@@ -1,0 +1,7 @@
+== Test breakdown (shuffle_test_mode=audio_pair) ==
+n_windows total: 800
+n_windows high-attention: 646
+global accuracy (records, all): 0.3825
+global accuracy (records, attn): 0.4025
+global margin mean (all): -0.5956
+global margin mean (attn): -0.4942
