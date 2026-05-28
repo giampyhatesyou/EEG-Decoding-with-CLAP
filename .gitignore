@@ -1,3 +1,4 @@
+.gitignore
 # ===== IDE / editor =====
 /.vscode
 
@@ -37,3 +38,6 @@ __pycache__/
 .DS_Store
 **/.DS_Store
 Thumbs.db
+
+CLAUDE.md
+
