@@ -18,10 +18,13 @@ audio_repr: "raw"
 # Hidden width of the CLAP projection head (Linear 512 -> hidden -> 100).
 # Only used when audio_repr == "clap".
 clap_proj_hidden_dim: 256
-# LAION-CLAP checkpoint to load. The default ("music") is the music-specific
-# fine-tune; pass "general" for the general-purpose checkpoint. Empty string
-# lets laion_clap pick its bundled default.
-clap_pretrained: "music"
+# LAION-CLAP checkpoint to load. Only used when audio_repr == "clap".
+# An empty string makes laion_clap load its bundled default checkpoint
+# (general-purpose audio, HTSAT-tiny) into ~/.cache/laion_clap/ on first use.
+# To use a specific checkpoint, pass an ABSOLUTE path to a local .pt file; any
+# non-path string is ignored with a warning and falls back to the default.
+# The CLAP runs in docs/AUDIT_FINDINGS.md all used this bundled default.
+clap_pretrained: ""
 
 # train options
 seed: 42

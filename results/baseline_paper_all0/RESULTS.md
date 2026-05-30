@@ -47,16 +47,16 @@ Others  0.9161  0.8741  0.9860  nan
 ## How to reproduce
 
 ```bash
-cd codes_attention/attention
-bash sequential_test.sh
+bash scripts/test.sh
 ```
 
-(`sequential_test.sh` points to `../../proposed_model_checkpoints/model-all0.ckpt`)
+(`scripts/test.sh` loads `checkpoints/model-all0.ckpt`; run
+`bash scripts/extract_checkpoints.sh` first to unpack it from `archive/`.)
 
 ## Files in this directory
 
-- `test_pairwise_matrix.png` — heatmap delle matrici 4x4 (All vs High-attention)
-- `test_per_task_accuracy.png` — bar chart per-task con linea di chance
-- `hparams.yaml` — iperparametri usati a inference
-- `events.out.tfevents.*` — log TensorBoard
-- `RESULTS.md` — questo file
+- `test_pairwise_matrix.png` — 4x4 pairwise-matrix heatmaps (All vs High-attention)
+- `test_per_task_accuracy.png` — per-task bar chart with the chance line
+- `hparams.yaml` — hyperparameters used at inference
+- `events.out.tfevents.*` — TensorBoard log
+- `RESULTS.md` — this file

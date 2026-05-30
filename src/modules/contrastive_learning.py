@@ -368,29 +368,6 @@ class EEGContrastiveLearning(LightningModule):
         similarity_dict = self.criterion(
             z_eeg, z_v, z_d, z_b, z_o, task, attention_score,self.attention_values)
 
-        positive_list = similarity_dict["all"]["positive_list"]
-        positive_task0 = self._get_tensor_value(positive_list[0])
-        positive_task1 = self._get_tensor_value(positive_list[1])
-        positive_task2 = self._get_tensor_value(positive_list[2])
-        positive_task3 = self._get_tensor_value(positive_list[3])
-
-        pos_list = [x for x in positive_list if x is not None]
-        if len(pos_list) > 0:
-            positive_average = sum(pos_list) / len(pos_list)
-
-     
-        filtered_list = similarity_dict["attention"]["positive_list"]
-        filtered_task0 = self._get_tensor_value(filtered_list[0])
-        filtered_task1 = self._get_tensor_value(filtered_list[1])
-        filtered_task2 = self._get_tensor_value(filtered_list[2])
-        filtered_task3 = self._get_tensor_value(filtered_list[3])
-
-        fil_list = [x for x in filtered_list if x is not None]
-        if len(fil_list) > 0:
-            filtered_average = sum(fil_list) / len(fil_list)
-        else:
-            filtered_average = None
-
         matrix_all = similarity_dict["all"]["matrix_list"]
         matrix_attention = similarity_dict["attention"]["matrix_list"]
 
@@ -626,74 +603,3 @@ class EEGContrastiveLearning(LightningModule):
         optimizer = torch.optim.Adam(chain(self.encoder_raw_e.parameters(), self.encoder_vocal.parameters(
         ), self.encoder_drum.parameters(), self.encoder_bass.parameters(), self.encoder_others.parameters()), self.hparams.learning_rate)
         return {"optimizer": optimizer}
-
-    def _shared_step(self, label, y):
-        y_hat = y
-        y = label
-
-        loss = F.cross_entropy(y_hat, y)
-        preds = torch.argmax(y_hat, dim=1)
-        acc = (y == preds).sum() / y.size(0)
-        return loss, acc
-
-    def Kfold_log(self):
-        return self.train_log_df, self.valid_log_df
-
-    def save_checkpoint(self, filepath):
-        torch.save({
-            'module_state_dict': self.state_dict(),
-            'encoder_raw_e_state_dict': self.encoder_raw_e.state_dict(),
-            'encoder_vocal_state_dict': self.encoder_vocal.state_dict(),
-            'encoder_drum_state_dict': self.encoder_drum.state_dict(),
-            'encoder_bass_state_dict': self.encoder_bass.state_dict(),
-            'encoder_others_state_dict': self.encoder_others.state_dict(),
-            'optimizer_state_dict': self.trainer.optimizers[0].state_dict()
-        }, filepath)
-
-    def load_checkpoint(self, filepath):
-        checkpoint = torch.load(filepath)
-        self.load_state_dict(checkpoint['module_state_dict'])
-        self.encoder_raw_e.load_state_dict(
-            checkpoint['encoder_raw_e_state_dict'])
-        self.encoder_vocal.load_state_dict(
-            checkpoint['encoder_vocal_state_dict'])
-        self.encoder_drum.load_state_dict(
-            checkpoint['encoder_drum_state_dict'])
-        self.encoder_bass.load_state_dict(
-            checkpoint['encoder_bass_state_dict'])
-        self.encoder_others.load_state_dict(
-            checkpoint['encoder_others_state_dict'])
-
-        optimizer_config = self.configure_optimizers()
-        optimizer = optimizer_config['optimizer']
-
-        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-
-        return optimizer
-
-    def _get_tensor_value(self, value):
-        if value is None:
-            return None
-        return value.cpu().detach().numpy().item()
-
-    def _get_eeg(self, eeg, eeg_start):
-        slice_eeg = eeg[:, :, eeg_start: eeg_start +
-                        self.test_data_length]
-
-        return slice_eeg
-
-    def _get_audio(self, audio, eeg_start):
-        test_slice_length = int(
-            self.test_data_length / self.eeg_sample_rate)
-        audio_start = int(
-            eeg_start * (self.audio_sample_rate / self.eeg_sample_rate))
-        audio_end = int(audio_start + (test_slice_length *
-                        self.audio_sample_rate))
-
-        slice_audio = audio[:, :, audio_start:audio_end]
-
-        return slice_audio
-
-
-
-

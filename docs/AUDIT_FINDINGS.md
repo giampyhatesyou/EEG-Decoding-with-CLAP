@@ -4,9 +4,10 @@ This document records the full audit and the extension experiments performed
 on top of Akama et al. (2025), "Decoding Selective Auditory Attention to
 Musical Elements in Ecologically Valid Music Listening" (Sony CSL).
 
-All numbers in this document are verified against the actual run outputs;
-the path to each `test_breakdown_summary.txt` is given in section §6 so
-they can be inspected directly.
+All numbers in this document come from real run outputs; the path to each
+`test_breakdown_summary.txt` is listed in §5. Only the baseline and its
+negative-control sweep are committed under `results/` in this repo; the CLAP,
+LOSO, and LSO run directories live on the training cluster (paths in §5).
 
 ---
 
@@ -565,7 +566,7 @@ reason.
 
 ## 5. Where every number in this document comes from
 
-| number | source on baldo (or local) |
+| number | run directory |
 |---|---|
 | 0.9237 (within-subject) | `results/clap_run1/nmed-CL-.../version_1/test_breakdown_summary.txt` |
 | 0.9237 / 0.2575 / 0.3812 (CLAP sanity v2) | `results/clap_sanity_v2_{none,labels,audio_pair}/nmed-CL-.../version_0/test_breakdown_summary.txt` |
@@ -578,11 +579,10 @@ reason.
 | LOSO sweep (0.924/0.953/0.968/0.917/0.986) | `results/cv_sweep_leave_subject_out_{1,2,3,4,5}/nmed-CL-.../version_1/test_breakdown_summary.txt` |
 | argmax / mean-sim tables | derived from `test_records.csv` in the same directories |
 
-To inspect any of them directly on baldo:
+To inspect any of them, from the project root:
 
 ```bash
-ssh baldo "cd ~/EEG-Attention-decoding-with-CLAP && \
-  cat results/<run>/nmed-CL-preprocessing_eegmusic/version_*/test_breakdown_summary.txt"
+cat results/<run>/nmed-CL-preprocessing_eegmusic/version_*/test_breakdown_summary.txt
 ```
 
 ---
@@ -590,7 +590,7 @@ ssh baldo "cd ~/EEG-Attention-decoding-with-CLAP && \
 ## 6. How to reproduce
 
 ### 6.1 Environment
-Conda env `eeg_attention` on the baldo cluster (Python 3.9, PyTorch +
+Conda env `eeg_attention` on the training cluster (Python 3.9, PyTorch +
 PyTorch Lightning, laion_clap, audiomentations, sklearn). Dataset at
 `dataset/eeg_within_sub/{subject}/{train,valid,test}/{song}/{task}/{att}/eeg.pkl`
 and `dataset/audio/{0..3}/{song}.wav`.

@@ -65,7 +65,7 @@ negative-control sweep are committed under `results/`.
 │   ├── models/
 │   │   ├── sample_cnn2d_eeg.py      Akama 2D-CNN EEG / raw-audio encoder
 │   │   ├── clap_encoder.py          Frozen LAION-CLAP + projection head (extension)
-│   │   └── model.py                 Assembled contrastive model
+│   │   └── model.py                 Base nn.Module (weight-init helper) the encoders subclass
 │   ├── modules/
 │   │   ├── contrastive_learning.py  LightningModule: loss, audit hooks, breakdown
 │   │   └── clip_loss.py             InfoNCE contrastive loss

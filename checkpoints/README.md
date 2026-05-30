@@ -24,5 +24,6 @@ Source archive: `archive/proposed_model_checkpoints.7z` (kept tracked, ~25 MB co
 The checkpoints contain weights for an extra `projector1` layer (a 4-class classification
 head) which is not present in the current model code. This was an auxiliary supervised
 head used during training in the earlier version of the paper. When loading the checkpoint
-the code uses `strict=False` to ignore these unused weights. See `src/checkpoint_test.py`
-line ~220.
+the code uses `strict=False` to ignore these unused weights (and prints the missing /
+unexpected key diff so a real mismatch is not masked). See the `load_state_dict` call
+in `src/checkpoint_test.py`.

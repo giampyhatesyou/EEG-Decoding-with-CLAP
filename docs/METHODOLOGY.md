@@ -6,10 +6,10 @@ that you can port to Overleaf / Word with minor stylistic adjustments. Each
 section is small enough to be moved or reordered without losing context.
 
 Conventions:
-- — paragraphs ready to lift into the thesis with minor copy-editing.
-- — placeholders that need a number, citation, or decision before the
+- [READY] paragraphs ready to lift into the thesis with minor copy-editing.
+- [TODO] placeholders that need a number, citation, or decision before the
   section can be considered complete.
-- — design choices that the thesis must explicitly defend.
+- [DEFEND] design choices that the thesis must explicitly defend.
 
 ---
 
@@ -22,7 +22,7 @@ polyphonic music mixture, the model must infer which musical element
 (vocal, drum, bass, or *others*) the subject was instructed to attend.
 
 The dataset is the one released by Akama *et al.* (Sony CSL, 2025):
-24 subjects, 4-channel consumer-grade EEG (Muse 2) at 256 Hz, paired with
+8 subjects, 4-channel consumer-grade EEG (Muse 2) at 256 Hz, paired with
 the corresponding music mixtures and per-stem audio at 44.1 kHz. Each
 trial is associated with a task label in `{0, 1, 2, 3}` mapping to
 `{vocal, drum, bass, others}` and with a behavioural *attention score*
@@ -82,7 +82,7 @@ high-attention. Discuss the asymmetry on `bass` vs `drum`.*
 
 ### 3.1 Motivation
 
-🔬 The baseline learns each stem's audio encoder end-to-end on the same
+[DEFEND] The baseline learns each stem's audio encoder end-to-end on the same
 small dataset that supervises the contrastive task. This couples *audio
 representation learning* and *EEG-audio alignment* into a single
 optimization problem, with the audio side bearing almost 80 % of the
@@ -142,7 +142,7 @@ This ensures the comparison is apples-to-apples on a single axis.
 
 ### 3.4 Known methodological limitations
 
-🔬 Two limitations of the current CLAP integration are worth recording
+[DEFEND] Two limitations of the current CLAP integration are worth recording
 explicitly:
 
 1. **Out-of-distribution clip length.** LAION-CLAP was pre-trained on
@@ -164,7 +164,7 @@ explicitly:
 
 ## 4. Comparison and analysis
 
-🟡 *To be filled after the CLAP run finishes.*
+[TODO] *To be filled after the CLAP run finishes.*
 
 Expected structure:
 
@@ -177,28 +177,28 @@ Expected structure:
 - **Parameter count vs accuracy.** ~273K trainable vs ~580K, useful to
   argue about sample efficiency regardless of the absolute accuracy.
 
-🟡 *Optional: training curves (validation loss vs epoch) overlaid for
+[TODO] *Optional: training curves (validation loss vs epoch) overlaid for
 the two variants, to show convergence speed.*
 
 ---
 
 ## 5. Reproducibility
 
-✏️ All code, configuration, and seeds required to reproduce the
+[READY] All code, configuration, and seeds required to reproduce the
 experiments are available at
-`https://github.com/giampyhatesyou/EEG-Attention-decoding-with-CLAP`.
+`https://github.com/giampyhatesyou/EEG-Decoding-with-CLAP`.
 The baseline run is launched with `bash scripts/train.sh` and the CLAP
 variant with `bash scripts/train_clap.sh`. Each script writes its
 checkpoints and TensorBoard logs into a separate `results/<training_date>`
 subdirectory so the two runs cannot overwrite each other.
 
-✏️ Dependencies are pinned in `requirements.txt`; the only versions
+[READY] Dependencies are pinned in `requirements.txt`; the only versions
 that diverge from a vanilla LAION-CLAP install are `transformers<4.40`
 (LAION-CLAP 1.1.6 imports several classes from transformers in a way
 that broke at version 4.40) and `numpy==1.26.4` (the LAION-CLAP pin on
 1.23.5 is over-strict; the rest of the stack requires ≥1.24).
 
-🟡 *Add: a short paragraph on the cluster setup once you settle on
+[TODO] *Add: a short paragraph on the cluster setup once you settle on
 which node ran the final runs (edu02 with NVIDIA L40S for training,
 SLURM allocation 8 CPUs × 1 GPU; meg-server-3 for CPU-only baselines
 when relevant).*

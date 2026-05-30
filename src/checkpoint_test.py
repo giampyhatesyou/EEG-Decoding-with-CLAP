@@ -131,14 +131,6 @@ if __name__ == "__main__":
     if args.openmiir_augmentation != "no_augmentation":
         train_dataset.set_transform(train_transform)
 
-    train_loader = DataLoader(
-        train_dataset,
-        batch_size=args.batch_size,
-        num_workers=args.workers,
-        drop_last=True,
-        shuffle=True,
-    )
-
     valid_dataset = get_dataset(
         args.dataset, args.dataset_dir, subset="valid", download=False,
         cv_mode=args.cv_mode, cv_held_out_id=args.cv_held_out_id)
@@ -150,14 +142,6 @@ if __name__ == "__main__":
     valid_random_numbers = [random.randint(
         0, args.window_size - args.eeg_length - 1) for _ in range(1200)]
     valid_dataset.set_random_numbers(valid_random_numbers)
-
-    valid_loader = DataLoader(
-        valid_dataset,
-        batch_size=args.batch_size,
-        num_workers=args.workers,
-        drop_last=True,
-        shuffle=False,
-    )
 
     test_dataset = get_dataset(
         args.test_dataset, args.dataset_dir, subset="test", download=False,
@@ -291,7 +275,18 @@ if __name__ == "__main__":
     checkpoint_path = args.checkpoint_path
     map_location = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     checkpoint = torch.load(checkpoint_path, map_location=map_location)
-    module.load_state_dict(checkpoint['state_dict'], strict=False)
+    # strict=False is required: the authors' checkpoints carry an extra
+    # `projector1` head (legacy multi-task setup) that the current model omits.
+    # Printing the key diff means a genuine mismatch -- e.g. loading a raw-encoder
+    # checkpoint into the CLAP topology -- surfaces here instead of silently
+    # loading partial weights and reporting a meaningless accuracy.
+    load_result = module.load_state_dict(checkpoint['state_dict'], strict=False)
+    if load_result.missing_keys:
+        print(f"[load] {len(load_result.missing_keys)} missing key(s) not in checkpoint; first few: {load_result.missing_keys[:8]}")
+    if load_result.unexpected_keys:
+        print(f"[load] {len(load_result.unexpected_keys)} unexpected key(s) in checkpoint (ignored); first few: {load_result.unexpected_keys[:8]}")
+    if not load_result.missing_keys and not load_result.unexpected_keys:
+        print("[load] checkpoint state_dict matched the model exactly")
     trainer.test(module,dataloaders=test_loader)
     print('[[[ FINISH ]]]', datetime.datetime.now())
 
