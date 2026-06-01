@@ -1,0 +1,49 @@
+# ── Editor / IDE ──────────────────────────────────────────────
+/.vscode/
+/.idea/
+*.code-workspace
+
+# ── OS junk ───────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Python ────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# ── Virtual environments ──────────────────────────────────────
+.venv/
+venv/
+env/
+# Extracted upstream reference tree (only a leftover .venv lives here).
+/Music_attention-main/
+
+# ── Large local-only archives (not distributed through git) ───
+/dataset.zip
+/Music_attention-main.zip
+
+# ── Assistant / agent config — keep the repo human-authored ───
+/CLAUDE.md
+/GEMINI.md
+/.claude/
+
+# ── Generated training artifacts (re-runnable) ────────────────
+/logs/
+/lightning_logs/
+/archive_tmp/
+
+# results/: ignore live run directories, but keep the committed
+# reproduction baselines under results/baseline_*/ ...
+/results/**
+!/results/baseline_*/
+!/results/baseline_*/**
+
+# ... yet never commit re-derivable binaries, even inside a kept
+# baseline dir: model checkpoints and TensorBoard event files.
+# Paper checkpoints ship as archive/*.7z and are unpacked locally
+# by scripts/extract_checkpoints.sh.
+*.ckpt
+events.out.tfevents.*
