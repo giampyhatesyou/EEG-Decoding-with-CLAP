@@ -118,8 +118,12 @@ baseline. On the audio side:
      Linear(256 → 100)`, mapping the CLAP embedding into the 100-d
      contrastive space used by the EEG encoder.
 
-The CLAP backbone contains ~158M frozen parameters; the projection head
-adds ~157K trainable parameters. Together with the (unchanged) EEG
+The CLAP audio tower actually used (HTSAT-tiny) has ~31M frozen
+parameters; the full `CLAP_Module` we instantiate also loads a RoBERTa
+text tower (~125M) that is never called in the forward pass, so the whole
+frozen backbone is ~158M parameters resident in memory regardless
+(measured: 31.3M audio + 124.6M text + projections = 158.3M, all
+`requires_grad=False`). The projection head adds ~157K trainable parameters. Together with the (unchanged) EEG
 encoder, the total trainable budget drops from ~580K (baseline) to
 ~273K, roughly halving it.
 

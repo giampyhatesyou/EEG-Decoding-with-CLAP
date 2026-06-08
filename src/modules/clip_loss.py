@@ -1,3 +1,4 @@
+# CHANGED(baseline): pyrefly linter directives added below (tooling only, no runtime effect)
 # pyrefly: ignore [missing-import]
 import torch
 # pyrefly: ignore [missing-import]
@@ -53,8 +54,11 @@ class CLIP_Loss(nn.Module):
                 filtered_eeg, filtered_m_v, filtered_m_d, filtered_m_b, filtered_m_o, filtered_task
             )
         else:
+            # CHANGED(baseline): removed `print(f"No samples with attention_score {attention_values}")`
             filtered_losses, filtered_positive_list, filtered_negative_av, filtered_matrix = None, [None,None,None,None], None, [[] for _ in range(4)]
 
+        # CHANGED(baseline): start — structured observability stats (per-task counts, skipped-task
+        #                    flags, high-attention count). Pure bookkeeping: does NOT touch the loss.
         task_counts_all = {i: (task == i).sum().item() for i in range(4)}
         stats = {
             "all": {
@@ -75,6 +79,7 @@ class CLIP_Loss(nn.Module):
         else:
             stats["attention"]["task_counts"] = {i: 0 for i in range(4)}
             stats["attention"]["skipped_tasks"] = {i: True for i in range(4)}
+        # CHANGED(baseline): end — stats
 
         return {
             "all": {
@@ -89,10 +94,13 @@ class CLIP_Loss(nn.Module):
                 "negative_av": filtered_negative_av,
                 "matrix_list": filtered_matrix
             },
-            "stats": stats
+            "stats": stats  # CHANGED(baseline): new key carrying the observability stats above
         }
 
     def compute_task_loss(self, eeg, m_v, m_d, m_b, m_o, task):
+        # CHANGED(baseline): removed the 4 `print('No <vocal|drum|bass|others> task')` calls from the
+        #                    `else: positive_list.append(None)` branches below. Loss math is unchanged;
+        #                    that observability is now carried by the `stats` dict built in forward().
         task_mask0 = (task == 0)
         task_mask1 = (task == 1)
         task_mask2 = (task == 2)

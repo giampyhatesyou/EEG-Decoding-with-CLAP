@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from .model import Model
 import numpy as np
-# from simclr.modules.identity import Identity
+# CHANGED(baseline): removed `from simclr.modules.identity import Identity` (use nn.Identity below)
 import torch.nn.functional as F
 
 from torch.autograd import Function
@@ -27,7 +27,7 @@ class SampleCNN2DEEG(Model):
         
         self.dropout = nn.Dropout(0.5)
 
-        self.fc = nn.Identity()
+        self.fc = nn.Identity()  # CHANGED(baseline): was Identity() from simclr; behaviorally identical
 
         self.projector2 = nn.Sequential(
             nn.Linear(128, 100, bias=False),

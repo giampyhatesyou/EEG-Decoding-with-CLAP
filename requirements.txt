@@ -57,6 +57,13 @@ tqdm==4.66.5
 matplotlib==3.7.5
 contourpy<1.2
 
+# ===== Interactive CLI (src/run.py) =====
+# Terminal launcher that replaces the per-combination scripts in scripts/.
+# Pure-Python, no native deps, so they install cleanly on cluster nodes and Colab.
+# Imported lazily inside run.py, so the rest of the codebase runs without them.
+questionary==2.0.1
+rich==13.7.1
+
 # ===== Build tools =====
 # setuptools >= 81 removes pkg_resources, breaking pytorch_lightning 1.9.x
 setuptools<81

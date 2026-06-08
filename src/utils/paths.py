@@ -1,3 +1,4 @@
+# CHANGED(baseline): NEW FILE — not present in the Akama et al. upstream. Host-aware path/worker resolution.
 """
 Dynamic path resolution and resource sizing.
 

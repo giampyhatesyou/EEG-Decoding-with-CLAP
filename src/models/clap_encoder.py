@@ -1,3 +1,4 @@
+# CHANGED(baseline): NEW FILE — not present in the Akama et al. upstream. This is the CLAP extension.
 """CLAP-based audio encoder for the EEG <-> audio contrastive task.
 
 Drop-in replacement for ``SampleCNN2DEEG`` when ``audio_repr: "clap"`` in the

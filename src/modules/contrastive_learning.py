@@ -1,6 +1,12 @@
+# CHANGED(baseline): this LightningModule is substantially modified from the Akama upstream. PRESERVED
+#                    unchanged (verified by diff): forward(), compute_evaluation_matrix() [the metric],
+#                    configure_optimizers(). Loss arithmetic lives in clip_loss.py and is untouched.
+#                    Everything marked `CHANGED(baseline)` below is observability/audit/lifecycle work.
 import torch
 from pytorch_lightning import LightningModule
-from . import CLIP_Loss
+# CHANGED(baseline): removed top-level `from simclr.modules import NT_Xent` (now lazy-imported in
+#                    configure_criterion, only on the non-CLIP fallback path)
+from . import CLIP_Loss  # CHANGED(baseline): was `from modules import CLIP_Loss`
 from itertools import chain
 from utils import get_logger
 import torch.nn.functional as F
@@ -50,6 +56,8 @@ class EEGContrastiveLearning(LightningModule):
         self.subject_accuracy_count = {
             subject: {'correct': 0, 'total': 0} for subject in range(24)}
 
+        # CHANGED(baseline): added the two fields below (test_records, _shuffle_test_mode); upstream __init__
+        #                    ended at subject_accuracy_count.
         # Per-window test records populated in test_step / consumed in on_test_end.
         # Each row: subject, song, task, attention, sim per stem, pos, max_neg,
         # margin, correct, group ("all"/"attention"). Kept as a flat list of
@@ -66,6 +74,7 @@ class EEGContrastiveLearning(LightningModule):
 
         return z_eeg, z_v, z_d, z_b, z_o
 
+    # CHANGED(baseline): new method — not in upstream. Resets per-epoch train observability counters.
     def on_train_epoch_start(self):
         self.train_epoch_stats = {
             "total_samples": 0,
@@ -92,6 +101,7 @@ class EEGContrastiveLearning(LightningModule):
         similarity_dict = self.criterion(
             z_eeg, z_v, z_d, z_b, z_o, task, attention_score, self.attention_values)
 
+        # CHANGED(baseline): start — read the new `stats` dict and aggregate per-epoch observability counters
         stats = similarity_dict.get("stats")
         if stats and hasattr(self, 'train_epoch_stats'):
             self.train_epoch_stats["total_samples"] += stats["all"]["total_samples"]
@@ -120,8 +130,9 @@ class EEGContrastiveLearning(LightningModule):
                 loss = similarity_dict["attention"]["loss"]
         else:
             raise ValueError('Please input training data category (all or high_attention)')
+        # CHANGED(baseline): end — per-epoch stats aggregation
 
-        self.log("Loss/train", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        self.log("Loss/train", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)  # CHANGED(baseline): upstream logged only via debug_logger, never self.log
 
         if self.current_epoch == self.trainer.max_epochs - 1:
             self.last_epoch_train_embeddings.append(
@@ -129,6 +140,7 @@ class EEGContrastiveLearning(LightningModule):
 
         return loss
 
+    # CHANGED(baseline): new method — not in upstream. Prints the per-epoch train observability summary.
     def on_train_epoch_end(self):
         if hasattr(self, 'train_epoch_stats'):
             summary = (
@@ -142,6 +154,9 @@ class EEGContrastiveLearning(LightningModule):
             )
             self.debug_logger.info(summary)
 
+    # CHANGED(baseline): new method — replaces upstream `on_validation_start` (which only did self.eval()).
+    #                    Resets the validation matrices each epoch; upstream accumulated them in __init__
+    #                    and never reset them, so validation accuracy was not per-epoch.
     def on_validation_epoch_start(self):
         self.val_epoch_stats = {
             "total_samples": 0,
@@ -166,6 +181,9 @@ class EEGContrastiveLearning(LightningModule):
         similarity_dict = self.criterion(
             z_eeg, z_v, z_d, z_b, z_o, task, attention_score, self.attention_values)
 
+        # CHANGED(baseline): start — per-epoch val stats. Upstream validation_step instead did a lot of
+        #                    debug_logger.info()/_get_tensor_value() bookkeeping (positive/filtered task
+        #                    averages) that was computed and discarded; that has been removed here.
         stats = similarity_dict.get("stats")
         if stats and hasattr(self, 'val_epoch_stats'):
             self.val_epoch_stats["total_samples"] += stats["all"]["total_samples"]
@@ -185,10 +203,13 @@ class EEGContrastiveLearning(LightningModule):
 
         self.matrix_list_all.append(similarity_dict["all"]["matrix_list"])
         self.matrix_list_attention.append(similarity_dict["attention"]["matrix_list"])
-        
-        self.log("Valid/loss", loss, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
+        # CHANGED(baseline): end — per-epoch val stats / removed discarded bookkeeping
+
+        self.log("Valid/loss", loss, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)  # CHANGED(baseline): upstream never logged Valid/loss, so EarlyStopping/ModelCheckpoint on it never fired
         return loss
 
+    # CHANGED(baseline): new method — not in upstream. Logs per-epoch valid accuracy (all + high-attention)
+    #                    via the preserved compute_evaluation_matrix, and prints the val summary.
     def on_validation_epoch_end(self):
         eval_all = self.compute_evaluation_matrix(self.matrix_list_all)
         eval_att = self.compute_evaluation_matrix(self.matrix_list_attention)
@@ -210,6 +231,9 @@ class EEGContrastiveLearning(LightningModule):
             self.debug_logger.info(summary)
 
 
+    # NOT CHANGED(baseline): this method is identical to upstream (verified by diff). It is
+    #                        the evaluation metric (global accuracy = P[sim(EEG,target) > max sim(EEG,other)],
+    #                        per-task and pairwise). Do NOT modify without an explicit methodological decision.
     def compute_evaluation_matrix(self, all_lists):
         if not all_lists or all(len(task) == 0 for group in all_lists for task in group):
             print("all_lists is empty")
@@ -330,6 +354,7 @@ class EEGContrastiveLearning(LightningModule):
         subject = batch[7]
         song = batch[8]
 
+        # CHANGED(baseline): start — negative-control shuffles (audit). Not in upstream test_step.
         # --- Negative-control shuffles (audit only; no effect when "none"). ---
         # Applied BEFORE the forward pass so the criterion sees the perturbed
         # pairing/label. We rely on pl.seed_everything() upstream for repro.
@@ -358,6 +383,7 @@ class EEGContrastiveLearning(LightningModule):
                 f"Unknown shuffle_test_mode={self._shuffle_test_mode!r}; "
                 "expected one of {'none','labels','audio_pair'}."
             )
+        # CHANGED(baseline): end — negative-control shuffles
 
         z_eeg, z_v, z_d, z_b, z_o = self.forward(eeg, m_v, m_d, m_b, m_o)
         if self.hparams.detach_z_c:
@@ -374,6 +400,9 @@ class EEGContrastiveLearning(LightningModule):
         self.matrix_list_all.append(matrix_all)
         self.matrix_list_attention.append(matrix_attention)
 
+        # CHANGED(baseline): start — per-window record collection (audit breakdowns). Not in upstream.
+        #                    Upstream test_step instead had discarded _get_tensor_value()/positive-average
+        #                    bookkeeping here; that has been removed.
         # --- Per-window record collection (used by on_test_end for breakdowns).
         # matrix_all[k] is the ordered list of [sim_v, sim_d, sim_b, sim_o]
         # rows for samples in this batch whose task == k, in the same order as
@@ -409,10 +438,16 @@ class EEGContrastiveLearning(LightningModule):
                         "correct": int(pos > max_neg),
                         "high_attention": int(int(att_t[i]) in attention_values),
                     })
+        # CHANGED(baseline): end — per-window record collection
 
+        # NOTE(baseline): these two calls are inherited from upstream test_step; their results are
+        #                 discarded here (the real evaluation runs in on_test_end). Left as-is.
         evaluation_all = self.compute_evaluation_matrix(self.matrix_list_all)
         evaluation_attention = self.compute_evaluation_matrix(self.matrix_list_attention)
 
+    # CHANGED(baseline): upstream on_test_end was effectively empty (commented bootstrap + super() call).
+    #                    The whole body below — console metrics, figures, breakdown CSVs — is new. It uses
+    #                    the preserved compute_evaluation_matrix and never feeds back into training.
     def on_test_end(self):
         import matplotlib
         matplotlib.use('Agg')
@@ -583,6 +618,8 @@ class EEGContrastiveLearning(LightningModule):
 
 
     def configure_criterion(self):
+        # CHANGED(baseline): `devices` instead of upstream's deprecated `gpus`
+        #                    (upstream: `if self.hparams.accelerator == "dp" and self.hparams.gpus: ... / self.hparams.gpus`)
         if self.hparams.accelerator == "dp" and hasattr(self.hparams, 'devices') and self.hparams.devices:
             batch_size = int(self.hparams.batch_size / self.hparams.devices)
         else:
@@ -593,13 +630,18 @@ class EEGContrastiveLearning(LightningModule):
             criterion = CLIP_Loss(
                 batch_size, self.hparams.temperature, world_size=1)
         else:
-            from simclr.modules import NT_Xent
+            from simclr.modules import NT_Xent  # CHANGED(baseline): lazy import (was top-of-module)
             print('use NT_Xent as criterion')
             criterion = NT_Xent(
                 batch_size, self.hparams.temperature, world_size=1)
         return criterion
 
+    # NOT CHANGED(baseline): identical to upstream (verified by diff). Adam over all 5 encoders' params.
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(chain(self.encoder_raw_e.parameters(), self.encoder_vocal.parameters(
         ), self.encoder_drum.parameters(), self.encoder_bass.parameters(), self.encoder_others.parameters()), self.hparams.learning_rate)
         return {"optimizer": optimizer}
+
+    # CHANGED(baseline): removed 9 upstream methods that had no call site in this repo:
+    #   on_validation_start, val_dataloader, _shared_step, Kfold_log, save_checkpoint,
+    #   load_checkpoint, _get_tensor_value, _get_eeg, _get_audio.

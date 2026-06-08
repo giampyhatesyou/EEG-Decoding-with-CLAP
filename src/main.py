@@ -1,3 +1,8 @@
+# CHANGED(baseline): this entrypoint extends the Akama upstream main.py. The original structure/flow is
+#                    preserved; every addition or change relative to upstream is marked with a
+#                    `CHANGED(baseline)` flag below (single-line, or start/end for blocks).
+# CHANGED(baseline): start — cluster/Colab bootstrap (was not in upstream: sys/os, GPU-safe detection,
+#                    memlock bump, sys.path insert). Upstream main.py began directly at `import argparse`.
 import sys
 import os
 
@@ -22,19 +27,20 @@ except Exception:
 
 # Ensure the local 'attention' directory is at the top of sys.path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# CHANGED(baseline): end — cluster/Colab bootstrap
 
 import argparse
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
-from pytorch_lightning.callbacks.progress import TQDMProgressBar
+from pytorch_lightning.callbacks.progress import TQDMProgressBar  # CHANGED(baseline): new import (TTY-aware progress)
 from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import TensorBoardLogger
 from audiomentations import AddGaussianNoise, Gain
 from datasets import get_dataset
-from models import SampleCNN2DEEG, CLAPEncoder
+from models import SampleCNN2DEEG, CLAPEncoder  # CHANGED(baseline): added CLAPEncoder
 from modules import EEGContrastiveLearning
-from utils import yaml_config_hook, get_logger, file_writer, paths
+from utils import yaml_config_hook, get_logger, file_writer, paths  # CHANGED(baseline): added paths
 from preprocessing import eeg_data_processing
 import pandas as pd
 import datetime
@@ -50,6 +56,7 @@ class RandomWindowUpdateCallback(pl.Callback):
         self.dataset.update_random_window()
 
 
+# CHANGED(baseline): new class — not in upstream. Epoch-level observability for non-TTY logs.
 class _EpochSummaryCallback(pl.Callback):
     """One concise line per epoch, designed for non-TTY logs (cluster jobs,
     `tee`'d files, etc.) where the per-batch tqdm progress bar would otherwise
@@ -79,7 +86,7 @@ class _EpochSummaryCallback(pl.Callback):
         )
 
 def preprocess():
-    input = config['dataset_dir']
+    input = config['dataset_dir']  # CHANGED(baseline): was config['/codes_attention/config/config.yaml']
     output_base = f"{config['dataset_dir']}/eeg/"
     preprocess_logger = get_logger('preprocess')
 
@@ -109,7 +116,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="PredANN")
 
-    config = yaml_config_hook("../configs/baseline.yaml")
+    config = yaml_config_hook("../configs/baseline.yaml")  # CHANGED(baseline): was absolute "/codes_attention/config/config.yaml"
     for k, v in config.items():
         parser.add_argument(f"--{k}", default=v, type=type(v))
     parser.add_argument('--mode', type=str)
@@ -121,9 +128,11 @@ if __name__ == "__main__":
     parser.add_argument('--key', type=str)
     parser.add_argument('--test_window_size', type=int)
     parser.add_argument('--test_stride', type=int)
-    parser.add_argument('--log_dir', type=str, default="../results", help="Base directory for saving logs and checkpoints (relative to src/)")
+    parser.add_argument('--log_dir', type=str, default="../results", help="Base directory for saving logs and checkpoints (relative to src/)")  # CHANGED(baseline): new arg
     args = parser.parse_args()
 
+    # CHANGED(baseline): start — dynamic, host-aware path/worker resolution (env > CLI > host profile > YAML).
+    #                    Upstream went straight from parse_args() to seed_everything().
     # --- Dynamic, host-aware path / worker resolution. ---
     # YAML defaults define the "vanilla" repo layout (so other machines clone &
     # run as-is). On known hosts (e.g. meg-server-3) we silently redirect heavy
@@ -145,6 +154,7 @@ if __name__ == "__main__":
     print(f"[paths] dataset_dir={args.dataset_dir}")
     print(f"[paths] log_dir={args.log_dir}")
     print(f"[paths] workers={args.workers}")
+    # CHANGED(baseline): end — dynamic path/worker resolution
 
     pl.seed_everything(args.seed, workers=True)
 
@@ -183,10 +193,11 @@ if __name__ == "__main__":
     valid_log = pd.DataFrame(
         columns=["Loss/valid", "Accuracy/valid_eeg", "Accuracy/valid_audio"])
 
+    # CHANGED(baseline): forward cv_mode / cv_held_out_id to all 3 get_dataset calls (defaults reproduce upstream)
     print(f"[cv] mode={args.cv_mode} held_out_id={args.cv_held_out_id}")
     train_dataset = get_dataset(
         args.dataset, args.dataset_dir, subset="train", download=False,
-        cv_mode=args.cv_mode, cv_held_out_id=args.cv_held_out_id)
+        cv_mode=args.cv_mode, cv_held_out_id=args.cv_held_out_id)  # CHANGED(baseline): cv args
     train_dataset.set_sliding_window_parameters(args.window_size, args.stride)
     train_dataset.set_eeg_normalization(
         args.eeg_normalization, args.clamp_value)
@@ -209,7 +220,7 @@ if __name__ == "__main__":
 
     valid_dataset = get_dataset(
         args.dataset, args.dataset_dir, subset="valid", download=False,
-        cv_mode=args.cv_mode, cv_held_out_id=args.cv_held_out_id)
+        cv_mode=args.cv_mode, cv_held_out_id=args.cv_held_out_id)  # CHANGED(baseline): cv args
     valid_dataset.set_sliding_window_parameters(args.window_size, args.stride)
     valid_dataset.set_eeg_normalization(
         args.eeg_normalization, args.clamp_value)
@@ -229,7 +240,7 @@ if __name__ == "__main__":
     
     test_dataset = get_dataset(
         args.test_dataset, args.dataset_dir, subset="test", download=False,
-        cv_mode=args.cv_mode, cv_held_out_id=args.cv_held_out_id)
+        cv_mode=args.cv_mode, cv_held_out_id=args.cv_held_out_id)  # CHANGED(baseline): cv args
     test_dataset.set_test_data_length(args.test_data_length)
     test_dataset.set_sliding_window_parameters(args.test_window_size, args.test_stride)
     test_dataset.set_eeg_normalization(
@@ -259,6 +270,8 @@ if __name__ == "__main__":
             kernal_size=3,
         )
 
+        # CHANGED(baseline): start — audio_repr switch. Upstream built 4 independent SampleCNN2DEEG
+        #                    encoders unconditionally (that is exactly the `else` branch below).
         if args.audio_repr == "clap":
             # Variant A: one frozen LAION-CLAP backbone + a single trainable
             # projection head, shared across all 4 stems. See clap_encoder.py
@@ -296,11 +309,13 @@ if __name__ == "__main__":
                 kernal_size=3,
             )
             print("[audio] SampleCNN2DEEG (4 independent encoders, Akama baseline)")
+        # CHANGED(baseline): end — audio_repr switch
 
     print('EEG Contrastive learning')
     module = EEGContrastiveLearning(
         valid_dataset, args, encoder_eeg, encoder_vocal, encoder_drum, encoder_bass, encoder_others,key=args.key)
 
+    # CHANGED(baseline): configurable log dir; upstream hardcoded TensorBoardLogger("runs/{training_date}", ...)
     log_dir_base = getattr(args, 'log_dir', '../results')
     logger = TensorBoardLogger(
         f"{log_dir_base}/{args.training_date}", name="nmed-CL-{}".format(args.dataset))
@@ -322,6 +337,8 @@ if __name__ == "__main__":
 
     callback = RandomWindowUpdateCallback(train_dataset)
 
+    # CHANGED(baseline): start — TTY-aware progress bar + epoch-summary callback selection.
+    #                    Upstream passed callbacks=[early_stop_callback, checkpoint_callback] directly.
     # --- Quiet progress when stdout is not a TTY. ---
     # On interactive shells we keep the normal tqdm progress bar (refresh every
     # batch). When stdout is redirected (cluster jobs, `tee`'d logs, `nohup`),
@@ -341,6 +358,7 @@ if __name__ == "__main__":
     if not _is_tty:
         _callbacks.append(_EpochSummaryCallback())
     print(f"[paths] tty={_is_tty} (progress bar {'on' if _is_tty else 'off, epoch summaries instead'})")
+    # CHANGED(baseline): end — progress/summary callback selection
 
     trainer = Trainer.from_argparse_args(
         args,
@@ -349,12 +367,12 @@ if __name__ == "__main__":
         max_epochs=args.max_epochs,
         min_epochs=50,
         deterministic=True,
-        log_every_n_steps=50,
+        log_every_n_steps=50,  # CHANGED(baseline): was 1 (quieter logs; no effect on optimization)
         check_val_every_n_epoch=1,
         accelerator=args.accelerator,
-        resume_from_checkpoint=args.resume_checkpoint_path if args.resume_checkpoint_path else None,
+        resume_from_checkpoint=args.resume_checkpoint_path if args.resume_checkpoint_path else None,  # CHANGED(baseline): None-guard; was args.resume_checkpoint_path
         accumulate_grad_batches=6,
-        callbacks=_callbacks,
+        callbacks=_callbacks,  # CHANGED(baseline): was [early_stop_callback, checkpoint_callback]
     )
     print('[[[ START ]]]', datetime.datetime.now())
     trainer.fit(module, train_dataloaders=train_loader, val_dataloaders=valid_loader)

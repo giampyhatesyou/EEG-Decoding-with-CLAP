@@ -37,21 +37,23 @@ def get_test_window(df,eeg_length,window_size,stride):
     return newdf
 
 class Preprocessing_EEGMusic_dataset(Dataset):
+    # CHANGED(baseline): removed class attr `_base_dir = "dataset_path"` (placeholder); base_dir now defaults to root
     logger = get_logger("dataloader_debug")
 
     def __init__(
         self,
         root: str,
-        base_dir: str = None,
+        base_dir: str = None,  # CHANGED(baseline): was `_base_dir` placeholder
         download: bool = False,
         subset: Optional[str] = None,
-        cv_mode: str = "within",
-        cv_held_out_id: int = -1,
+        cv_mode: str = "within",        # CHANGED(baseline): new CV arg
+        cv_held_out_id: int = -1,       # CHANGED(baseline): new CV arg
     ):
 
         self.root = root
-        self.base_dir = base_dir if base_dir is not None else root
+        self.base_dir = base_dir if base_dir is not None else root  # CHANGED(baseline): was `self.base_dir = base_dir`
         self.subset = subset
+        # CHANGED(baseline): start — cross-validation routing (cv_mode / cv_held_out_id)
         # --- Cross-validation routing ------------------------------------------
         # cv_mode controls how _get_file_list assembles each split:
         #   "within"             -> reproduce the original within-subject split
@@ -67,6 +69,7 @@ class Preprocessing_EEGMusic_dataset(Dataset):
         # the current fold. Ignored when cv_mode == "within".
         self.cv_mode = cv_mode
         self.cv_held_out_id = int(cv_held_out_id)
+        # CHANGED(baseline): end — cross-validation routing
         self.eeg_normalization = None
         self.transform = None
         self.eeg_length = 256*15
@@ -267,7 +270,7 @@ class Preprocessing_EEGMusic_dataset(Dataset):
         return eeg
 
     def _get_file_list(self, root, subset):
-        BASE = os.path.join(root, "eeg_within_sub")
+        BASE = os.path.join(root, "eeg_within_sub")  # CHANGED(baseline): was os.path.join(root, "eeg")
         
         if not os.path.exists(BASE):
             raise RuntimeError('BASE folder is not found')
@@ -279,6 +282,7 @@ class Preprocessing_EEGMusic_dataset(Dataset):
         if not os.path.exists(BASE):
             raise RuntimeError('BASE folder is not found')
 
+        # CHANGED(baseline): f.parts[-2] was the absolute positional index f.parts[4]
         Audio_path_list = [{'task': int(f.parts[-2]), 'name': self._get_song_id(
             f.name), 'path': f} for f in Path(BASE).rglob('*.wav') if f.is_file()]
 
@@ -288,12 +292,16 @@ class Preprocessing_EEGMusic_dataset(Dataset):
         for idx, r_path in enumerate(EEG_path_list):
             r_part = r_path.parts
 
+            # CHANGED(baseline): negative path indices (-5..-2, subject -6); the upstream used absolute
+            #                    positional indices (r_part[4..8]). Equivalent for the original layout
+            #                    but independent of where the dataset root sits.
             r_subset = r_part[-5]
             r_subject = r_part[-6]
             r_song = self._get_song_id(r_part[-4])
             r_task = int(r_part[-3])
             attention_score = int(r_part[-2])
 
+            # CHANGED(baseline): start — CV gate. Upstream was simply `if subset != r_subset: continue`.
             # --- CV gate ---
             # See the cv_mode docstring in __init__ for the full semantics.
             # All gates short-circuit by `continue` so they are easy to reason
@@ -329,6 +337,7 @@ class Preprocessing_EEGMusic_dataset(Dataset):
                     f"Unknown cv_mode={self.cv_mode!r}; expected one of "
                     "{'within','leave_song_out','leave_subject_out'}."
                 )
+            # CHANGED(baseline): end — CV gate (within branch == upstream behaviour, bit-for-bit)
 
             c_audio_list = list(filter(lambda x: self._get_song_id(
                 x["name"]) == self._get_song_id(r_song), Audio_path_list))

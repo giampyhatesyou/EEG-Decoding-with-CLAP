@@ -1,3 +1,7 @@
+# CHANGED(baseline): this evaluation entrypoint extends the Akama upstream checkpoint_test.py. The
+#                    original was a template with hardcoded placeholders ("/checkpoint_path"); all
+#                    additions/changes relative to upstream are marked with `CHANGED(baseline)` flags.
+# CHANGED(baseline): start — cluster/Colab bootstrap (not in upstream). Upstream began at `import argparse`.
 import sys
 import os
 
@@ -22,19 +26,20 @@ except Exception:
 
 # Ensure the local 'attention' directory is at the top of sys.path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# CHANGED(baseline): end — cluster/Colab bootstrap
 
 import argparse
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import EarlyStopping
-from pytorch_lightning.callbacks.progress import TQDMProgressBar
+from pytorch_lightning.callbacks.progress import TQDMProgressBar  # CHANGED(baseline): new import
 from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import TensorBoardLogger
 from audiomentations import AddGaussianNoise, Gain
 from datasets import get_dataset
-from models import SampleCNN2DEEG, CLAPEncoder
+from models import SampleCNN2DEEG, CLAPEncoder  # CHANGED(baseline): added CLAPEncoder
 from modules import EEGContrastiveLearning
-from utils import yaml_config_hook, get_logger, file_writer, paths
+from utils import yaml_config_hook, get_logger, file_writer, paths  # CHANGED(baseline): added paths
 from preprocessing import eeg_data_processing, experiment_data_processing
 import pandas as pd
 import datetime
@@ -47,7 +52,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="PredANN")
 
-    config = yaml_config_hook("../configs/baseline.yaml")
+    config = yaml_config_hook("../configs/baseline.yaml")  # CHANGED(baseline): was absolute "/codes_attention/config/config.yaml"
     for k, v in config.items():
         parser.add_argument(f"--{k}", default=v, type=type(v))
     parser.add_argument('--mode', type=str)
@@ -59,9 +64,10 @@ if __name__ == "__main__":
     parser.add_argument('--key', type=str)
     parser.add_argument('--test_window_size', type=int)
     parser.add_argument('--test_stride', type=int)
-    parser.add_argument('--log_dir', type=str, default="../results", help="Base directory for logs and checkpoints (relative to src/)")
+    parser.add_argument('--log_dir', type=str, default="../results", help="Base directory for logs and checkpoints (relative to src/)")  # CHANGED(baseline): new arg
     args = parser.parse_args()
 
+    # CHANGED(baseline): start — dynamic, host-aware path/worker resolution (same contract as main.py)
     # --- Dynamic, host-aware path / worker resolution. ---
     # Same contract as main.py: YAML defaults define the vanilla repo layout;
     # known hosts redirect to shared storage; explicit CLI overrides win;
@@ -82,6 +88,7 @@ if __name__ == "__main__":
     print(f"[paths] dataset_dir={args.dataset_dir}")
     print(f"[paths] log_dir={args.log_dir}")
     print(f"[paths] workers={args.workers}")
+    # CHANGED(baseline): end — dynamic path/worker resolution
 
     pl.seed_everything(args.seed, workers=True)
 
@@ -115,10 +122,11 @@ if __name__ == "__main__":
     valid_log = pd.DataFrame(
         columns=["Loss/valid", "Accuracy/valid_eeg", "Accuracy/valid_audio"])
 
+    # CHANGED(baseline): forward cv_mode / cv_held_out_id to all 3 get_dataset calls (defaults reproduce upstream)
     print(f"[cv] mode={args.cv_mode} held_out_id={args.cv_held_out_id}")
     train_dataset = get_dataset(
         args.dataset, args.dataset_dir, subset="train", download=False,
-        cv_mode=args.cv_mode, cv_held_out_id=args.cv_held_out_id)
+        cv_mode=args.cv_mode, cv_held_out_id=args.cv_held_out_id)  # CHANGED(baseline): cv args
     train_dataset.set_sliding_window_parameters(args.window_size, args.stride)
     train_dataset.set_eeg_normalization(
         args.eeg_normalization, args.clamp_value)
@@ -130,10 +138,11 @@ if __name__ == "__main__":
 
     if args.openmiir_augmentation != "no_augmentation":
         train_dataset.set_transform(train_transform)
+    # CHANGED(baseline): removed the unused `train_loader` DataLoader here (never iterated in the test driver)
 
     valid_dataset = get_dataset(
         args.dataset, args.dataset_dir, subset="valid", download=False,
-        cv_mode=args.cv_mode, cv_held_out_id=args.cv_held_out_id)
+        cv_mode=args.cv_mode, cv_held_out_id=args.cv_held_out_id)  # CHANGED(baseline): cv args
     valid_dataset.set_sliding_window_parameters(args.window_size, args.stride)
     valid_dataset.set_eeg_normalization(
         args.eeg_normalization, args.clamp_value)
@@ -142,10 +151,11 @@ if __name__ == "__main__":
     valid_random_numbers = [random.randint(
         0, args.window_size - args.eeg_length - 1) for _ in range(1200)]
     valid_dataset.set_random_numbers(valid_random_numbers)
+    # CHANGED(baseline): removed the unused `valid_loader` DataLoader here (never iterated in the test driver)
 
     test_dataset = get_dataset(
         args.test_dataset, args.dataset_dir, subset="test", download=False,
-        cv_mode=args.cv_mode, cv_held_out_id=args.cv_held_out_id)
+        cv_mode=args.cv_mode, cv_held_out_id=args.cv_held_out_id)  # CHANGED(baseline): cv args
     test_dataset.set_test_data_length(args.test_data_length)
     test_dataset.set_sliding_window_parameters(args.test_window_size, args.test_stride)
     test_dataset.set_eeg_normalization(
@@ -157,6 +167,8 @@ if __name__ == "__main__":
         0, args.window_size - args.eeg_length - 1) for _ in range(1200)]
     test_dataset.set_random_numbers(test_random_numbers)
 
+    # CHANGED(baseline): start — test-loader shuffling policy. Upstream always used shuffle=False; here
+    #                    shuffle is forced True only for negative-control sweeps (shuffle_test_mode != "none").
     # --- test loader shuffling policy ---
     # Normal evaluation (shuffle_test_mode="none") keeps shuffle=False so the
     # printed numbers are bit-for-bit reproducible against the legacy test.sh
@@ -175,8 +187,9 @@ if __name__ == "__main__":
         batch_size=args.batch_size,
         num_workers=args.workers,
         drop_last=True,
-        shuffle=_test_shuffle,
+        shuffle=_test_shuffle,  # CHANGED(baseline): was shuffle=False
     )
+    # CHANGED(baseline): end — test-loader shuffling policy
 
     print(f"Size of train dataset: {len(train_dataset)}")
     print(f"Size of valid dataset: {len(valid_dataset)}")
@@ -188,6 +201,8 @@ if __name__ == "__main__":
             kernal_size=3,
         )
 
+        # CHANGED(baseline): start — audio_repr switch (must match training). Upstream built 4 SampleCNN2DEEG
+        #                    encoders unconditionally (the `else` branch below).
         if args.audio_repr == "clap":
             # Must match the audio_repr used at training time, otherwise the
             # checkpoint's audio-side weights won't load (different topology).
@@ -204,7 +219,7 @@ if __name__ == "__main__":
                 f"[audio] CLAPEncoder (shared) hidden={args.clap_proj_hidden_dim} "
                 f"pretrained={args.clap_pretrained!r}"
             )
-        else:
+        else: #Baseline was 4 independent SampleCNN2DEEG encoders for all 4 audio parts
             encoder_vocal = SampleCNN2DEEG(
                 out_dim=train_dataset.labels(),
                 kernal_size=3,
@@ -222,11 +237,13 @@ if __name__ == "__main__":
                 kernal_size=3,
             )
             print("[audio] SampleCNN2DEEG (4 independent encoders, Akama baseline)")
+        # CHANGED(baseline): end — audio_repr switch
 
     print('EEG Contrastive learning')
     module = EEGContrastiveLearning(
         valid_dataset, args, encoder_eeg, encoder_vocal, encoder_drum, encoder_bass, encoder_others,key=args.key)
 
+    # CHANGED(baseline): configurable log dir; upstream hardcoded "runs/{training_date}"
     logger = TensorBoardLogger(
         "{}/{}".format(args.log_dir, args.training_date), name="nmed-CL-{}".format(args.dataset))
 
@@ -234,6 +251,7 @@ if __name__ == "__main__":
         monitor="Valid/loss", patience=10
     )
 
+    # CHANGED(baseline): start — TTY-aware progress bar (not in upstream)
     # --- Quiet progress when stdout is not a TTY (see main.py for rationale). ---
     _force = os.environ.get("EEG_FORCE_PROGRESS")
     if _force == "1":
@@ -244,6 +262,7 @@ if __name__ == "__main__":
         _is_tty = sys.stdout.isatty()
     _progress_bar_cb = TQDMProgressBar(refresh_rate=1 if _is_tty else 0)
     print(f"[paths] tty={_is_tty} (progress bar {'on' if _is_tty else 'off'})")
+    # CHANGED(baseline): end — TTY-aware progress bar
 
     trainer = Trainer.from_argparse_args(
         args,
@@ -254,11 +273,12 @@ if __name__ == "__main__":
         log_every_n_steps=1,
         check_val_every_n_epoch=1,
         accelerator=args.accelerator,
-        devices=args.devices,
-        resume_from_checkpoint=args.checkpoint_path if args.checkpoint_path else None,
+        devices=args.devices,  # CHANGED(baseline): added (was not passed)
+        resume_from_checkpoint=args.checkpoint_path if args.checkpoint_path else None,  # CHANGED(baseline): was hardcoded '/checkpoint_path'
         accumulate_grad_batches=6,
-        callbacks=[_progress_bar_cb],
+        callbacks=[_progress_bar_cb],  # CHANGED(baseline): added (upstream passed no callbacks here)
     )
+    # CHANGED(baseline): start — checkpoint auto-discovery (not in upstream; upstream hardcoded the path)
     # Auto-discover latest checkpoint if not explicitly provided via --checkpoint_path.
     # Scans {log_dir}/{training_date}/nmed-CL-{dataset}/version_*/checkpoints/ and picks the most recent version.
     # To use a specific checkpoint, pass --checkpoint_path <path> from the command line.
@@ -270,8 +290,13 @@ if __name__ == "__main__":
             raise FileNotFoundError(f"No checkpoint found matching: {pattern}")
         args.checkpoint_path = matches[-1]
         print(f"Auto-discovered checkpoint: {args.checkpoint_path}")
+    # CHANGED(baseline): end — checkpoint auto-discovery
 
     print('[[[ START ]]]', datetime.datetime.now())
+    # CHANGED(baseline): start — checkpoint load. Upstream was:
+    #     checkpoint_path = "/checkpoint_path"; checkpoint = torch.load(checkpoint_path)
+    #     module.load_state_dict(checkpoint['state_dict'])
+    # Here: map_location for CPU/GPU portability + strict=False + key-diff reporting.
     checkpoint_path = args.checkpoint_path
     map_location = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     checkpoint = torch.load(checkpoint_path, map_location=map_location)
@@ -287,6 +312,7 @@ if __name__ == "__main__":
         print(f"[load] {len(load_result.unexpected_keys)} unexpected key(s) in checkpoint (ignored); first few: {load_result.unexpected_keys[:8]}")
     if not load_result.missing_keys and not load_result.unexpected_keys:
         print("[load] checkpoint state_dict matched the model exactly")
+    # CHANGED(baseline): end — checkpoint load
     trainer.test(module,dataloaders=test_loader)
     print('[[[ FINISH ]]]', datetime.datetime.now())
 

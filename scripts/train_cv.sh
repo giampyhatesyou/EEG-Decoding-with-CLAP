@@ -18,7 +18,7 @@
 #   LR=...                override --learning_rate 0.003
 #
 # Note: every fold trains from scratch — this is the whole point of CV. On a
-# single L40S a fold takes ~30–60 min; loop over folds with run_cv_sweep.sh.
+# single L40S a fold takes ~30–60 min; loop this script over ids for a sweep.
 
 set -e
 

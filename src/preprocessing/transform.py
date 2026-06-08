@@ -10,7 +10,7 @@ phase_counts = {"train": 0, "valid": 0, "test": 0}
 phase_ratio = {"train": 8, "valid": 1, "test": 1}
 prev_genre = None
 experiment_result = None
-playlist_path = "../configs/tracklist.csv"
+playlist_path = "../configs/tracklist.csv"  # CHANGED(baseline): was './data/raw/audio/tracklist.csv' (CSV content identical)
 
 
 def _detect_phase(genre: str) -> str:
