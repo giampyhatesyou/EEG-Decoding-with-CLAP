@@ -298,20 +298,46 @@ def ask_train_axes():
                 shifting_time=shifting_time, seed=seed, training_date=tag)
 
 
-def ask_checkpoint(training_date):
-    """Return a checkpoint path (str) or None for auto-discovery."""
+def runs_with_checkpoint():
+    """training_dates under results/ that contain a best-checkpoint.ckpt."""
+    bases = {PROJECT_ROOT / "results"}
+    try:
+        bases.add(_log_dir())
+    except Exception:
+        pass
+    tds = set()
+    for base in bases:
+        for h in glob.glob(str(base / "*" / "nmed-CL-*" / "version_*"
+                                / "checkpoints" / "best-checkpoint.ckpt")):
+            tds.add(Path(h).parts[-5])
+    return sorted(tds)
+
+
+def ask_checkpoint(default_label):
+    """Return (checkpoint_path_or_None, training_date_override_or_None).
+
+    checkpoint_test.py auto-discovers `best-checkpoint.ckpt` under
+    `results/<training_date>/`, so picking an existing run also points the
+    test output there. An explicit path / authors' checkpoint leaves the run
+    label free (the caller asks for it separately).
+    """
     how = pick("Checkpoint to evaluate:", {
-        "auto": f"auto-discover the latest best-checkpoint under results/{training_date}/",
+        "existing": "pick an existing run under results/ (auto-find its best-checkpoint)",
         "path": "type an explicit .ckpt path",
-        "authors": "an authors' released checkpoint in checkpoints/ (model-all0, model-sub{3,7,2})",
+        "authors": "an authors' checkpoint in checkpoints/ (model-all0, model-sub{2,3,7})",
     })
-    if how == "auto":
-        return None
+    if how == "existing":
+        runs = runs_with_checkpoint()
+        if not runs:
+            print("  no run under results/ has a best-checkpoint — give an explicit path")
+            return ask_path("Path to .ckpt:"), None
+        run = pick("Which run?", {r: "(has best-checkpoint)" for r in runs})
+        return None, run
     if how == "authors":
         name = ask_text("Checkpoint file under checkpoints/ (e.g. model-all0.ckpt):",
                         default="model-all0.ckpt")
-        return f"../checkpoints/{name}"
-    return ask_path("Path to .ckpt:")
+        return f"../checkpoints/{name}", None
+    return ask_path("Path to .ckpt:"), None
 
 
 # --- Phase flows ---------------------------------------------------------------
@@ -330,11 +356,16 @@ def flow_test(axes=None, *, ask_shuffle=True):
         cv_mode, held, eval_label = ask_eval_setting()
         shifting_time = ask_delay()
         seed = ask_int("Optimisation seed:", default=DEFAULT_SEED)
-        tag = ask_text("Run label (--training_date):",
-                       default=suggest_tag(audio_repr, eval_label, shifting_time))
+        ckpt, run = ask_checkpoint(suggest_tag(audio_repr, eval_label, shifting_time))
+        if run is not None:
+            training_date = run  # test output goes into the picked run's dir
+        else:
+            training_date = ask_text("Run label (--training_date, output dir):",
+                                     default=suggest_tag(audio_repr, eval_label, shifting_time))
         axes = dict(audio_repr=audio_repr, cv_mode=cv_mode, cv_held_out_id=held,
-                    shifting_time=shifting_time, seed=seed, training_date=tag)
-    ckpt = ask_checkpoint(axes["training_date"])
+                    shifting_time=shifting_time, seed=seed, training_date=training_date)
+    else:
+        ckpt = None  # train+test: auto-discover the checkpoint just trained under axes[training_date]
     shuffle = "none"
     if ask_shuffle:
         shuffle = pick("Evaluation mode:", {
