@@ -290,7 +290,10 @@ def suggest_tag(audio_repr, eval_label, shifting_time):
 def ask_train_axes():
     audio_repr = pick("Audio representation / model:", AUDIO_REPRS)
     cv_mode, held, eval_label = ask_eval_setting()
-    shifting_time = ask_delay()
+    # The EEG-audio delay ablation (all-0 / all-200) is a paper baseline knob;
+    # CLAP always uses the all-0 (no-delay) Akama best-model setting, so we don't
+    # ask for it there.
+    shifting_time = 0 if audio_repr == "clap" else ask_delay()
     seed = ask_int("Optimisation seed:", default=DEFAULT_SEED)
     tag = ask_text("Run label (--training_date):",
                    default=suggest_tag(audio_repr, eval_label, shifting_time))
@@ -298,8 +301,25 @@ def ask_train_axes():
                 shifting_time=shifting_time, seed=seed, training_date=tag)
 
 
-def runs_with_checkpoint():
-    """training_dates under results/ that contain a best-checkpoint.ckpt."""
+def _run_audio_repr(ckpt_path):
+    """audio_repr recorded in the version dir's hparams.yaml next to a checkpoint."""
+    hp = Path(ckpt_path).parents[1] / "hparams.yaml"
+    try:
+        for line in hp.read_text().splitlines():
+            if line.strip().startswith("audio_repr:"):
+                return line.split(":", 1)[1].strip().strip("'\"")
+    except Exception:
+        pass
+    return None
+
+
+def runs_with_checkpoint(audio_repr=None):
+    """training_dates under results/ with a best-checkpoint.ckpt.
+
+    When audio_repr is given, only runs trained with that representation are
+    returned (read from each run's hparams.yaml), so testing CLAP lists only
+    CLAP runs and testing the baseline lists only raw runs.
+    """
     bases = {PROJECT_ROOT / "results"}
     try:
         bases.add(_log_dir())
@@ -309,29 +329,31 @@ def runs_with_checkpoint():
     for base in bases:
         for h in glob.glob(str(base / "*" / "nmed-CL-*" / "version_*"
                                 / "checkpoints" / "best-checkpoint.ckpt")):
-            tds.add(Path(h).parts[-5])
+            if audio_repr is None or _run_audio_repr(h) == audio_repr:
+                tds.add(Path(h).parts[-5])
     return sorted(tds)
 
 
-def ask_checkpoint(default_label):
+def ask_checkpoint(default_label, audio_repr=None):
     """Return (checkpoint_path_or_None, training_date_override_or_None).
 
     checkpoint_test.py auto-discovers `best-checkpoint.ckpt` under
     `results/<training_date>/`, so picking an existing run also points the
     test output there. An explicit path / authors' checkpoint leaves the run
-    label free (the caller asks for it separately).
+    label free (the caller asks for it separately). When audio_repr is given,
+    the existing-run list is filtered to that representation.
     """
     how = pick("Checkpoint to evaluate:", {
-        "existing": "pick an existing run under results/ (auto-find its best-checkpoint)",
+        "existing": f"pick an existing {audio_repr or ''} run under results/ (auto-find its best-checkpoint)",
         "path": "type an explicit .ckpt path",
         "authors": "an authors' checkpoint in checkpoints/ (model-all0, model-sub{2,3,7})",
     })
     if how == "existing":
-        runs = runs_with_checkpoint()
+        runs = runs_with_checkpoint(audio_repr)
         if not runs:
-            print("  no run under results/ has a best-checkpoint — give an explicit path")
+            print(f"  no {audio_repr or ''} run under results/ has a best-checkpoint — give an explicit path")
             return ask_path("Path to .ckpt:"), None
-        run = pick("Which run?", {r: "(has best-checkpoint)" for r in runs})
+        run = pick("Which run?", {r: f"({audio_repr} run)" if audio_repr else "(has best-checkpoint)" for r in runs})
         return None, run
     if how == "authors":
         name = ask_text("Checkpoint file under checkpoints/ (e.g. model-all0.ckpt):",
@@ -354,9 +376,11 @@ def flow_test(axes=None, *, ask_shuffle=True):
     if axes is None:
         audio_repr = pick("Audio representation / model:", AUDIO_REPRS)
         cv_mode, held, eval_label = ask_eval_setting()
-        shifting_time = ask_delay()
+        # CLAP is fixed to the all-0 (no-delay) setting; only the raw baseline
+        # exposes the paper's delay ablation.
+        shifting_time = 0 if audio_repr == "clap" else ask_delay()
         seed = ask_int("Optimisation seed:", default=DEFAULT_SEED)
-        ckpt, run = ask_checkpoint(suggest_tag(audio_repr, eval_label, shifting_time))
+        ckpt, run = ask_checkpoint(suggest_tag(audio_repr, eval_label, shifting_time), audio_repr)
         if run is not None:
             training_date = run  # test output goes into the picked run's dir
         else:
