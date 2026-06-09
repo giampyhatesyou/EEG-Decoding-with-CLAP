@@ -208,46 +208,61 @@ def _questionary():
                  "    python -m pip install questionary rich")
 
 
-def pick(message, options, *, disabled=None):
-    """Single-choice select over an ordered {value: description} dict."""
+# Navigation sentinels for the back-stack wizard (questionary has no native
+# ESC-to-previous; we offer a "↩ back" menu entry and treat Ctrl-C as back).
+BACK = object()
+SKIP = object()
+
+
+def pick(message, options, *, disabled=None, back=False):
+    """Single-choice select over an ordered {value: description} dict.
+
+    With back=True a '↩ back' entry is offered and Ctrl-C returns BACK; with
+    back=False (the default for non-wizard callers) Ctrl-C exits.
+    """
     questionary = _questionary()
-    disabled = disabled or {}
-    choices = [questionary.Choice(title=f"{value}  -  {desc}", value=value)
-               for value, desc in options.items()]
-    for value, reason in disabled.items():
+    choices = []
+    if back:
+        choices.append(questionary.Choice(title="↩ back", value=BACK))
+    choices += [questionary.Choice(title=f"{value}  -  {desc}", value=value)
+                for value, desc in options.items()]
+    for value, reason in (disabled or {}).items():
         choices.append(questionary.Choice(title=f"{value}  -  {reason}",
-                                           value=value, disabled=reason))
+                                          value=value, disabled=reason))
     answer = questionary.select(message, choices=choices).ask()
     if answer is None:
-        sys.exit("aborted")
+        return BACK if back else sys.exit("aborted")
     return answer
 
 
-def ask_int(message, default=None):
+def ask_int(message, default=None, *, back=False):
     questionary = _questionary()
+    hint = "  [Ctrl-C: back]" if back else ""
     while True:
-        raw = questionary.text(message, default=("" if default is None else str(default))).ask()
+        raw = questionary.text(message + hint,
+                               default=("" if default is None else str(default))).ask()
         if raw is None:
-            sys.exit("aborted")
+            return BACK if back else sys.exit("aborted")
         try:
             return int(raw)
         except ValueError:
             print("  please enter an integer")
 
 
-def ask_text(message, default=""):
+def ask_text(message, default="", *, back=False):
     questionary = _questionary()
-    answer = questionary.text(message, default=default).ask()
+    answer = questionary.text(message + ("  [Ctrl-C: back]" if back else ""),
+                              default=default).ask()
     if answer is None:
-        sys.exit("aborted")
+        return BACK if back else sys.exit("aborted")
     return answer.strip()
 
 
-def ask_path(message):
+def ask_path(message, *, back=False):
     questionary = _questionary()
-    answer = questionary.path(message).ask()
+    answer = questionary.path(message + ("  [Ctrl-C: back]" if back else "")).ask()
     if answer is None:
-        sys.exit("aborted")
+        return BACK if back else sys.exit("aborted")
     return answer.strip()
 
 
@@ -259,24 +274,52 @@ def ask_confirm(message, default=True):
     return answer
 
 
+def _wizard(steps, state):
+    """Run a list of step(state) functions with back navigation. Each step
+    returns BACK (return to the previous prompted step), SKIP (auto-advance,
+    not recorded so back skips it), or None (advance, recorded). Returns state,
+    or None if the user backed out past the first step.
+    """
+    history = []
+    i = 0
+    while i < len(steps):
+        res = steps[i](state)
+        if res is BACK:
+            if not history:
+                return None
+            i = history.pop()
+            continue
+        if res is not SKIP:
+            history.append(i)
+        i += 1
+    return state
+
+
 # --- Axis prompts --------------------------------------------------------------
-def ask_eval_setting():
-    """Return (cv_mode, cv_held_out_id, label)."""
-    cv_mode = pick("Evaluation setting:", CV_MODES)
-    if cv_mode == "within":
-        return cv_mode, -1, "within"
-    if cv_mode == "leave_subject_out":
-        sid = ask_int("Held-out subject id (paper used 3, 7, 2):", default=3)
-        return cv_mode, sid, f"loso_sub{sid}"
-    sid = ask_int("Held-out song id:", default=36)
-    return cv_mode, sid, f"lso_song{sid}"
+def ask_eval_setting(*, back=False):
+    """Return (cv_mode, cv_held_out_id, label), or BACK."""
+    while True:
+        cv_mode = pick("Evaluation setting:", CV_MODES, back=back)
+        if cv_mode is BACK:
+            return BACK
+        if cv_mode == "within":
+            return cv_mode, -1, "within"
+        prompt, dflt, lbl = (("Held-out subject id (paper used 3, 7, 2):", 3, "loso_sub")
+                             if cv_mode == "leave_subject_out"
+                             else ("Held-out song id:", 36, "lso_song"))
+        sid = ask_int(prompt, default=dflt, back=back)
+        if sid is BACK:
+            continue  # re-pick cv_mode
+        return cv_mode, sid, f"{lbl}{sid}"
 
 
-def ask_delay():
-    """Return shifting_time (0 or 200)."""
+def ask_delay(*, back=False):
+    """Return shifting_time (0 or 200), or BACK."""
     variant = pick("Model variant (EEG-audio delay):",
                    {k: v[1] for k, v in DELAY_VARIANTS.items()},
-                   disabled=DELAY_DISABLED)
+                   disabled=DELAY_DISABLED, back=back)
+    if variant is BACK:
+        return BACK
     return DELAY_VARIANTS[variant][0]
 
 
@@ -355,35 +398,81 @@ def runs_with_checkpoint(audio_repr=None, cv_mode=None, cv_held_out_id=None,
     return sorted(tds)
 
 
-def ask_checkpoint(default_label, *, audio_repr=None, cv_mode=None,
-                   cv_held_out_id=None, shifting_time=None):
-    """Return (checkpoint_path_or_None, training_date_override_or_None).
+def resolve_checkpoint(training_date):
+    """Newest best-checkpoint.ckpt under results/<training_date>/, or None.
+    Mirrors checkpoint_test.py's auto-discovery so the CLI can show the exact
+    path it will load before running (transparency, not a black box).
+    """
+    hits = []
+    bases = {PROJECT_ROOT / "results"}
+    try:
+        bases.add(_log_dir())
+    except Exception:
+        pass
+    for base in bases:
+        hits += glob.glob(str(base / training_date / "nmed-CL-*" / "version_*"
+                              / "checkpoints" / "best-checkpoint.ckpt"))
+    return max(hits, key=os.path.getmtime) if hits else None
 
-    checkpoint_test.py auto-discovers `best-checkpoint.ckpt` under
-    `results/<training_date>/`, so picking an existing run also points the test
-    output there. The existing-run list is filtered to checkpoints whose
-    training config matches (audio_repr, cv_mode, cv_held_out_id, shifting_time),
-    so only models valid for the chosen test split are offered.
+
+def authors_checkpoints_for(audio_repr, cv_mode, cv_held_out_id):
+    """Authors' released checkpoints in checkpoints/ valid for this test split.
+    They published only raw models: model-all0 (within), model-sub{N} (LOSO N).
+    Returns a list of (label, repo-relative path).
+    """
+    if audio_repr not in (None, "raw"):
+        return []
+    want = None
+    if cv_mode in (None, "within"):
+        want = "model-all0.ckpt"
+    elif cv_mode == "leave_subject_out":
+        want = f"model-sub{cv_held_out_id}.ckpt"
+    if want and (PROJECT_ROOT / "checkpoints" / want).exists():
+        return [(f"{want}  (authors' baseline)", f"../checkpoints/{want}")]
+    return []
+
+
+def ask_checkpoint(default_label, *, audio_repr=None, cv_mode=None,
+                   cv_held_out_id=None, shifting_time=None, back=False):
+    """Return (checkpoint_path_or_None, training_date_override_or_None), or BACK.
+
+    The "existing" list merges results/ runs matching the test split (the
+    reproducibility guard) with the authors' released checkpoints valid for that
+    split, so the baseline is selectable from the launcher. Picking a run lets
+    checkpoint_test.py auto-discover its checkpoint under results/<run>/.
     """
     setting = "within" if cv_mode in (None, "within") else f"{cv_mode}={cv_held_out_id}"
     desc = " ".join(x for x in (audio_repr, setting) if x)
     how = pick("Checkpoint to evaluate:", {
-        "existing": f"pick a matching run [{desc}] under results/",
+        "existing": f"pick a matching run / authors' checkpoint [{desc}]",
         "path": "type an explicit .ckpt path",
-        "authors": "an authors' checkpoint in checkpoints/ (model-all0, model-sub{2,3,7})",
-    })
-    if how == "existing":
-        runs = runs_with_checkpoint(audio_repr, cv_mode, cv_held_out_id, shifting_time)
-        if not runs:
-            print(f"  no checkpoint under results/ matches [{desc}] — give an explicit path")
-            return ask_path("Path to .ckpt:"), None
-        run = pick("Which run?", {r: f"[{desc}]" for r in runs})
-        return None, run
-    if how == "authors":
-        name = ask_text("Checkpoint file under checkpoints/ (e.g. model-all0.ckpt):",
-                        default="model-all0.ckpt")
-        return f"../checkpoints/{name}", None
-    return ask_path("Path to .ckpt:"), None
+    }, back=back)
+    if how is BACK:
+        return BACK
+    if how == "path":
+        p = ask_path("Path to .ckpt:", back=back)
+        return BACK if p is BACK else (p, None)
+    runs = runs_with_checkpoint(audio_repr, cv_mode, cv_held_out_id, shifting_time)
+    authors = authors_checkpoints_for(audio_repr, cv_mode, cv_held_out_id)
+    if not runs and not authors:
+        print(f"  no checkpoint matches [{desc}] — give an explicit path")
+        p = ask_path("Path to .ckpt:", back=back)
+        return BACK if p is BACK else (p, None)
+    questionary = _questionary()
+    choices = []
+    if back:
+        choices.append(questionary.Choice(title="↩ back", value=BACK))
+    for r in runs:
+        choices.append(questionary.Choice(title=f"run: {r}", value=("run", r)))
+    for label, p in authors:
+        choices.append(questionary.Choice(title=label, value=("path", p)))
+    sel = questionary.select(f"Which checkpoint?  [{desc}]", choices=choices).ask()
+    if sel is None:
+        return BACK if back else sys.exit("aborted")
+    if sel is BACK:
+        return BACK
+    kind, val = sel
+    return (None, val) if kind == "run" else (val, None)
 
 
 # --- Phase flows ---------------------------------------------------------------
@@ -396,33 +485,22 @@ def flow_train(axes=None):
     return None, axes
 
 
-def flow_test(axes=None, *, ask_shuffle=True):
-    if axes is None:
-        audio_repr = pick("Audio representation / model:", AUDIO_REPRS)
-        cv_mode, held, eval_label = ask_eval_setting()
-        # CLAP is fixed to the all-0 (no-delay) setting; only the raw baseline
-        # exposes the paper's delay ablation.
-        shifting_time = 0 if audio_repr == "clap" else ask_delay()
-        seed = ask_int("Optimisation seed:", default=DEFAULT_SEED)
-        ckpt, run = ask_checkpoint(suggest_tag(audio_repr, eval_label, shifting_time),
-                                   audio_repr=audio_repr, cv_mode=cv_mode,
-                                   cv_held_out_id=held, shifting_time=shifting_time)
-        if run is not None:
-            training_date = run  # test output goes into the picked run's dir
-        else:
-            training_date = ask_text("Run label (--training_date, output dir):",
-                                     default=suggest_tag(audio_repr, eval_label, shifting_time))
-        axes = dict(audio_repr=audio_repr, cv_mode=cv_mode, cv_held_out_id=held,
-                    shifting_time=shifting_time, seed=seed, training_date=training_date)
+def _run_test(axes, *, ckpt, shuffle):
+    """Print a transparency banner (model / split / the checkpoint that will be
+    loaded), then build and optionally run the evaluation."""
+    setting = ("within" if axes["cv_mode"] in (None, "within")
+               else f'{axes["cv_mode"]}={axes["cv_held_out_id"]}')
+    print(f"\n→ Testing: {axes['audio_repr']} model  |  {setting}  |  run '{axes['training_date']}'")
+    if ckpt:
+        print(f"  checkpoint: {ckpt}")
     else:
-        ckpt = None  # train+test: auto-discover the checkpoint just trained under axes[training_date]
-    shuffle = "none"
-    if ask_shuffle:
-        shuffle = pick("Evaluation mode:", {
-            "none": "normal evaluation",
-            "labels": "negative control: shuffle task labels (accuracy must -> chance)",
-            "audio_pair": "negative control: shuffle EEG<->audio pairing (-> chance)",
-        })
+        rp = resolve_checkpoint(axes["training_date"])
+        if rp:
+            try:
+                rp = str(Path(rp).relative_to(PROJECT_ROOT))
+            except Exception:
+                pass
+        print(f"  checkpoint (auto-discovered): {rp or '(none found — checkpoint_test will error)'}")
     cmd = build_command("checkpoint_test.py", checkpoint_path=ckpt,
                         shuffle_test_mode=(None if shuffle == "none" else shuffle),
                         test_breakdown=1, **axes)
@@ -430,6 +508,84 @@ def flow_test(axes=None, *, ask_shuffle=True):
         return run_subprocess(cmd), axes
     print("\nNot run. Equivalent command:\n  " + format_cmdline(cmd))
     return None, axes
+
+
+def flow_test(axes=None, *, ask_shuffle=True):
+    # train+test path: the model was just trained under axes[training_date];
+    # auto-discover its checkpoint, no prompts.
+    if axes is not None:
+        return _run_test(axes, ckpt=None, shuffle="none")
+
+    st = {}
+
+    def s_audio(s):
+        v = pick("Audio representation / model:", AUDIO_REPRS, back=True)
+        if v is BACK:
+            return BACK
+        s["audio_repr"] = v
+
+    def s_eval(s):
+        r = ask_eval_setting(back=True)
+        if r is BACK:
+            return BACK
+        s["cv_mode"], s["cv_held_out_id"], s["eval_label"] = r
+
+    def s_delay(s):
+        if s["audio_repr"] == "clap":
+            s["shifting_time"] = 0  # CLAP is fixed to all-0; no prompt
+            return SKIP
+        v = ask_delay(back=True)
+        if v is BACK:
+            return BACK
+        s["shifting_time"] = v
+
+    def s_seed(s):
+        v = ask_int("Optimisation seed:", default=DEFAULT_SEED, back=True)
+        if v is BACK:
+            return BACK
+        s["seed"] = v
+
+    def s_ckpt(s):
+        res = ask_checkpoint(
+            suggest_tag(s["audio_repr"], s["eval_label"], s["shifting_time"]),
+            audio_repr=s["audio_repr"], cv_mode=s["cv_mode"],
+            cv_held_out_id=s["cv_held_out_id"], shifting_time=s["shifting_time"],
+            back=True)
+        if res is BACK:
+            return BACK
+        s["ckpt"], s["run_override"] = res
+
+    def s_label(s):
+        if s.get("run_override") is not None:
+            s["training_date"] = s["run_override"]  # output into the picked run's dir
+            return SKIP
+        v = ask_text("Run label (--training_date, output dir):",
+                     default=suggest_tag(s["audio_repr"], s["eval_label"], s["shifting_time"]),
+                     back=True)
+        if v is BACK:
+            return BACK
+        s["training_date"] = v
+
+    def s_shuffle(s):
+        if not ask_shuffle:
+            s["shuffle"] = "none"
+            return SKIP
+        v = pick("Evaluation mode:", {
+            "none": "normal evaluation",
+            "labels": "negative control: shuffle task labels (accuracy must -> chance)",
+            "audio_pair": "negative control: shuffle EEG<->audio pairing (-> chance)",
+        }, back=True)
+        if v is BACK:
+            return BACK
+        s["shuffle"] = v
+
+    if _wizard([s_audio, s_eval, s_delay, s_seed, s_ckpt, s_label, s_shuffle], st) is None:
+        return BACK  # backed out past the first step -> phase menu
+
+    axes = dict(audio_repr=st["audio_repr"], cv_mode=st["cv_mode"],
+                cv_held_out_id=st["cv_held_out_id"], shifting_time=st["shifting_time"],
+                seed=st["seed"], training_date=st["training_date"])
+    return _run_test(axes, ckpt=st["ckpt"], shuffle=st["shuffle"])
 
 
 def flow_train_test():
@@ -595,16 +751,23 @@ def _flags_to_dict(cmd):
 # --- Entry point ---------------------------------------------------------------
 def interactive():
     print("EEG attention experiments - interactive launcher")
-    print("(fixed Akama protocol is baked in; you pick only what varies)\n")
-    phase = pick("Phase:", PHASES)
-    {
+    print("(fixed Akama protocol is baked in; you pick only what varies)")
+    print("(use the '↩ back' menu entry to step back)\n")
+    dispatch = {
         "train": flow_train,
         "test": flow_test,
         "train+test": flow_train_test,
         "compare": flow_compare,
         "reproduce-paper": flow_reproduce,
         "sanity": flow_sanity,
-    }[phase]()
+    }
+    while True:
+        phase = pick("Phase:", PHASES, back=True)
+        if phase is BACK:
+            return
+        if dispatch[phase]() is BACK:
+            continue  # the flow backed out -> re-show the phase menu
+        return
 
 
 def main():
