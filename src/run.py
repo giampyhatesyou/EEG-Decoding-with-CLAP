@@ -301,25 +301,45 @@ def ask_train_axes():
                 shifting_time=shifting_time, seed=seed, training_date=tag)
 
 
-def _run_audio_repr(ckpt_path):
-    """audio_repr recorded in the version dir's hparams.yaml next to a checkpoint."""
+# Argparse defaults, for runs whose hparams.yaml predates these flags (e.g. an
+# early within-subject run that never logged cv_mode is, by definition, within).
+_HP_DEFAULTS = {"audio_repr": None, "cv_mode": "within",
+                "cv_held_out_id": "-1", "shifting_time": "0"}
+
+
+def _run_config(ckpt_path):
+    """Read (audio_repr, cv_mode, cv_held_out_id, shifting_time) from the version
+    dir's hparams.yaml. Missing keys fall back to the argparse defaults so older
+    within-subject runs still match a within query; audio_repr stays None when
+    unreadable, so such runs drop out of any representation-filtered list.
+    """
+    cfg = dict(_HP_DEFAULTS)
     hp = Path(ckpt_path).parents[1] / "hparams.yaml"
     try:
         for line in hp.read_text().splitlines():
-            if line.strip().startswith("audio_repr:"):
-                return line.split(":", 1)[1].strip().strip("'\"")
+            s = line.strip()
+            for k in cfg:
+                if s.startswith(k + ":"):
+                    cfg[k] = s.split(":", 1)[1].strip().strip("'\"")
     except Exception:
         pass
-    return None
+    return cfg
 
 
-def runs_with_checkpoint(audio_repr=None):
-    """training_dates under results/ with a best-checkpoint.ckpt.
+def runs_with_checkpoint(audio_repr=None, cv_mode=None, cv_held_out_id=None,
+                         shifting_time=None):
+    """training_dates under results/ with a best-checkpoint.ckpt whose training
+    config matches the given axes (read from each run's hparams.yaml).
 
-    When audio_repr is given, only runs trained with that representation are
-    returned (read from each run's hparams.yaml), so testing CLAP lists only
-    CLAP runs and testing the baseline lists only raw runs.
+    Matching on (audio_repr, cv_mode, cv_held_out_id, shifting_time) is a
+    reproducibility guard: a checkpoint is only offered for a test whose split it
+    was actually trained for. A leave_subject_out=3 model is therefore not listed
+    when testing within-subject or a different held-out subject — which would
+    otherwise evaluate that model on data it saw during training.
     """
+    want = {"audio_repr": audio_repr, "cv_mode": cv_mode,
+            "cv_held_out_id": None if cv_held_out_id is None else str(cv_held_out_id),
+            "shifting_time": None if shifting_time is None else str(shifting_time)}
     bases = {PROJECT_ROOT / "results"}
     try:
         bases.add(_log_dir())
@@ -329,31 +349,35 @@ def runs_with_checkpoint(audio_repr=None):
     for base in bases:
         for h in glob.glob(str(base / "*" / "nmed-CL-*" / "version_*"
                                 / "checkpoints" / "best-checkpoint.ckpt")):
-            if audio_repr is None or _run_audio_repr(h) == audio_repr:
+            cfg = _run_config(h)
+            if all(v is None or cfg.get(k) == v for k, v in want.items()):
                 tds.add(Path(h).parts[-5])
     return sorted(tds)
 
 
-def ask_checkpoint(default_label, audio_repr=None):
+def ask_checkpoint(default_label, *, audio_repr=None, cv_mode=None,
+                   cv_held_out_id=None, shifting_time=None):
     """Return (checkpoint_path_or_None, training_date_override_or_None).
 
     checkpoint_test.py auto-discovers `best-checkpoint.ckpt` under
-    `results/<training_date>/`, so picking an existing run also points the
-    test output there. An explicit path / authors' checkpoint leaves the run
-    label free (the caller asks for it separately). When audio_repr is given,
-    the existing-run list is filtered to that representation.
+    `results/<training_date>/`, so picking an existing run also points the test
+    output there. The existing-run list is filtered to checkpoints whose
+    training config matches (audio_repr, cv_mode, cv_held_out_id, shifting_time),
+    so only models valid for the chosen test split are offered.
     """
+    setting = "within" if cv_mode in (None, "within") else f"{cv_mode}={cv_held_out_id}"
+    desc = " ".join(x for x in (audio_repr, setting) if x)
     how = pick("Checkpoint to evaluate:", {
-        "existing": f"pick an existing {audio_repr or ''} run under results/ (auto-find its best-checkpoint)",
+        "existing": f"pick a matching run [{desc}] under results/",
         "path": "type an explicit .ckpt path",
         "authors": "an authors' checkpoint in checkpoints/ (model-all0, model-sub{2,3,7})",
     })
     if how == "existing":
-        runs = runs_with_checkpoint(audio_repr)
+        runs = runs_with_checkpoint(audio_repr, cv_mode, cv_held_out_id, shifting_time)
         if not runs:
-            print(f"  no {audio_repr or ''} run under results/ has a best-checkpoint — give an explicit path")
+            print(f"  no checkpoint under results/ matches [{desc}] — give an explicit path")
             return ask_path("Path to .ckpt:"), None
-        run = pick("Which run?", {r: f"({audio_repr} run)" if audio_repr else "(has best-checkpoint)" for r in runs})
+        run = pick("Which run?", {r: f"[{desc}]" for r in runs})
         return None, run
     if how == "authors":
         name = ask_text("Checkpoint file under checkpoints/ (e.g. model-all0.ckpt):",
@@ -380,7 +404,9 @@ def flow_test(axes=None, *, ask_shuffle=True):
         # exposes the paper's delay ablation.
         shifting_time = 0 if audio_repr == "clap" else ask_delay()
         seed = ask_int("Optimisation seed:", default=DEFAULT_SEED)
-        ckpt, run = ask_checkpoint(suggest_tag(audio_repr, eval_label, shifting_time), audio_repr)
+        ckpt, run = ask_checkpoint(suggest_tag(audio_repr, eval_label, shifting_time),
+                                   audio_repr=audio_repr, cv_mode=cv_mode,
+                                   cv_held_out_id=held, shifting_time=shifting_time)
         if run is not None:
             training_date = run  # test output goes into the picked run's dir
         else:
@@ -436,11 +462,14 @@ def flow_compare():
             ckpt = None
         else:
             print(f"\n=== {repr_name}: pick checkpoint ===")
-            ckpt = ask_checkpoint(tag)
+            ckpt, run = ask_checkpoint(tag, audio_repr=repr_name, cv_mode=cv_mode,
+                                       cv_held_out_id=held, shifting_time=shifting_time)
+            if run is not None:
+                axes["training_date"] = run
         print(f"\n=== {repr_name}: evaluate ===")
         run_subprocess(build_command("checkpoint_test.py", checkpoint_path=ckpt,
                                      test_breakdown=1, **axes))
-        rows.append((repr_name, tag))
+        rows.append((repr_name, axes["training_date"]))
     render_compare(rows, eval_label)
 
 
