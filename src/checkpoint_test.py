@@ -38,7 +38,7 @@ from pytorch_lightning.loggers import TensorBoardLogger
 from audiomentations import AddGaussianNoise, Gain
 from datasets import get_dataset
 from models import SampleCNN2DEEG, CLAPEncoder  # CHANGED(baseline): added CLAPEncoder
-from modules import EEGContrastiveLearning
+from modules import EEGContrastiveLearning, SupervisedClassification  # CHANGED(baseline): added SupervisedClassification (#1/#2)
 from utils import yaml_config_hook, get_logger, file_writer, paths  # CHANGED(baseline): added paths
 from preprocessing import eeg_data_processing, experiment_data_processing
 import pandas as pd
@@ -239,9 +239,27 @@ if __name__ == "__main__":
             print("[audio] SampleCNN2DEEG (4 independent encoders, Akama baseline)")
         # CHANGED(baseline): end — audio_repr switch
 
-    print('EEG Contrastive learning')
-    module = EEGContrastiveLearning(
-        valid_dataset, args, encoder_eeg, encoder_vocal, encoder_drum, encoder_bass, encoder_others,key=args.key)
+    # CHANGED(baseline): start — objective switch (must match the objective used at training time).
+    #                    Default "contrastive" reproduces the Akama baseline evaluation exactly.
+    #                    "classify_*" select SupervisedClassification, whose on_test_end writes the
+    #                    supervised argmax outputs; the contrastive metric is not touched.
+    _objective = getattr(args, "objective", "contrastive")
+    if _objective == "contrastive":
+        print('EEG Contrastive learning')
+        module = EEGContrastiveLearning(
+            valid_dataset, args, encoder_eeg, encoder_vocal, encoder_drum, encoder_bass, encoder_others,key=args.key)
+    elif _objective in ("classify_eeg", "classify_audio"):
+        _modality = "eeg" if _objective == "classify_eeg" else "audio"
+        print(f'Supervised classification (objective={_objective}, modality={_modality})')
+        module = SupervisedClassification(
+            valid_dataset, args, _modality,
+            encoder_eeg=encoder_eeg, encoder_vocal=encoder_vocal, encoder_drum=encoder_drum,
+            encoder_bass=encoder_bass, encoder_others=encoder_others, key=args.key)
+    else:
+        raise ValueError(
+            f"Unknown objective={_objective!r}; expected one of "
+            "{'contrastive','classify_eeg','classify_audio'}.")
+    # CHANGED(baseline): end — objective switch
 
     # CHANGED(baseline): configurable log dir; upstream hardcoded "runs/{training_date}"
     logger = TensorBoardLogger(

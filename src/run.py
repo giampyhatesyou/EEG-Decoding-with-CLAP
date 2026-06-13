@@ -75,6 +75,14 @@ AUDIO_REPRS = {
     "raw": "Akama baseline - 4 independent SampleCNN2DEEG audio encoders",
     "clap": "Extension - frozen LAION-CLAP backbone + shared projection head",
 }
+# Training objective (diagnostic axis, in the spirit of audio_repr). "contrastive"
+# is the Akama baseline; the two classify_* objectives are the supervisor's
+# unimodal supervised baselines (#1/#2) — a separate cross-entropy path.
+OBJECTIVES = {
+    "contrastive": "Akama baseline - CLIP/InfoNCE EEG<->audio contrastive loss",
+    "classify_eeg": "Supervisor #2 - supervised EEG->label classifier (cross-entropy)",
+    "classify_audio": "Supervisor #1 - supervised audio->label classifier (negative control, ~chance)",
+}
 CV_MODES = {
     "within": "within-subject, new songs (paper Table 1)",
     "leave_subject_out": "cross-subject LOSO (paper Table 2; paper subjects 3,7,2)",
@@ -101,12 +109,14 @@ REFERENCE = {
 def build_command(entrypoint, *, audio_repr, cv_mode, cv_held_out_id,
                   training_date, shifting_time=0, seed=DEFAULT_SEED, devices=1,
                   workers=None, checkpoint_path=None, shuffle_test_mode=None,
-                  test_breakdown=None):
+                  test_breakdown=None, objective="contrastive"):
     """Assemble the exact ``python <entrypoint> ...`` argv from PROTOCOL + axes.
 
     ``entrypoint`` is "main.py" (train) or "checkpoint_test.py" (test). The
     emitted flags match scripts/train.sh / test.sh, with audio_repr / cv_* passed
-    explicitly instead of relying on the YAML defaults (same values).
+    explicitly instead of relying on the YAML defaults (same values). ``--objective``
+    is emitted only for the non-default (classify_*) objectives, so the contrastive
+    command stays byte-identical to scripts/train.sh and the selftest keeps passing.
     """
     cmd = [sys.executable, "-u", entrypoint]
     for key, value in PROTOCOL.items():
@@ -116,6 +126,8 @@ def build_command(entrypoint, *, audio_repr, cv_mode, cv_held_out_id,
     cmd += ["--shifting_time", str(shifting_time)]
     cmd += ["--seed", str(seed)]
     cmd += ["--audio_repr", audio_repr]
+    if objective and objective != "contrastive":
+        cmd += ["--objective", objective]
     cmd += ["--cv_mode", cv_mode, "--cv_held_out_id", str(cv_held_out_id)]
     cmd += ["--training_date", training_date]
     if workers is not None:
@@ -323,31 +335,42 @@ def ask_delay(*, back=False):
     return DELAY_VARIANTS[variant][0]
 
 
-def suggest_tag(audio_repr, eval_label, shifting_time):
-    tag = f"{audio_repr}_{eval_label}"
+def suggest_tag(audio_repr, eval_label, shifting_time, objective="contrastive"):
+    if objective == "classify_eeg":
+        tag = f"clf_eeg_{eval_label}"          # no audio encoder -> audio_repr irrelevant
+    elif objective == "classify_audio":
+        tag = f"clf_audio_{audio_repr}_{eval_label}"
+    else:
+        tag = f"{audio_repr}_{eval_label}"
     if shifting_time:
         tag += f"_d{shifting_time}"
     return tag
 
 
 def ask_train_axes():
-    audio_repr = pick("Audio representation / model:", AUDIO_REPRS)
+    objective = pick("Objective:", OBJECTIVES)
+    # classify_eeg uses no audio encoder; pin audio_repr=raw so CLAP is never loaded.
+    audio_repr = "raw" if objective == "classify_eeg" else pick(
+        "Audio representation / model:", AUDIO_REPRS)
     cv_mode, held, eval_label = ask_eval_setting()
-    # The EEG-audio delay ablation (all-0 / all-200) is a paper baseline knob;
-    # CLAP always uses the all-0 (no-delay) Akama best-model setting, so we don't
-    # ask for it there.
-    shifting_time = 0 if audio_repr == "clap" else ask_delay()
+    # The EEG-audio delay ablation (all-0 / all-200) is a paper baseline knob; it
+    # only applies to the contrastive baseline with raw encoders. CLAP and the
+    # supervised objectives use the all-0 (no-delay) setting, so we don't ask.
+    shifting_time = (ask_delay()
+                     if objective == "contrastive" and audio_repr == "raw" else 0)
     seed = ask_int("Optimisation seed:", default=DEFAULT_SEED)
     tag = ask_text("Run label (--training_date):",
-                   default=suggest_tag(audio_repr, eval_label, shifting_time))
-    return dict(audio_repr=audio_repr, cv_mode=cv_mode, cv_held_out_id=held,
-                shifting_time=shifting_time, seed=seed, training_date=tag)
+                   default=suggest_tag(audio_repr, eval_label, shifting_time, objective))
+    return dict(objective=objective, audio_repr=audio_repr, cv_mode=cv_mode,
+                cv_held_out_id=held, shifting_time=shifting_time, seed=seed,
+                training_date=tag)
 
 
 # Argparse defaults, for runs whose hparams.yaml predates these flags (e.g. an
 # early within-subject run that never logged cv_mode is, by definition, within).
 _HP_DEFAULTS = {"audio_repr": None, "cv_mode": "within",
-                "cv_held_out_id": "-1", "shifting_time": "0"}
+                "cv_held_out_id": "-1", "shifting_time": "0",
+                "objective": "contrastive"}  # runs predating the flag are contrastive
 
 
 def _run_config(ckpt_path):
@@ -370,17 +393,19 @@ def _run_config(ckpt_path):
 
 
 def runs_with_checkpoint(audio_repr=None, cv_mode=None, cv_held_out_id=None,
-                         shifting_time=None):
+                         shifting_time=None, objective=None):
     """training_dates under results/ with a best-checkpoint.ckpt whose training
     config matches the given axes (read from each run's hparams.yaml).
 
-    Matching on (audio_repr, cv_mode, cv_held_out_id, shifting_time) is a
+    Matching on (objective, audio_repr, cv_mode, cv_held_out_id, shifting_time) is a
     reproducibility guard: a checkpoint is only offered for a test whose split it
     was actually trained for. A leave_subject_out=3 model is therefore not listed
     when testing within-subject or a different held-out subject — which would
-    otherwise evaluate that model on data it saw during training.
+    otherwise evaluate that model on data it saw during training. Likewise a
+    classify_* checkpoint is not offered for a contrastive evaluation (its
+    topology and metric differ), and vice versa.
     """
-    want = {"audio_repr": audio_repr, "cv_mode": cv_mode,
+    want = {"objective": objective, "audio_repr": audio_repr, "cv_mode": cv_mode,
             "cv_held_out_id": None if cv_held_out_id is None else str(cv_held_out_id),
             "shifting_time": None if shifting_time is None else str(shifting_time)}
     bases = {PROJECT_ROOT / "results"}
@@ -433,7 +458,7 @@ def authors_checkpoints_for(audio_repr, cv_mode, cv_held_out_id):
 
 
 def ask_checkpoint(default_label, *, audio_repr=None, cv_mode=None,
-                   cv_held_out_id=None, shifting_time=None, back=False):
+                   cv_held_out_id=None, shifting_time=None, objective=None, back=False):
     """Return (checkpoint_path_or_None, training_date_override_or_None), or BACK.
 
     The "existing" list merges results/ runs matching the test split (the
@@ -442,7 +467,8 @@ def ask_checkpoint(default_label, *, audio_repr=None, cv_mode=None,
     checkpoint_test.py auto-discover its checkpoint under results/<run>/.
     """
     setting = "within" if cv_mode in (None, "within") else f"{cv_mode}={cv_held_out_id}"
-    desc = " ".join(x for x in (audio_repr, setting) if x)
+    obj_tag = None if objective in (None, "contrastive") else objective
+    desc = " ".join(x for x in (obj_tag, audio_repr, setting) if x)
     how = pick("Checkpoint to evaluate:", {
         "existing": f"pick a matching run / authors' checkpoint [{desc}]",
         "path": "type an explicit .ckpt path",
@@ -452,8 +478,11 @@ def ask_checkpoint(default_label, *, audio_repr=None, cv_mode=None,
     if how == "path":
         p = ask_path("Path to .ckpt:", back=back)
         return BACK if p is BACK else (p, None)
-    runs = runs_with_checkpoint(audio_repr, cv_mode, cv_held_out_id, shifting_time)
-    authors = authors_checkpoints_for(audio_repr, cv_mode, cv_held_out_id)
+    runs = runs_with_checkpoint(audio_repr, cv_mode, cv_held_out_id, shifting_time, objective)
+    # The authors released only raw contrastive checkpoints; never offer them for
+    # a classify_* evaluation.
+    authors = (authors_checkpoints_for(audio_repr, cv_mode, cv_held_out_id)
+               if objective in (None, "contrastive") else [])
     if not runs and not authors:
         print(f"  no checkpoint matches [{desc}] — give an explicit path")
         p = ask_path("Path to .ckpt:", back=back)
@@ -490,7 +519,9 @@ def _run_test(axes, *, ckpt, shuffle):
     loaded), then build and optionally run the evaluation."""
     setting = ("within" if axes["cv_mode"] in (None, "within")
                else f'{axes["cv_mode"]}={axes["cv_held_out_id"]}')
-    print(f"\n→ Testing: {axes['audio_repr']} model  |  {setting}  |  run '{axes['training_date']}'")
+    _obj = axes.get("objective", "contrastive")
+    model_desc = axes['audio_repr'] if _obj == "contrastive" else _obj
+    print(f"\n→ Testing: {model_desc} model  |  {setting}  |  run '{axes['training_date']}'")
     if ckpt:
         print(f"  checkpoint: {ckpt}")
     else:
@@ -518,7 +549,16 @@ def flow_test(axes=None, *, ask_shuffle=True):
 
     st = {}
 
+    def s_objective(s):
+        v = pick("Objective:", OBJECTIVES, back=True)
+        if v is BACK:
+            return BACK
+        s["objective"] = v
+
     def s_audio(s):
+        if s["objective"] == "classify_eeg":
+            s["audio_repr"] = "raw"  # no audio encoder used; pin raw (CLAP never loaded)
+            return SKIP
         v = pick("Audio representation / model:", AUDIO_REPRS, back=True)
         if v is BACK:
             return BACK
@@ -531,8 +571,10 @@ def flow_test(axes=None, *, ask_shuffle=True):
         s["cv_mode"], s["cv_held_out_id"], s["eval_label"] = r
 
     def s_delay(s):
-        if s["audio_repr"] == "clap":
-            s["shifting_time"] = 0  # CLAP is fixed to all-0; no prompt
+        # The delay ablation applies only to the contrastive baseline with raw
+        # encoders; CLAP and the supervised objectives are fixed to all-0.
+        if s["objective"] != "contrastive" or s["audio_repr"] == "clap":
+            s["shifting_time"] = 0
             return SKIP
         v = ask_delay(back=True)
         if v is BACK:
@@ -547,10 +589,10 @@ def flow_test(axes=None, *, ask_shuffle=True):
 
     def s_ckpt(s):
         res = ask_checkpoint(
-            suggest_tag(s["audio_repr"], s["eval_label"], s["shifting_time"]),
+            suggest_tag(s["audio_repr"], s["eval_label"], s["shifting_time"], s["objective"]),
             audio_repr=s["audio_repr"], cv_mode=s["cv_mode"],
             cv_held_out_id=s["cv_held_out_id"], shifting_time=s["shifting_time"],
-            back=True)
+            objective=s["objective"], back=True)
         if res is BACK:
             return BACK
         s["ckpt"], s["run_override"] = res
@@ -560,7 +602,7 @@ def flow_test(axes=None, *, ask_shuffle=True):
             s["training_date"] = s["run_override"]  # output into the picked run's dir
             return SKIP
         v = ask_text("Run label (--training_date, output dir):",
-                     default=suggest_tag(s["audio_repr"], s["eval_label"], s["shifting_time"]),
+                     default=suggest_tag(s["audio_repr"], s["eval_label"], s["shifting_time"], s["objective"]),
                      back=True)
         if v is BACK:
             return BACK
@@ -579,10 +621,10 @@ def flow_test(axes=None, *, ask_shuffle=True):
             return BACK
         s["shuffle"] = v
 
-    if _wizard([s_audio, s_eval, s_delay, s_seed, s_ckpt, s_label, s_shuffle], st) is None:
+    if _wizard([s_objective, s_audio, s_eval, s_delay, s_seed, s_ckpt, s_label, s_shuffle], st) is None:
         return BACK  # backed out past the first step -> phase menu
 
-    axes = dict(audio_repr=st["audio_repr"], cv_mode=st["cv_mode"],
+    axes = dict(objective=st["objective"], audio_repr=st["audio_repr"], cv_mode=st["cv_mode"],
                 cv_held_out_id=st["cv_held_out_id"], shifting_time=st["shifting_time"],
                 seed=st["seed"], training_date=st["training_date"])
     return _run_test(axes, ckpt=st["ckpt"], shuffle=st["shuffle"])
@@ -618,8 +660,10 @@ def flow_compare():
             ckpt = None
         else:
             print(f"\n=== {repr_name}: pick checkpoint ===")
+            # The compare flow is the contrastive raw<->clap headline comparison.
             ckpt, run = ask_checkpoint(tag, audio_repr=repr_name, cv_mode=cv_mode,
-                                       cv_held_out_id=held, shifting_time=shifting_time)
+                                       cv_held_out_id=held, shifting_time=shifting_time,
+                                       objective="contrastive")
             if run is not None:
                 axes["training_date"] = run
         print(f"\n=== {repr_name}: evaluate ===")
@@ -698,6 +742,12 @@ def cmd_dry_run():
         ("test   raw  loso3 ", build_command(
             "checkpoint_test.py", audio_repr="raw", cv_mode="leave_subject_out",
             cv_held_out_id=3, training_date="raw_loso_sub3", test_breakdown=1)),
+        ("train  clf_eeg within", build_command(
+            "main.py", audio_repr="raw", cv_mode="within", cv_held_out_id=-1,
+            objective="classify_eeg", training_date="clf_eeg_within")),
+        ("train  clf_audio raw within", build_command(
+            "main.py", audio_repr="raw", cv_mode="within", cv_held_out_id=-1,
+            objective="classify_audio", training_date="clf_audio_raw_within")),
     ]
     for label, cmd in samples:
         print(f"\n# {label}\n{format_cmdline(cmd)}")

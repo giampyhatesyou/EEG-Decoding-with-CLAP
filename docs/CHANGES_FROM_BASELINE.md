@@ -15,10 +15,18 @@ each edit relative to upstream is marked `# CHANGED(baseline)`.
 
 - `src/models/clap_encoder.py` — frozen LAION-CLAP backbone + a trainable head
   `Linear(512→256)→GELU→Linear(256→100)`, one instance shared across the 4 stems.
+- `src/modules/supervised_classification.py` — `SupervisedClassification`, a separate
+  LightningModule for the supervisor-proposed unimodal diagnostics (#1/#2): a
+  cross-entropy 4-class classifier over a single modality (`classify_eeg` /
+  `classify_audio`), selected by the `objective` flag. It reuses the baseline encoders
+  but defines its own loss and argmax metric, so the contrastive loss
+  (`clip_loss.py::compute_task_loss`) and metric (`compute_evaluation_matrix`) are left
+  untouched. `classify_audio` is a negative control (expected ~chance; above-chance =
+  song→label leakage).
 - `src/utils/paths.py` — dataset/log/worker resolution (env > CLI > host profile > YAML).
 - `src/run.py` — interactive launcher; subprocess wrapper over `main.py` / `checkpoint_test.py`.
-- `scripts/`: `train.sh`, `train_clap.sh`, `test.sh`, `test_sanity.sh`,
-  `train_cv.sh`, `extract_checkpoints.sh`, `reproduce_akama.sh`.
+- `scripts/`: `train.sh`, `train_clap.sh`, `train_supervised.sh`, `test.sh`,
+  `test_sanity.sh`, `train_cv.sh`, `extract_checkpoints.sh`, `reproduce_akama.sh`.
 
 ## Files removed (present upstream)
 
@@ -28,7 +36,7 @@ each edit relative to upstream is marked `# CHANGED(baseline)`.
 
 ## Files identical to upstream (verified by diff)
 
-`models/model.py`, `modules/__init__.py`, `preprocessing/__init__.py`,
+`models/model.py`, `preprocessing/__init__.py`,
 `utils/file_helpers.py`, `utils/time_helper.py`, `utils/yaml_config_hook.py`.
 
 ## Changed files (upstream → now)
@@ -38,6 +46,8 @@ each edit relative to upstream is marked `# CHANGED(baseline)`.
 - added `sys`/`os` bootstrap: GPU-safe CUDA detection, memlock bump, `sys.path` insert
 - added host-aware path/worker resolution via `utils.paths`
 - added `audio_repr` switch: `raw` → 4× `SampleCNN2DEEG`; `clap` → 1 shared `CLAPEncoder`
+- added `objective` switch: `contrastive` (baseline, builds `EEGContrastiveLearning`
+  unchanged) vs `classify_eeg` / `classify_audio` (builds `SupervisedClassification`)
 - `cv_mode` / `cv_held_out_id` forwarded to the three `get_dataset` calls
 - added TTY-aware progress bar + one-line-per-epoch summary callback
 - `gpus` → `devices`; `log_every_n_steps` 1 → 50; `log_dir` configurable
@@ -46,6 +56,7 @@ each edit relative to upstream is marked `# CHANGED(baseline)`.
 - placeholder `checkpoint_path = "/checkpoint_path"` → repo-relative config + auto-discovery of the latest `best-checkpoint`
 - same `sys`/`os` bootstrap and path resolution as `main.py`
 - added `cv_mode` / `cv_held_out_id` / `audio_repr` / `shuffle_test_mode` / `test_breakdown` handling
+- added the same `objective` switch as `main.py` (must match the objective used at training)
 - `load_state_dict(strict=False)` + print of missing/unexpected keys
 - removed 2 DataLoaders (train/valid) never iterated in the test driver
 
@@ -73,6 +84,9 @@ each edit relative to upstream is marked `# CHANGED(baseline)`.
 ### `src/models/sample_cnn2d_eeg.py`
 - `from simclr.modules.identity import Identity` removed; `self.fc = Identity()` → `nn.Identity()`
 
+### `src/modules/__init__.py`
+- added `from .supervised_classification import SupervisedClassification`
+
 ### `src/models/__init__.py`
 - added `from .clap_encoder import CLAPEncoder`
 
@@ -88,4 +102,4 @@ each edit relative to upstream is marked `# CHANGED(baseline)`.
 ### `configs/config.yaml` → `configs/baseline.yaml`
 - removed unused keys (`finetuner_*`, `transforms_*`, `spec_aug*`, `save_*`, `projection_dim`, `weight_decay`, …)
 - `gpus` → `devices`; `dataset_dir` repo-relative
-- added `audio_repr`, `clap_proj_hidden_dim`, `clap_pretrained`, `cv_mode`, `cv_held_out_id`, `shuffle_test_mode`, `test_breakdown`
+- added `audio_repr`, `clap_proj_hidden_dim`, `clap_pretrained`, `objective`, `cv_mode`, `cv_held_out_id`, `shuffle_test_mode`, `test_breakdown`

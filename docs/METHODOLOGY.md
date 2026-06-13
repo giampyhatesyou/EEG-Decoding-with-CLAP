@@ -218,3 +218,71 @@ when relevant).*
   metrics — this is currently implicit in the result tables.
 - If you decide to pursue music-specific CLAP, LoRA, or a non-shared
   projection head, those become their own sub-sections under §3 and §4.
+
+---
+
+## 7. Unimodal supervised diagnostics (supervisor experiments #1 and #2)
+
+[DEFEND] These two experiments are *diagnostic*, not part of the
+minimal-change baseline. Their purpose is to probe **how much of the
+in-distribution result depends on the fixed structure of the training
+songs** rather than on genuine generalization. They deliberately step
+outside the contrastive setup: with a single modality there is no second
+stream to contrast against, so the objective becomes **supervised 4-class
+classification** (cross-entropy on the attended-element label `task ∈
+{vocal, drum, bass, others}`) and the metric becomes **argmax accuracy**.
+
+To keep the comparison path with the Akama baseline intact, both
+experiments are implemented in a **separate** `LightningModule`
+(`src/modules/supervised_classification.py`), selected by a single flag
+`objective ∈ {contrastive, classify_eeg, classify_audio}`. The contrastive
+loss (`clip_loss.py::compute_task_loss`), the contrastive metric
+(`compute_evaluation_matrix`), the data split, the seed, the optimizer,
+the batch/accumulation, the windows and the normalization are all
+unchanged; `objective="contrastive"` reproduces the baseline exactly.
+
+### 7.1 EEG-only classifier (experiment #2)
+
+The EEG encoder (`SampleCNN2DEEG`, 100-d embedding) feeds a single
+`Linear(100→4)` head trained with cross-entropy. This forces the EEG
+encoder to build label-discriminative features on its own, instead of
+relying on alignment with the audio stems.
+
+Reading of the result:
+
+- **High accuracy** ⇒ the attended element is decodable from EEG alone,
+  which is the representation quality the supervisor wants to push.
+- **Chance-level (~25%)** ⇒ the contrastive model's apparent success
+  leaned on the audio side / song structure rather than on EEG content.
+
+### 7.2 Audio-only classifier (experiment #1) — negative control
+
+The four audio stems of a song are encoded with the existing audio
+encoder(s) (`audio_repr=raw`: four independent `SampleCNN2DEEG`;
+`audio_repr=clap`: the shared frozen CLAP encoder), their four 100-d
+embeddings are concatenated, and a `Linear(400→4)` head is trained with
+cross-entropy.
+
+[DEFEND] This is a **negative control**, and its expected outcome is
+**chance**. The four stems are *fixed per song* and carry **no cue** about
+which element the subject was instructed to attend (the attended stem is
+deliberately *not* given as an isolated input — that would leak the label
+directly). The label varies across trials of the same song, so the audio
+alone cannot determine it. Therefore:
+
+- **At chance (~25%)** ⇒ the control behaves as expected: the label is not
+  recoverable from the audio content.
+- **Above chance** ⇒ this is **not** performance. It quantifies
+  **song→label leakage** in the split (e.g. a song that appears in training
+  with a dominant attended label), which is exactly the dependence on fixed
+  song structure that motivates the diagnostic.
+
+### 7.3 Metric comparability
+
+[DEFEND] The supervised argmax accuracy and the contrastive pairwise
+accuracy both have a chance level of ~25%, but they measure **different
+quantities**: the contrastive metric is
+`P[sim(EEG, target) > max sim(EEG, other)]` over a paired EEG–audio batch,
+while the supervised metric is the fraction of windows whose argmax over
+four class logits equals the true label. The two numbers must be reported
+in separate tables and never conflated.
