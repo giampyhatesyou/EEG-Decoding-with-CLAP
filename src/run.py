@@ -23,7 +23,6 @@ Usage:
     python run.py --selftest           # assert the assembled command matches train.sh/test.sh
 """
 import argparse
-import csv as _csv
 import glob
 import os
 import shlex
@@ -67,42 +66,53 @@ PHASES = {
     "train": "Train a model (main.py)",
     "test": "Evaluate a checkpoint (checkpoint_test.py)",
     "train+test": "Train then evaluate on the same config",
-    "compare": "Direct baseline<->CLAP comparison (side-by-side table)",
-    "reproduce-paper": "Replicate Akama Table 1 + Table 2 from the authors' checkpoints",
+    "experiments": "Supervisor diagnostic controls (EEG-only / audio-only classifiers)",
     "sanity": "Negative-control sweep (none / labels / audio_pair)",
 }
+# Model axis = the architectural switch (--audio_repr). The keys are the flag
+# values passed to main.py verbatim; later models join here as they are wired in.
 AUDIO_REPRS = {
-    "raw": "Akama baseline - 4 independent SampleCNN2DEEG audio encoders",
-    "clap": "Extension - frozen LAION-CLAP backbone + shared projection head",
+    "raw": "akama baseline - 4 independent SampleCNN2DEEG audio encoders",
+    "clap": "CLAP - frozen LAION-CLAP backbone + shared projection head",
 }
-# Training objective (diagnostic axis, in the spirit of audio_repr). "contrastive"
-# is the Akama baseline; the two classify_* objectives are the supervisor's
-# unimodal supervised baselines (#1/#2) — a separate cross-entropy path.
-OBJECTIVES = {
-    "contrastive": "Akama baseline - CLIP/InfoNCE EEG<->audio contrastive loss",
-    "classify_eeg": "Supervisor #2 - supervised EEG->label classifier (cross-entropy)",
-    "classify_audio": "Supervisor #1 - supervised audio->label classifier (negative control, ~chance)",
+# Planned models shown (greyed-out) so the roadmap is visible, but not selectable
+# until main.py's audio_repr switch supports them — otherwise the value would
+# silently fall through to the raw path and run the wrong model.
+AUDIO_REPRS_DISABLED = {
+    "clap+spectraclip": "planned extension - not implemented in main.py yet",
+}
+# Supervisor-proposed diagnostic controls (experiments #1/#2), kept separate from
+# the contrastive baseline and reached through the dedicated "experiments" phase
+# rather than the generic train/test flows. Each pins a single training objective
+# (a SEPARATE cross-entropy LightningModule; the contrastive loss/metric/split are
+# untouched). classify_eeg uses no audio encoder, so its audio_repr is irrelevant
+# (pinned raw, CLAP never loaded); classify_audio's audio_repr selects how the song
+# stems are encoded. The user-facing names mirror what they isolate.
+EXPERIMENTS = {
+    "control_no_audio": {
+        "objective": "classify_eeg",
+        "needs_audio_repr": False,
+        "desc": "Control without audio - supervised EEG-only classifier (#2)",
+    },
+    "control_no_eeg": {
+        "objective": "classify_audio",
+        "needs_audio_repr": True,
+        "desc": "Control without EEG - audio-only classifier, negative control (#1)",
+    },
+}
+EXP_ACTIONS = {
+    "train": "Train the control (main.py)",
+    "test": "Evaluate a control checkpoint (checkpoint_test.py)",
+    "train+test": "Train then evaluate the control",
 }
 CV_MODES = {
     "within": "within-subject, new songs (paper Table 1)",
     "leave_subject_out": "cross-subject LOSO (paper Table 2; paper subjects 3,7,2)",
     "leave_song_out": "cross-song (audit extension, not in the paper)",
 }
-# EEG-audio delay variants (paper ablation). attn-0 (train on high-attention
-# trials only) is NOT wired in main.py, so it is offered but disabled.
-DELAY_VARIANTS = {
-    "all-0": (0, "all trials, no EEG-audio delay (headline / best model)"),
-    "all-200": (200, "all trials, 200 ms EEG-audio delay (paper ablation)"),
-}
-DELAY_DISABLED = {
-    "attn-0": "train on high-attention trials only - not implemented in main.py",
-}
-
-# Reference numbers for the within-subject comparison table.
-REFERENCE = {
-    ("raw", "within"): {"all": 0.8641, "attn": 0.8454, "src": "Akama Table 1"},
-    ("clap", "within"): {"all": 0.9237, "attn": None, "src": "thesis CLAP"},
-}
+# The EEG-audio delay ablation (all-0 / all-200) is no longer asked: the launcher
+# always uses the headline all-0 (no-delay) model. The 200 ms variant is still
+# reachable via scripts/train.sh --shifting_time 200 if ever needed.
 
 
 # --- Command assembly (pure; no third-party imports) ---------------------------
@@ -165,59 +175,14 @@ def _log_dir():
         return PROJECT_ROOT / "results"
 
 
-def find_summary(training_date):
-    """Newest test_breakdown_summary.txt written under a training_date, or None."""
-    hits = []
-    for root in {PROJECT_ROOT / "results", _log_dir()}:
-        hits += glob.glob(str(root / training_date / "nmed-CL-*" / "version_*"
-                               / "test_breakdown_summary.txt"))
-    return max(hits, key=os.path.getmtime) if hits else None
-
-
-def parse_summary(path):
-    """Pull {'all': float|None, 'attn': float|None} from a summary file."""
-    out = {"all": None, "attn": None}
-    for line in Path(path).read_text().splitlines():
-        if "global accuracy (records, all)" in line:
-            out["all"] = _safe_float(line.rsplit(":", 1)[-1])
-        elif "global accuracy (records, attn)" in line:
-            out["attn"] = _safe_float(line.rsplit(":", 1)[-1])
-    return out
-
-
-def macro_accuracy(summary_path):
-    """Macro accuracy = mean of the 4 per-task accuracies, or None."""
-    csv_path = Path(summary_path).with_name("test_per_task_summary.csv")
-    if not csv_path.exists():
-        return None
-    accs = []
-    with open(csv_path) as fh:
-        for row in _csv.DictReader(fh):
-            value = _safe_float(row.get("accuracy"))
-            if value is not None:
-                accs.append(value)
-    return sum(accs) / len(accs) if accs else None
-
-
-def _safe_float(text):
-    try:
-        return float(str(text).strip())
-    except (TypeError, ValueError):
-        return None
-
-
-def _fmt(value):
-    return f"{value:.4f}" if isinstance(value, float) else "--"
-
-
 # --- Interactive helpers (questionary imported lazily) -------------------------
 def _questionary():
     try:
         import questionary
         return questionary
     except ImportError:
-        sys.exit("This CLI needs 'questionary' and 'rich':\n"
-                 "    python -m pip install questionary rich")
+        sys.exit("This CLI needs 'questionary':\n"
+                 "    python -m pip install questionary")
 
 
 # Navigation sentinels for the back-stack wizard (questionary has no native
@@ -247,14 +212,23 @@ def pick(message, options, *, disabled=None, back=False):
     return answer
 
 
+def _ask(question, *, back):
+    """Run a questionary prompt, mapping Ctrl-C to BACK (with a 'back' message
+    instead of the default 'Cancelled by user') when the caller allows it."""
+    answer = question.ask(kbi_msg="↩ back") if back else question.ask()
+    if answer is None:
+        return BACK if back else sys.exit("aborted")
+    return answer
+
+
 def ask_int(message, default=None, *, back=False):
     questionary = _questionary()
     hint = "  [Ctrl-C: back]" if back else ""
     while True:
-        raw = questionary.text(message + hint,
-                               default=("" if default is None else str(default))).ask()
-        if raw is None:
-            return BACK if back else sys.exit("aborted")
+        raw = _ask(questionary.text(
+            message + hint, default=("" if default is None else str(default))), back=back)
+        if raw is BACK:
+            return BACK
         try:
             return int(raw)
         except ValueError:
@@ -263,19 +237,15 @@ def ask_int(message, default=None, *, back=False):
 
 def ask_text(message, default="", *, back=False):
     questionary = _questionary()
-    answer = questionary.text(message + ("  [Ctrl-C: back]" if back else ""),
-                              default=default).ask()
-    if answer is None:
-        return BACK if back else sys.exit("aborted")
-    return answer.strip()
+    answer = _ask(questionary.text(message + ("  [Ctrl-C: back]" if back else ""),
+                                   default=default), back=back)
+    return answer if answer is BACK else answer.strip()
 
 
 def ask_path(message, *, back=False):
     questionary = _questionary()
-    answer = questionary.path(message + ("  [Ctrl-C: back]" if back else "")).ask()
-    if answer is None:
-        return BACK if back else sys.exit("aborted")
-    return answer.strip()
+    answer = _ask(questionary.path(message + ("  [Ctrl-C: back]" if back else "")), back=back)
+    return answer if answer is BACK else answer.strip()
 
 
 def ask_confirm(message, default=True):
@@ -325,45 +295,61 @@ def ask_eval_setting(*, back=False):
         return cv_mode, sid, f"{lbl}{sid}"
 
 
-def ask_delay(*, back=False):
-    """Return shifting_time (0 or 200), or BACK."""
-    variant = pick("Model variant (EEG-audio delay):",
-                   {k: v[1] for k, v in DELAY_VARIANTS.items()},
-                   disabled=DELAY_DISABLED, back=back)
-    if variant is BACK:
-        return BACK
-    return DELAY_VARIANTS[variant][0]
-
-
-def suggest_tag(audio_repr, eval_label, shifting_time, objective="contrastive"):
+def suggest_tag(audio_repr, eval_label, objective="contrastive"):
     if objective == "classify_eeg":
-        tag = f"clf_eeg_{eval_label}"          # no audio encoder -> audio_repr irrelevant
-    elif objective == "classify_audio":
-        tag = f"clf_audio_{audio_repr}_{eval_label}"
-    else:
-        tag = f"{audio_repr}_{eval_label}"
-    if shifting_time:
-        tag += f"_d{shifting_time}"
-    return tag
+        return f"clf_eeg_{eval_label}"         # no audio encoder -> audio_repr irrelevant
+    if objective == "classify_audio":
+        return f"clf_audio_{audio_repr}_{eval_label}"
+    return f"{audio_repr}_{eval_label}"
 
 
-def ask_train_axes():
-    objective = pick("Objective:", OBJECTIVES)
-    # classify_eeg uses no audio encoder; pin audio_repr=raw so CLAP is never loaded.
-    audio_repr = "raw" if objective == "classify_eeg" else pick(
-        "Audio representation / model:", AUDIO_REPRS)
-    cv_mode, held, eval_label = ask_eval_setting()
-    # The EEG-audio delay ablation (all-0 / all-200) is a paper baseline knob; it
-    # only applies to the contrastive baseline with raw encoders. CLAP and the
-    # supervised objectives use the all-0 (no-delay) setting, so we don't ask.
-    shifting_time = (ask_delay()
-                     if objective == "contrastive" and audio_repr == "raw" else 0)
-    seed = ask_int("Optimisation seed:", default=DEFAULT_SEED)
-    tag = ask_text("Run label (--training_date):",
-                   default=suggest_tag(audio_repr, eval_label, shifting_time, objective))
-    return dict(objective=objective, audio_repr=audio_repr, cv_mode=cv_mode,
-                cv_held_out_id=held, shifting_time=shifting_time, seed=seed,
-                training_date=tag)
+def ask_train_axes(*, objective="contrastive", audio_repr=None, back=False):
+    """Collect the training axes via a back-navigable wizard. Returns an axes dict
+    or BACK (backed out past the first prompted step).
+
+    The generic train flow is contrastive-only, so ``objective`` defaults to
+    "contrastive" and is never prompted here; the two supervised controls reach
+    this with their objective (and, for classify_audio, audio_repr) pinned by the
+    experiments phase, which skips the corresponding prompts.
+    """
+    st = {"objective": objective, "audio_repr": audio_repr}
+
+    def s_audio(s):
+        if s["objective"] == "classify_eeg":
+            s["audio_repr"] = "raw"   # no audio encoder; pin raw (CLAP never loaded)
+            return SKIP
+        if s["audio_repr"] is not None:
+            return SKIP               # pinned by the caller (classify_audio)
+        v = pick("Model:", AUDIO_REPRS, disabled=AUDIO_REPRS_DISABLED, back=back)
+        if v is BACK:
+            return BACK
+        s["audio_repr"] = v
+
+    def s_eval(s):
+        r = ask_eval_setting(back=back)
+        if r is BACK:
+            return BACK
+        s["cv_mode"], s["cv_held_out_id"], s["eval_label"] = r
+
+    def s_seed(s):
+        v = ask_int("Optimisation seed:", default=DEFAULT_SEED, back=back)
+        if v is BACK:
+            return BACK
+        s["seed"] = v
+
+    def s_label(s):
+        v = ask_text("Run label (--training_date):",
+                     default=suggest_tag(s["audio_repr"], s["eval_label"], s["objective"]),
+                     back=back)
+        if v is BACK:
+            return BACK
+        s["training_date"] = v
+
+    if _wizard([s_audio, s_eval, s_seed, s_label], st) is None:
+        return BACK
+    return dict(objective=st["objective"], audio_repr=st["audio_repr"],
+                cv_mode=st["cv_mode"], cv_held_out_id=st["cv_held_out_id"],
+                seed=st["seed"], training_date=st["training_date"])
 
 
 # Argparse defaults, for runs whose hparams.yaml predates these flags (e.g. an
@@ -465,48 +451,57 @@ def ask_checkpoint(default_label, *, audio_repr=None, cv_mode=None,
     reproducibility guard) with the authors' released checkpoints valid for that
     split, so the baseline is selectable from the launcher. Picking a run lets
     checkpoint_test.py auto-discover its checkpoint under results/<run>/.
+
+    Back navigation is two-level: backing out of the path/list sub-prompt returns
+    to the source choice ("existing" vs "path"); only backing out of that source
+    choice (offered when ``back=True``) returns BACK to the caller.
     """
     setting = "within" if cv_mode in (None, "within") else f"{cv_mode}={cv_held_out_id}"
     obj_tag = None if objective in (None, "contrastive") else objective
     desc = " ".join(x for x in (obj_tag, audio_repr, setting) if x)
-    how = pick("Checkpoint to evaluate:", {
-        "existing": f"pick a matching run / authors' checkpoint [{desc}]",
-        "path": "type an explicit .ckpt path",
-    }, back=back)
-    if how is BACK:
-        return BACK
-    if how == "path":
-        p = ask_path("Path to .ckpt:", back=back)
-        return BACK if p is BACK else (p, None)
-    runs = runs_with_checkpoint(audio_repr, cv_mode, cv_held_out_id, shifting_time, objective)
-    # The authors released only raw contrastive checkpoints; never offer them for
-    # a classify_* evaluation.
-    authors = (authors_checkpoints_for(audio_repr, cv_mode, cv_held_out_id)
-               if objective in (None, "contrastive") else [])
-    if not runs and not authors:
-        print(f"  no checkpoint matches [{desc}] — give an explicit path")
-        p = ask_path("Path to .ckpt:", back=back)
-        return BACK if p is BACK else (p, None)
     questionary = _questionary()
-    choices = []
-    if back:
-        choices.append(questionary.Choice(title="↩ back", value=BACK))
-    for r in runs:
-        choices.append(questionary.Choice(title=f"run: {r}", value=("run", r)))
-    for label, p in authors:
-        choices.append(questionary.Choice(title=label, value=("path", p)))
-    sel = questionary.select(f"Which checkpoint?  [{desc}]", choices=choices).ask()
-    if sel is None:
-        return BACK if back else sys.exit("aborted")
-    if sel is BACK:
-        return BACK
-    kind, val = sel
-    return (None, val) if kind == "run" else (val, None)
+    while True:
+        how = pick("Checkpoint to evaluate:", {
+            "existing": f"pick a matching run / authors' checkpoint [{desc}]",
+            "path": "type an explicit .ckpt path",
+        }, back=back)
+        if how is BACK:
+            return BACK
+        if how == "path":
+            # back here returns to the source choice above, not out to the caller.
+            p = ask_path("Path to .ckpt:", back=True)
+            if p is BACK:
+                continue
+            return (p, None)
+        runs = runs_with_checkpoint(audio_repr, cv_mode, cv_held_out_id, shifting_time, objective)
+        # The authors released only raw contrastive checkpoints; never offer them
+        # for a classify_* evaluation.
+        authors = (authors_checkpoints_for(audio_repr, cv_mode, cv_held_out_id)
+                   if objective in (None, "contrastive") else [])
+        if not runs and not authors:
+            print(f"  no checkpoint matches [{desc}] — give an explicit path")
+            p = ask_path("Path to .ckpt:", back=True)
+            if p is BACK:
+                continue
+            return (p, None)
+        choices = [questionary.Choice(title="↩ back", value=BACK)]
+        for r in runs:
+            choices.append(questionary.Choice(title=f"run: {r}", value=("run", r)))
+        for label, p in authors:
+            choices.append(questionary.Choice(title=label, value=("path", p)))
+        sel = questionary.select(f"Which checkpoint?  [{desc}]", choices=choices).ask()
+        if sel is None or sel is BACK:
+            continue  # back -> re-show the source choice
+        kind, val = sel
+        return (None, val) if kind == "run" else (val, None)
 
 
 # --- Phase flows ---------------------------------------------------------------
 def flow_train(axes=None):
-    axes = axes or ask_train_axes()
+    if axes is None:
+        axes = ask_train_axes(objective="contrastive", back=True)
+        if axes is BACK:
+            return BACK  # backed out of the train wizard -> phase menu
     cmd = build_command("main.py", **axes)
     if ask_confirm("Run training now?"):
         return run_subprocess(cmd), axes
@@ -541,25 +536,23 @@ def _run_test(axes, *, ckpt, shuffle):
     return None, axes
 
 
-def flow_test(axes=None, *, ask_shuffle=True):
+def flow_test(axes=None, *, ask_shuffle=True, objective="contrastive", audio_repr=None):
     # train+test path: the model was just trained under axes[training_date];
     # auto-discover its checkpoint, no prompts.
     if axes is not None:
         return _run_test(axes, ckpt=None, shuffle="none")
 
-    st = {}
-
-    def s_objective(s):
-        v = pick("Objective:", OBJECTIVES, back=True)
-        if v is BACK:
-            return BACK
-        s["objective"] = v
+    # objective/audio_repr default to the contrastive baseline for the generic
+    # test phase; the experiments phase pins them to a supervised control.
+    st = {"objective": objective, "audio_repr": audio_repr}
 
     def s_audio(s):
         if s["objective"] == "classify_eeg":
             s["audio_repr"] = "raw"  # no audio encoder used; pin raw (CLAP never loaded)
             return SKIP
-        v = pick("Audio representation / model:", AUDIO_REPRS, back=True)
+        if s["audio_repr"] is not None:
+            return SKIP              # pinned by the caller (classify_audio)
+        v = pick("Model:", AUDIO_REPRS, disabled=AUDIO_REPRS_DISABLED, back=True)
         if v is BACK:
             return BACK
         s["audio_repr"] = v
@@ -570,17 +563,6 @@ def flow_test(axes=None, *, ask_shuffle=True):
             return BACK
         s["cv_mode"], s["cv_held_out_id"], s["eval_label"] = r
 
-    def s_delay(s):
-        # The delay ablation applies only to the contrastive baseline with raw
-        # encoders; CLAP and the supervised objectives are fixed to all-0.
-        if s["objective"] != "contrastive" or s["audio_repr"] == "clap":
-            s["shifting_time"] = 0
-            return SKIP
-        v = ask_delay(back=True)
-        if v is BACK:
-            return BACK
-        s["shifting_time"] = v
-
     def s_seed(s):
         v = ask_int("Optimisation seed:", default=DEFAULT_SEED, back=True)
         if v is BACK:
@@ -588,10 +570,12 @@ def flow_test(axes=None, *, ask_shuffle=True):
         s["seed"] = v
 
     def s_ckpt(s):
+        # shifting_time is pinned to 0 (the headline all-0 model), so the
+        # checkpoint-matching guard only offers all-0 runs.
         res = ask_checkpoint(
-            suggest_tag(s["audio_repr"], s["eval_label"], s["shifting_time"], s["objective"]),
+            suggest_tag(s["audio_repr"], s["eval_label"], s["objective"]),
             audio_repr=s["audio_repr"], cv_mode=s["cv_mode"],
-            cv_held_out_id=s["cv_held_out_id"], shifting_time=s["shifting_time"],
+            cv_held_out_id=s["cv_held_out_id"], shifting_time=0,
             objective=s["objective"], back=True)
         if res is BACK:
             return BACK
@@ -602,14 +586,17 @@ def flow_test(axes=None, *, ask_shuffle=True):
             s["training_date"] = s["run_override"]  # output into the picked run's dir
             return SKIP
         v = ask_text("Run label (--training_date, output dir):",
-                     default=suggest_tag(s["audio_repr"], s["eval_label"], s["shifting_time"], s["objective"]),
+                     default=suggest_tag(s["audio_repr"], s["eval_label"], s["objective"]),
                      back=True)
         if v is BACK:
             return BACK
         s["training_date"] = v
 
     def s_shuffle(s):
-        if not ask_shuffle:
+        # The negative-control shuffles are implemented only in the contrastive
+        # test_step; the supervised classifier ignores shuffle_test_mode, so never
+        # offer it for a classify_* checkpoint (it would be a misleading no-op).
+        if not ask_shuffle or s["objective"] != "contrastive":
             s["shuffle"] = "none"
             return SKIP
         v = pick("Evaluation mode:", {
@@ -621,17 +608,19 @@ def flow_test(axes=None, *, ask_shuffle=True):
             return BACK
         s["shuffle"] = v
 
-    if _wizard([s_objective, s_audio, s_eval, s_delay, s_seed, s_ckpt, s_label, s_shuffle], st) is None:
+    if _wizard([s_audio, s_eval, s_seed, s_ckpt, s_label, s_shuffle], st) is None:
         return BACK  # backed out past the first step -> phase menu
 
     axes = dict(objective=st["objective"], audio_repr=st["audio_repr"], cv_mode=st["cv_mode"],
-                cv_held_out_id=st["cv_held_out_id"], shifting_time=st["shifting_time"],
+                cv_held_out_id=st["cv_held_out_id"],
                 seed=st["seed"], training_date=st["training_date"])
     return _run_test(axes, ckpt=st["ckpt"], shuffle=st["shuffle"])
 
 
 def flow_train_test():
-    axes = ask_train_axes()
+    axes = ask_train_axes(objective="contrastive", back=True)
+    if axes is BACK:
+        return BACK  # backed out of the train wizard -> phase menu
     rc, _ = flow_train(axes)
     if rc not in (0, None):
         print("training failed; skipping test")
@@ -639,54 +628,67 @@ def flow_train_test():
     flow_test(axes, ask_shuffle=False)
 
 
-def flow_compare():
-    source = pick("Comparison source:", {
-        "checkpoints": "evaluate two existing checkpoints (fast, minutes)",
-        "scratch": "train raw and clap from scratch, then compare (hours, GPU)",
-    })
-    cv_mode, held, eval_label = ask_eval_setting()
-    seed = ask_int("Optimisation seed:", default=DEFAULT_SEED)
-    shifting_time = 0  # the comparison is on the headline all-0 model
-    rows = []
-    for repr_name in ("raw", "clap"):
-        tag = f"compare_{repr_name}_{eval_label}"
-        axes = dict(audio_repr=repr_name, cv_mode=cv_mode, cv_held_out_id=held,
-                    shifting_time=shifting_time, seed=seed, training_date=tag)
-        if source == "scratch":
-            print(f"\n=== {repr_name}: train from scratch ===")
-            if run_subprocess(build_command("main.py", **axes)) != 0:
-                print(f"{repr_name} training failed; skipping")
-                continue
-            ckpt = None
-        else:
-            print(f"\n=== {repr_name}: pick checkpoint ===")
-            # The compare flow is the contrastive raw<->clap headline comparison.
-            ckpt, run = ask_checkpoint(tag, audio_repr=repr_name, cv_mode=cv_mode,
-                                       cv_held_out_id=held, shifting_time=shifting_time,
-                                       objective="contrastive")
-            if run is not None:
-                axes["training_date"] = run
-        print(f"\n=== {repr_name}: evaluate ===")
-        run_subprocess(build_command("checkpoint_test.py", checkpoint_path=ckpt,
-                                     test_breakdown=1, **axes))
-        rows.append((repr_name, axes["training_date"]))
-    render_compare(rows, eval_label)
+def flow_experiments():
+    """Supervisor diagnostic controls — the two unimodal supervised classifiers.
 
+    A thin wrapper that pins ``--objective`` (and ``audio_repr`` where it is
+    meaningful) and then reuses the very same train/test machinery as the
+    contrastive flows: the emitted command line, the run tags and the
+    checkpoint-matching guard are identical to driving these objectives by hand.
+    This entry only makes the two controls discoverable as named experiments
+    instead of a buried objective sub-prompt. Returns BACK (-> phase menu) or None.
+    """
+    while True:
+        st = {}
 
-def flow_reproduce():
-    phase = pick("Which paper tables?", {
-        "within loso": "Table 1 (within) + Table 2 (LOSO), both from checkpoints",
-        "within": "Table 1 only (within-subject, model-all0.ckpt)",
-        "loso": "Table 2 only (LOSO, model-sub{3,7,2}.ckpt)",
-    })
-    script = PROJECT_ROOT / "scripts" / "reproduce_akama.sh"
-    env = dict(os.environ, REPRO_PHASES=phase)
-    print("\n$ REPRO_PHASES=" + shlex.quote(phase) + " bash scripts/reproduce_akama.sh\n")
-    subprocess.run(["bash", str(script)], cwd=str(PROJECT_ROOT), env=env)
+        def s_which(s):
+            v = pick("Diagnostic control:",
+                     {k: e["desc"] for k, e in EXPERIMENTS.items()}, back=True)
+            if v is BACK:
+                return BACK
+            s["objective"] = EXPERIMENTS[v]["objective"]
+            s["needs_repr"] = EXPERIMENTS[v]["needs_audio_repr"]
+
+        def s_repr(s):
+            # classify_eeg uses no audio encoder; pin raw so CLAP is never loaded.
+            if not s["needs_repr"]:
+                s["audio_repr"] = "raw"
+                return SKIP
+            v = pick("Stem encoder:", AUDIO_REPRS,
+                     disabled=AUDIO_REPRS_DISABLED, back=True)
+            if v is BACK:
+                return BACK
+            s["audio_repr"] = v
+
+        def s_action(s):
+            v = pick("Action:", EXP_ACTIONS, back=True)
+            if v is BACK:
+                return BACK
+            s["action"] = v
+
+        if _wizard([s_which, s_repr, s_action], st) is None:
+            return BACK  # backed out past the first step -> phase menu
+
+        obj, repr_, action = st["objective"], st["audio_repr"], st["action"]
+        if action == "test":
+            if flow_test(objective=obj, audio_repr=repr_) is BACK:
+                continue  # backed out of the test wizard -> re-pick the control
+            return
+        axes = ask_train_axes(objective=obj, audio_repr=repr_, back=True)
+        if axes is BACK:
+            continue  # backed out of the train config -> re-pick the control
+        rc, _ = flow_train(axes)
+        if action == "train+test":
+            if rc not in (0, None):
+                print("training failed; skipping test")
+            else:
+                flow_test(axes, ask_shuffle=False)
+        return
 
 
 def flow_sanity():
-    audio_repr = pick("Audio representation of the checkpoint:", AUDIO_REPRS)
+    audio_repr = pick("Model of the checkpoint:", AUDIO_REPRS,
+                      disabled=AUDIO_REPRS_DISABLED)
     ckpt = ask_text("Checkpoint (repo-relative or absolute):",
                     default="checkpoints/model-all0.ckpt")
     tag = ask_text("Tag (training_date prefix):", default="sanity")
@@ -695,34 +697,6 @@ def flow_sanity():
     print(f"\n$ CKPT={shlex.quote(ckpt)} TAG={shlex.quote(tag)} "
           f"AUDIO_REPR={audio_repr} bash scripts/test_sanity.sh\n")
     subprocess.run(["bash", str(script)], cwd=str(PROJECT_ROOT), env=env)
-
-
-# --- Comparison table ----------------------------------------------------------
-def render_compare(rows, eval_label):
-    from rich.console import Console
-    from rich.table import Table
-
-    table = Table(title=f"Baseline (raw) <-> CLAP   [{eval_label}]")
-    table.add_column("variant", style="bold")
-    table.add_column("global acc (all)", justify="right")
-    table.add_column("global acc (attn)", justify="right")
-    table.add_column("macro (all)", justify="right")
-    table.add_column("reference", justify="right")
-    table.add_column("source")
-
-    for repr_name, tag in rows:
-        summary = find_summary(tag)
-        if summary:
-            acc = parse_summary(summary)
-            macro = macro_accuracy(summary)
-        else:
-            acc, macro = {"all": None, "attn": None}, None
-        ref = REFERENCE.get((repr_name, eval_label), {})
-        table.add_row(repr_name, _fmt(acc["all"]), _fmt(acc["attn"]), _fmt(macro),
-                      _fmt(ref.get("all")), ref.get("src", "--"))
-    Console().print(table)
-    print("(global acc all/attn from test_breakdown_summary.txt; macro = mean of "
-          "the 4 per-task accuracies)")
 
 
 # --- Non-interactive helpers (for verification) --------------------------------
@@ -802,13 +776,12 @@ def _flags_to_dict(cmd):
 def interactive():
     print("EEG attention experiments - interactive launcher")
     print("(fixed Akama protocol is baked in; you pick only what varies)")
-    print("(use the '↩ back' menu entry to step back)\n")
+    print("(step back with the '↩ back' menu entry, or Ctrl-C in a text/path prompt)\n")
     dispatch = {
         "train": flow_train,
         "test": flow_test,
         "train+test": flow_train_test,
-        "compare": flow_compare,
-        "reproduce-paper": flow_reproduce,
+        "experiments": flow_experiments,
         "sanity": flow_sanity,
     }
     while True:
