@@ -106,7 +106,7 @@ EXP_ACTIONS = {
     "train+test": "Train then evaluate the control",
 }
 CV_MODES = {
-    "within": "within-subject, new songs (paper Table 1)",
+    "within": "within-subject, 15s-window split (songs shared train/test; paper Table 1)",
     "leave_subject_out": "cross-subject LOSO (paper Table 2; paper subjects 3,7,2)",
     "leave_song_out": "cross-song (audit extension, not in the paper)",
 }
@@ -563,12 +563,6 @@ def flow_test(axes=None, *, ask_shuffle=True, objective="contrastive", audio_rep
             return BACK
         s["cv_mode"], s["cv_held_out_id"], s["eval_label"] = r
 
-    def s_seed(s):
-        v = ask_int("Optimisation seed:", default=DEFAULT_SEED, back=True)
-        if v is BACK:
-            return BACK
-        s["seed"] = v
-
     def s_ckpt(s):
         # shifting_time is pinned to 0 (the headline all-0 model), so the
         # checkpoint-matching guard only offers all-0 runs.
@@ -608,12 +602,15 @@ def flow_test(axes=None, *, ask_shuffle=True, objective="contrastive", audio_rep
             return BACK
         s["shuffle"] = v
 
-    if _wizard([s_audio, s_eval, s_seed, s_ckpt, s_label, s_shuffle], st) is None:
+    if _wizard([s_audio, s_eval, s_ckpt, s_label, s_shuffle], st) is None:
         return BACK  # backed out past the first step -> phase menu
 
+    # No seed prompt on the test path: with a loaded checkpoint and shuffle=False a
+    # normal evaluation is deterministic regardless of seed, so build_command's
+    # default (the protocol's 42, also the seed of the negative-control shuffle)
+    # is used. Training keeps the seed axis (error bars); testing does not need it.
     axes = dict(objective=st["objective"], audio_repr=st["audio_repr"], cv_mode=st["cv_mode"],
-                cv_held_out_id=st["cv_held_out_id"],
-                seed=st["seed"], training_date=st["training_date"])
+                cv_held_out_id=st["cv_held_out_id"], training_date=st["training_date"])
     return _run_test(axes, ckpt=st["ckpt"], shuffle=st["shuffle"])
 
 
