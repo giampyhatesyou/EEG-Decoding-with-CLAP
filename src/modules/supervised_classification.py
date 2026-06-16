@@ -1,7 +1,7 @@
 # CHANGED(baseline): NEW FILE — not present in the Akama et al. upstream. Diagnostic extension.
 """Unimodal supervised classification baselines (supervisor-proposed diagnostics).
 
-These are the supervisor's reference/diagnostic experiments #1 and #2, deliberately
+These are the diagnostic experiments #1 and #2, deliberately
 *outside* the minimal-change contrastive baseline. They live in their own
 ``LightningModule`` so the contrastive loss (``clip_loss.py::compute_task_loss``) and the
 contrastive evaluation metric (``EEGContrastiveLearning.compute_evaluation_matrix``) are
