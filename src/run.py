@@ -81,6 +81,14 @@ AUDIO_REPRS = {
 AUDIO_REPRS_DISABLED = {
     "clap+spectraclip": "planned extension - not implemented in main.py yet",
 }
+# EEG front-end axis (--eeg_repr); the EEG-side mirror of AUDIO_REPRS. Default "raw"
+# reproduces the Akama baseline (SampleCNN2DEEG); "spectra" adds a band-power frequency
+# branch fused to the same 100-d embedding (src/models/spectra_eeg.py). Prompted in every
+# flow; build_command emits --eeg_repr only when != "raw", so the baseline stays unchanged.
+EEG_REPRS = {
+    "raw": "akama baseline - SampleCNN2DEEG on the raw EEG window",
+    "spectra": "SpectraCLIP - raw 2D-CNN + band-power (delta/theta/alpha/beta) branch",
+}
 # Supervisor-proposed diagnostic controls (experiments #1/#2), kept separate from
 # the contrastive baseline and reached through the dedicated "experiments" phase
 # rather than the generic train/test flows. Each pins a single training objective
@@ -119,7 +127,7 @@ CV_MODES = {
 def build_command(entrypoint, *, audio_repr, cv_mode, cv_held_out_id,
                   training_date, shifting_time=0, seed=DEFAULT_SEED, devices=1,
                   workers=None, checkpoint_path=None, shuffle_test_mode=None,
-                  test_breakdown=None, objective="contrastive"):
+                  test_breakdown=None, objective="contrastive", eeg_repr="raw"):
     """Assemble the exact ``python <entrypoint> ...`` argv from PROTOCOL + axes.
 
     ``entrypoint`` is "main.py" (train) or "checkpoint_test.py" (test). The
@@ -136,6 +144,8 @@ def build_command(entrypoint, *, audio_repr, cv_mode, cv_held_out_id,
     cmd += ["--shifting_time", str(shifting_time)]
     cmd += ["--seed", str(seed)]
     cmd += ["--audio_repr", audio_repr]
+    if eeg_repr and eeg_repr != "raw":  # emit only the non-default EEG front-end (keeps selftest byte-identical)
+        cmd += ["--eeg_repr", eeg_repr]
     if objective and objective != "contrastive":
         cmd += ["--objective", objective]
     cmd += ["--cv_mode", cv_mode, "--cv_held_out_id", str(cv_held_out_id)]
@@ -295,24 +305,26 @@ def ask_eval_setting(*, back=False):
         return cv_mode, sid, f"{lbl}{sid}"
 
 
-def suggest_tag(audio_repr, eval_label, objective="contrastive"):
+def suggest_tag(audio_repr, eval_label, objective="contrastive", eeg_repr="raw"):
+    pre = "" if eeg_repr in (None, "raw") else f"{eeg_repr}_"  # non-default EEG front-end -> tag prefix
     if objective == "classify_eeg":
-        return f"clf_eeg_{eval_label}"         # no audio encoder -> audio_repr irrelevant
+        return f"{pre}clf_eeg_{eval_label}"    # no audio encoder -> audio_repr irrelevant
     if objective == "classify_audio":
-        return f"clf_audio_{audio_repr}_{eval_label}"
-    return f"{audio_repr}_{eval_label}"
+        return f"{pre}clf_audio_{audio_repr}_{eval_label}"
+    return f"{pre}{audio_repr}_{eval_label}"
 
 
-def ask_train_axes(*, objective="contrastive", audio_repr=None, back=False):
+def ask_train_axes(*, objective="contrastive", audio_repr=None, eeg_repr=None, back=False):
     """Collect the training axes via a back-navigable wizard. Returns an axes dict
     or BACK (backed out past the first prompted step).
 
     The generic train flow is contrastive-only, so ``objective`` defaults to
     "contrastive" and is never prompted here; the two supervised controls reach
     this with their objective (and, for classify_audio, audio_repr) pinned by the
-    experiments phase, which skips the corresponding prompts.
+    experiments phase, which skips the corresponding prompts. ``eeg_repr`` defaults
+    to None so the EEG front-end is prompted in every flow (raw / spectra).
     """
-    st = {"objective": objective, "audio_repr": audio_repr}
+    st = {"objective": objective, "audio_repr": audio_repr, "eeg_repr": eeg_repr}
 
     def s_audio(s):
         if s["objective"] == "classify_eeg":
@@ -324,6 +336,17 @@ def ask_train_axes(*, objective="contrastive", audio_repr=None, back=False):
         if v is BACK:
             return BACK
         s["audio_repr"] = v
+
+    def s_eeg(s):
+        if s["objective"] == "classify_audio":
+            s["eeg_repr"] = "raw"     # audio-only: no EEG encoder, eeg_repr irrelevant
+            return SKIP
+        if s["eeg_repr"] is not None:
+            return SKIP               # pinned by the caller
+        v = pick("EEG front-end:", EEG_REPRS, back=back)
+        if v is BACK:
+            return BACK
+        s["eeg_repr"] = v
 
     def s_eval(s):
         r = ask_eval_setting(back=back)
@@ -339,24 +362,24 @@ def ask_train_axes(*, objective="contrastive", audio_repr=None, back=False):
 
     def s_label(s):
         v = ask_text("Run label (--training_date):",
-                     default=suggest_tag(s["audio_repr"], s["eval_label"], s["objective"]),
+                     default=suggest_tag(s["audio_repr"], s["eval_label"], s["objective"], s["eeg_repr"]),
                      back=back)
         if v is BACK:
             return BACK
         s["training_date"] = v
 
-    if _wizard([s_audio, s_eval, s_seed, s_label], st) is None:
+    if _wizard([s_audio, s_eeg, s_eval, s_seed, s_label], st) is None:
         return BACK
-    return dict(objective=st["objective"], audio_repr=st["audio_repr"],
+    return dict(objective=st["objective"], audio_repr=st["audio_repr"], eeg_repr=st["eeg_repr"],
                 cv_mode=st["cv_mode"], cv_held_out_id=st["cv_held_out_id"],
                 seed=st["seed"], training_date=st["training_date"])
 
 
 # Argparse defaults, for runs whose hparams.yaml predates these flags (e.g. an
 # early within-subject run that never logged cv_mode is, by definition, within).
-_HP_DEFAULTS = {"audio_repr": None, "cv_mode": "within",
+_HP_DEFAULTS = {"audio_repr": None, "eeg_repr": "raw", "cv_mode": "within",
                 "cv_held_out_id": "-1", "shifting_time": "0",
-                "objective": "contrastive"}  # runs predating the flag are contrastive
+                "objective": "contrastive"}  # runs predating the flags are contrastive/raw
 
 
 def _run_config(ckpt_path):
@@ -379,7 +402,7 @@ def _run_config(ckpt_path):
 
 
 def runs_with_checkpoint(audio_repr=None, cv_mode=None, cv_held_out_id=None,
-                         shifting_time=None, objective=None):
+                         shifting_time=None, objective=None, eeg_repr=None):
     """training_dates under results/ with a best-checkpoint.ckpt whose training
     config matches the given axes (read from each run's hparams.yaml).
 
@@ -391,7 +414,8 @@ def runs_with_checkpoint(audio_repr=None, cv_mode=None, cv_held_out_id=None,
     classify_* checkpoint is not offered for a contrastive evaluation (its
     topology and metric differ), and vice versa.
     """
-    want = {"objective": objective, "audio_repr": audio_repr, "cv_mode": cv_mode,
+    want = {"objective": objective, "audio_repr": audio_repr, "eeg_repr": eeg_repr,
+            "cv_mode": cv_mode,
             "cv_held_out_id": None if cv_held_out_id is None else str(cv_held_out_id),
             "shifting_time": None if shifting_time is None else str(shifting_time)}
     bases = {PROJECT_ROOT / "results"}
@@ -444,7 +468,8 @@ def authors_checkpoints_for(audio_repr, cv_mode, cv_held_out_id):
 
 
 def ask_checkpoint(default_label, *, audio_repr=None, cv_mode=None,
-                   cv_held_out_id=None, shifting_time=None, objective=None, back=False):
+                   cv_held_out_id=None, shifting_time=None, objective=None,
+                   eeg_repr=None, back=False):
     """Return (checkpoint_path_or_None, training_date_override_or_None), or BACK.
 
     The "existing" list merges results/ runs matching the test split (the
@@ -458,7 +483,8 @@ def ask_checkpoint(default_label, *, audio_repr=None, cv_mode=None,
     """
     setting = "within" if cv_mode in (None, "within") else f"{cv_mode}={cv_held_out_id}"
     obj_tag = None if objective in (None, "contrastive") else objective
-    desc = " ".join(x for x in (obj_tag, audio_repr, setting) if x)
+    eeg_tag = None if eeg_repr in (None, "raw") else eeg_repr
+    desc = " ".join(x for x in (obj_tag, eeg_tag, audio_repr, setting) if x)
     questionary = _questionary()
     while True:
         how = pick("Checkpoint to evaluate:", {
@@ -473,11 +499,11 @@ def ask_checkpoint(default_label, *, audio_repr=None, cv_mode=None,
             if p is BACK:
                 continue
             return (p, None)
-        runs = runs_with_checkpoint(audio_repr, cv_mode, cv_held_out_id, shifting_time, objective)
-        # The authors released only raw contrastive checkpoints; never offer them
-        # for a classify_* evaluation.
+        runs = runs_with_checkpoint(audio_repr, cv_mode, cv_held_out_id, shifting_time, objective, eeg_repr)
+        # The authors released only raw contrastive checkpoints; never offer them for a
+        # classify_* evaluation, nor for a non-raw EEG front-end (architecture differs).
         authors = (authors_checkpoints_for(audio_repr, cv_mode, cv_held_out_id)
-                   if objective in (None, "contrastive") else [])
+                   if objective in (None, "contrastive") and eeg_repr in (None, "raw") else [])
         if not runs and not authors:
             print(f"  no checkpoint matches [{desc}] — give an explicit path")
             p = ask_path("Path to .ckpt:", back=True)
@@ -536,15 +562,16 @@ def _run_test(axes, *, ckpt, shuffle):
     return None, axes
 
 
-def flow_test(axes=None, *, ask_shuffle=True, objective="contrastive", audio_repr=None):
+def flow_test(axes=None, *, ask_shuffle=True, objective="contrastive", audio_repr=None, eeg_repr=None):
     # train+test path: the model was just trained under axes[training_date];
     # auto-discover its checkpoint, no prompts.
     if axes is not None:
         return _run_test(axes, ckpt=None, shuffle="none")
 
     # objective/audio_repr default to the contrastive baseline for the generic
-    # test phase; the experiments phase pins them to a supervised control.
-    st = {"objective": objective, "audio_repr": audio_repr}
+    # test phase; the experiments phase pins them to a supervised control. eeg_repr
+    # defaults to None so the EEG front-end is prompted here too.
+    st = {"objective": objective, "audio_repr": audio_repr, "eeg_repr": eeg_repr}
 
     def s_audio(s):
         if s["objective"] == "classify_eeg":
@@ -557,6 +584,17 @@ def flow_test(axes=None, *, ask_shuffle=True, objective="contrastive", audio_rep
             return BACK
         s["audio_repr"] = v
 
+    def s_eeg(s):
+        if s["objective"] == "classify_audio":
+            s["eeg_repr"] = "raw"    # audio-only: no EEG encoder, eeg_repr irrelevant
+            return SKIP
+        if s["eeg_repr"] is not None:
+            return SKIP              # pinned by the caller
+        v = pick("EEG front-end:", EEG_REPRS, back=True)
+        if v is BACK:
+            return BACK
+        s["eeg_repr"] = v
+
     def s_eval(s):
         r = ask_eval_setting(back=True)
         if r is BACK:
@@ -567,10 +605,10 @@ def flow_test(axes=None, *, ask_shuffle=True, objective="contrastive", audio_rep
         # shifting_time is pinned to 0 (the headline all-0 model), so the
         # checkpoint-matching guard only offers all-0 runs.
         res = ask_checkpoint(
-            suggest_tag(s["audio_repr"], s["eval_label"], s["objective"]),
+            suggest_tag(s["audio_repr"], s["eval_label"], s["objective"], s["eeg_repr"]),
             audio_repr=s["audio_repr"], cv_mode=s["cv_mode"],
             cv_held_out_id=s["cv_held_out_id"], shifting_time=0,
-            objective=s["objective"], back=True)
+            objective=s["objective"], eeg_repr=s["eeg_repr"], back=True)
         if res is BACK:
             return BACK
         s["ckpt"], s["run_override"] = res
@@ -580,7 +618,7 @@ def flow_test(axes=None, *, ask_shuffle=True, objective="contrastive", audio_rep
             s["training_date"] = s["run_override"]  # output into the picked run's dir
             return SKIP
         v = ask_text("Run label (--training_date, output dir):",
-                     default=suggest_tag(s["audio_repr"], s["eval_label"], s["objective"]),
+                     default=suggest_tag(s["audio_repr"], s["eval_label"], s["objective"], s["eeg_repr"]),
                      back=True)
         if v is BACK:
             return BACK
@@ -602,14 +640,15 @@ def flow_test(axes=None, *, ask_shuffle=True, objective="contrastive", audio_rep
             return BACK
         s["shuffle"] = v
 
-    if _wizard([s_audio, s_eval, s_ckpt, s_label, s_shuffle], st) is None:
+    if _wizard([s_audio, s_eeg, s_eval, s_ckpt, s_label, s_shuffle], st) is None:
         return BACK  # backed out past the first step -> phase menu
 
     # No seed prompt on the test path: with a loaded checkpoint and shuffle=False a
     # normal evaluation is deterministic regardless of seed, so build_command's
     # default (the protocol's 42, also the seed of the negative-control shuffle)
     # is used. Training keeps the seed axis (error bars); testing does not need it.
-    axes = dict(objective=st["objective"], audio_repr=st["audio_repr"], cv_mode=st["cv_mode"],
+    axes = dict(objective=st["objective"], audio_repr=st["audio_repr"], eeg_repr=st["eeg_repr"],
+                cv_mode=st["cv_mode"],
                 cv_held_out_id=st["cv_held_out_id"], training_date=st["training_date"])
     return _run_test(axes, ckpt=st["ckpt"], shuffle=st["shuffle"])
 
@@ -719,6 +758,9 @@ def cmd_dry_run():
         ("train  clf_audio raw within", build_command(
             "main.py", audio_repr="raw", cv_mode="within", cv_held_out_id=-1,
             objective="classify_audio", training_date="clf_audio_raw_within")),
+        ("train  spectra contrastive lso", build_command(
+            "main.py", audio_repr="raw", eeg_repr="spectra", cv_mode="leave_song_out",
+            cv_held_out_id=36, training_date="spectra_raw_lso_song36")),
     ]
     for label, cmd in samples:
         print(f"\n# {label}\n{format_cmdline(cmd)}")

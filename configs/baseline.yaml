@@ -26,6 +26,15 @@ clap_proj_hidden_dim: 256
 # The CLAP runs in docs/AUDIT_FINDINGS.md all used this bundled default.
 clap_pretrained: ""
 
+# EEG representation switch (the EEG-side mirror of audio_repr).
+#   "raw"     -> SampleCNN2DEEG on the raw EEG window (Akama et al. baseline).
+#   "spectra" -> SpectraEEG: the same time-domain CNN PLUS a band-power
+#                (delta/theta/alpha/beta) frequency branch, fused to the same
+#                100-d embedding. See src/models/spectra_eeg.py. The output width and
+#                everything downstream (loss, metric, audio side, splits) are unchanged,
+#                so the raw-vs-spectra comparison stays apples-to-apples.
+eeg_repr: "raw"
+
 # Training objective switch (diagnostic axis, in the spirit of audio_repr).
 #   "contrastive"    -> the Akama baseline: CLIP/InfoNCE EEG<->audio loss + the
 #                       pairwise evaluation metric. DEFAULT; reproduces upstream.

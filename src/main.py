@@ -38,7 +38,7 @@ from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import TensorBoardLogger
 from audiomentations import AddGaussianNoise, Gain
 from datasets import get_dataset
-from models import SampleCNN2DEEG, CLAPEncoder  # CHANGED(baseline): added CLAPEncoder
+from models import SampleCNN2DEEG, CLAPEncoder, SpectraEEG  # CHANGED(baseline): added CLAPEncoder, SpectraEEG
 from modules import EEGContrastiveLearning, SupervisedClassification  # CHANGED(baseline): added SupervisedClassification (#1/#2)
 from utils import yaml_config_hook, get_logger, file_writer, paths  # CHANGED(baseline): added paths
 from preprocessing import eeg_data_processing
@@ -265,10 +265,24 @@ if __name__ == "__main__":
     print(f"Size of test dataset: {len(test_dataset)}")
 
     if args.dataset == "preprocessing_eegmusic":
-        encoder_eeg = SampleCNN2DEEG(
-            out_dim=train_dataset.labels(),
-            kernal_size=3,
-        )
+        # CHANGED(baseline): start — eeg_repr switch (frequency-aware EEG front-end).
+        #                    Default "raw" builds the upstream SampleCNN2DEEG unchanged;
+        #                    "spectra" swaps in SpectraEEG (raw 2D-CNN + band-power branch),
+        #                    same 100-d output so the loss / metric / audio side stay untouched.
+        if getattr(args, "eeg_repr", "raw") == "spectra":
+            encoder_eeg = SpectraEEG(
+                out_dim=train_dataset.labels(),
+                kernal_size=3,
+                eeg_sample_rate=args.eeg_sample_rate,
+            )
+            print("[eeg] SpectraEEG (raw 2D-CNN + band-power frequency branch)")
+        else:
+            encoder_eeg = SampleCNN2DEEG(
+                out_dim=train_dataset.labels(),
+                kernal_size=3,
+            )
+            print("[eeg] SampleCNN2DEEG (raw EEG, Akama baseline)")
+        # CHANGED(baseline): end — eeg_repr switch
 
         # CHANGED(baseline): start — audio_repr switch. Upstream built 4 independent SampleCNN2DEEG
         #                    encoders unconditionally (that is exactly the `else` branch below).
