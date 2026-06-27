@@ -1,0 +1,2533 @@
+nohup: ignoring input
+[env] Thu Jun 25 07:41:54 PM CEST 2026 env=eeg_attention CUDA_VISIBLE_DEVICES=0 SHARD=0/1
+[env] torch=2.2.2+cu121 cuda=True dev=NVIDIA L40S
+[resume] folds already done: 60
+  skip(done): classify_eeg|raw|raw|within|-1
+  skip(done): classify_eeg|raw|spectra|within|-1
+  skip(done): contrastive|raw|raw|within|-1
+  skip(done): contrastive|raw|spectra|within|-1
+  skip(done): classify_eeg|raw|raw|leave_song_out|2
+  skip(done): classify_eeg|raw|spectra|leave_song_out|2
+  skip(done): contrastive|raw|raw|leave_song_out|2
+  skip(done): contrastive|raw|spectra|leave_song_out|2
+  skip(done): classify_eeg|raw|raw|leave_song_out|7
+  skip(done): classify_eeg|raw|spectra|leave_song_out|7
+  skip(done): contrastive|raw|raw|leave_song_out|7
+  skip(done): contrastive|raw|spectra|leave_song_out|7
+  skip(done): classify_eeg|raw|raw|leave_song_out|44
+  skip(done): classify_eeg|raw|spectra|leave_song_out|44
+  skip(done): contrastive|raw|raw|leave_song_out|44
+  skip(done): contrastive|raw|spectra|leave_song_out|44
+  skip(done): classify_eeg|raw|raw|leave_song_out|8
+  skip(done): classify_eeg|raw|spectra|leave_song_out|8
+  skip(done): contrastive|raw|raw|leave_song_out|8
+
+===== [19:41] spectra_ct_raw_lso_song8  (contrastive|raw|spectra|leave_song_out|8)  elapsed 0m =====
+  TRAIN
+/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_fabric/__init__.py:29: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  __import__("pkg_resources").declare_namespace(__name__)
+[paths] host=edu02 host_profile_keys=[] cpu=128 cpu_effective=8
+[paths] dataset_dir=../dataset
+[paths] log_dir=../results
+[paths] workers=7
+[rank: 0] Global seed set to 42
+no augmentation
+[cv] mode=leave_song_out held_out_id=8
+Size of train dataset: 3410
+Size of valid dataset: 1100
+Size of test dataset: 104
+[eeg] SpectraEEG (raw 2D-CNN + band-power frequency branch)
+[audio] SampleCNN2DEEG (4 independent encoders, Akama baseline)
+EEG Contrastive learning
+use CLIP_loss as criterion
+[paths] tty=False (progress bar off, epoch summaries instead)
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+[[[ START ]]] 2026-06-25 19:42:37.395139
+You are using a CUDA device ('NVIDIA L40S') that has Tensor Cores. To properly utilize them, you should set `torch.set_float32_matmul_precision('medium' | 'high')` which will trade-off precision for performance. For more details, read https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+
+  | Name           | Type           | Params
+--------------------------------------------------
+0 | encoder_raw_e  | SpectraEEG     | 153 K 
+1 | encoder_vocal  | SampleCNN2DEEG | 116 K 
+2 | encoder_drum   | SampleCNN2DEEG | 116 K 
+3 | encoder_bass   | SampleCNN2DEEG | 116 K 
+4 | encoder_others | SampleCNN2DEEG | 116 K 
+5 | criterion      | CLIP_Loss      | 0     
+--------------------------------------------------
+617 K     Trainable params
+0         Non-trainable params
+617 K     Total params
+2.472     Total estimated model params size (MB)
+SLURM auto-requeueing enabled. Setting signal handlers.
+[epoch    0] train_loss=n/a val_loss=3.5609
+2026-06-25 19:42:39,673 - dataloader_debug - INFO - --- Valid Epoch 0 Summary ---
+  Total samples: 16
+  High attention samples: 16
+  Task distribution: [16, 0, 0, 0]
+  Global Accuracy (All): 0.0000
+  Global Accuracy (Att): 0.0000
+----------------------------------------
+[epoch    0] train_loss=2.1391 val_loss=3.0132
+2026-06-25 19:48:23,346 - dataloader_debug - INFO - --- Valid Epoch 0 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 165, 117, 165]
+  Global Accuracy (All): 0.4717
+  Global Accuracy (Att): 0.5516
+----------------------------------------
+Metric Valid/loss improved. New best score: 3.013
+2026-06-25 19:48:23,668 - dataloader_debug - INFO - --- Train Epoch 0 Summary ---
+  Total samples: 3408
+  High attention samples: 2463
+  Batches w/o high attention: 0
+  Task distribution: [1628, 614, 737, 429]
+  Batches skipping tasks: [3, 80, 66, 145]
+---------------------------------------
+[epoch    1] train_loss=1.6694 val_loss=2.9058
+2026-06-25 19:54:07,521 - dataloader_debug - INFO - --- Valid Epoch 1 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 165, 117, 165]
+  Global Accuracy (All): 0.5155
+  Global Accuracy (Att): 0.6069
+----------------------------------------
+Metric Valid/loss improved by 0.107 >= min_delta = 0.0. New best score: 2.906
+2026-06-25 19:54:07,588 - dataloader_debug - INFO - --- Train Epoch 1 Summary ---
+  Total samples: 3408
+  High attention samples: 2462
+  Batches w/o high attention: 0
+  Task distribution: [1627, 615, 737, 429]
+  Batches skipping tasks: [0, 85, 54, 149]
+---------------------------------------
+[epoch    2] train_loss=2.6572 val_loss=2.9098
+2026-06-25 19:59:51,676 - dataloader_debug - INFO - --- Valid Epoch 2 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 165, 117, 165]
+  Global Accuracy (All): 0.4243
+  Global Accuracy (Att): 0.4287
+----------------------------------------
+2026-06-25 19:59:51,690 - dataloader_debug - INFO - --- Train Epoch 2 Summary ---
+  Total samples: 3408
+  High attention samples: 2463
+  Batches w/o high attention: 0
+  Task distribution: [1628, 615, 736, 429]
+  Batches skipping tasks: [0, 79, 63, 139]
+---------------------------------------
+[epoch    3] train_loss=1.8232 val_loss=2.9332
+2026-06-25 20:05:35,653 - dataloader_debug - INFO - --- Valid Epoch 3 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 165, 117, 165]
+  Global Accuracy (All): 0.5000
+  Global Accuracy (Att): 0.5749
+----------------------------------------
+2026-06-25 20:05:35,666 - dataloader_debug - INFO - --- Train Epoch 3 Summary ---
+  Total samples: 3408
+  High attention samples: 2462
+  Batches w/o high attention: 0
+  Task distribution: [1626, 616, 737, 429]
+  Batches skipping tasks: [1, 81, 66, 145]
+---------------------------------------
+[epoch    4] train_loss=1.2951 val_loss=2.8931
+2026-06-25 20:11:19,526 - dataloader_debug - INFO - --- Valid Epoch 4 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 165, 117, 165]
+  Global Accuracy (All): 0.5265
+  Global Accuracy (Att): 0.5762
+----------------------------------------
+Metric Valid/loss improved by 0.013 >= min_delta = 0.0. New best score: 2.893
+2026-06-25 20:11:19,612 - dataloader_debug - INFO - --- Train Epoch 4 Summary ---
+  Total samples: 3408
+  High attention samples: 2462
+  Batches w/o high attention: 0
+  Task distribution: [1627, 616, 737, 428]
+  Batches skipping tasks: [6, 99, 62, 144]
+---------------------------------------
+[epoch    5] train_loss=1.3569 val_loss=2.7745
+2026-06-25 20:17:03,506 - dataloader_debug - INFO - --- Valid Epoch 5 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 165, 117, 165]
+  Global Accuracy (All): 0.6542
+  Global Accuracy (Att): 0.7666
+----------------------------------------
+Metric Valid/loss improved by 0.119 >= min_delta = 0.0. New best score: 2.774
+2026-06-25 20:17:03,582 - dataloader_debug - INFO - --- Train Epoch 5 Summary ---
+  Total samples: 3408
+  High attention samples: 2463
+  Batches w/o high attention: 0
+  Task distribution: [1628, 615, 736, 429]
+  Batches skipping tasks: [3, 91, 54, 144]
+---------------------------------------
+[epoch    6] train_loss=1.4631 val_loss=2.7794
+2026-06-25 20:22:47,624 - dataloader_debug - INFO - --- Valid Epoch 6 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 165, 117, 165]
+  Global Accuracy (All): 0.6049
+  Global Accuracy (Att): 0.7297
+----------------------------------------
+2026-06-25 20:22:47,667 - dataloader_debug - INFO - --- Train Epoch 6 Summary ---
+  Total samples: 3408
+  High attention samples: 2463
+  Batches w/o high attention: 0
+  Task distribution: [1627, 616, 736, 429]
+  Batches skipping tasks: [2, 89, 59, 140]
+---------------------------------------
+[epoch    7] train_loss=1.3516 val_loss=2.9007
+2026-06-25 20:28:31,725 - dataloader_debug - INFO - --- Valid Epoch 7 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 165, 117, 165]
+  Global Accuracy (All): 0.4626
+  Global Accuracy (Att): 0.5012
+----------------------------------------
+2026-06-25 20:28:31,740 - dataloader_debug - INFO - --- Train Epoch 7 Summary ---
+  Total samples: 3408
+  High attention samples: 2463
+  Batches w/o high attention: 0
+  Task distribution: [1628, 614, 737, 429]
+  Batches skipping tasks: [4, 81, 67, 155]
+---------------------------------------
+[epoch    8] train_loss=1.0110 val_loss=3.1176
+2026-06-25 20:34:15,734 - dataloader_debug - INFO - --- Valid Epoch 8 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 165, 117, 165]
+  Global Accuracy (All): 0.3969
+  Global Accuracy (Att): 0.3686
+----------------------------------------
+2026-06-25 20:34:15,747 - dataloader_debug - INFO - --- Train Epoch 8 Summary ---
+  Total samples: 3408
+  High attention samples: 2463
+  Batches w/o high attention: 0
+  Task distribution: [1626, 616, 737, 429]
+  Batches skipping tasks: [2, 93, 63, 143]
+---------------------------------------
+[epoch    9] train_loss=2.1044 val_loss=2.7628
+2026-06-25 20:39:59,704 - dataloader_debug - INFO - --- Valid Epoch 9 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 165, 117, 165]
+  Global Accuracy (All): 0.5885
+  Global Accuracy (Att): 0.6130
+----------------------------------------
+Metric Valid/loss improved by 0.012 >= min_delta = 0.0. New best score: 2.763
+2026-06-25 20:39:59,781 - dataloader_debug - INFO - --- Train Epoch 9 Summary ---
+  Total samples: 3408
+  High attention samples: 2463
+  Batches w/o high attention: 0
+  Task distribution: [1627, 615, 737, 429]
+  Batches skipping tasks: [1, 88, 64, 146]
+---------------------------------------
+[epoch   10] train_loss=1.3643 val_loss=3.5153
+2026-06-25 20:45:43,895 - dataloader_debug - INFO - --- Valid Epoch 10 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 165, 117, 165]
+  Global Accuracy (All): 0.2591
+  Global Accuracy (Att): 0.1548
+----------------------------------------
+2026-06-25 20:45:43,908 - dataloader_debug - INFO - --- Train Epoch 10 Summary ---
+  Total samples: 3408
+  High attention samples: 2464
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 735, 429]
+  Batches skipping tasks: [2, 81, 58, 148]
+---------------------------------------
+[epoch   11] train_loss=1.5004 val_loss=2.7583
+2026-06-25 20:51:28,075 - dataloader_debug - INFO - --- Valid Epoch 11 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 165, 117, 165]
+  Global Accuracy (All): 0.6131
+  Global Accuracy (Att): 0.6499
+----------------------------------------
+Metric Valid/loss improved by 0.005 >= min_delta = 0.0. New best score: 2.758
+2026-06-25 20:51:28,136 - dataloader_debug - INFO - --- Train Epoch 11 Summary ---
+  Total samples: 3408
+  High attention samples: 2462
+  Batches w/o high attention: 0
+  Task distribution: [1626, 616, 737, 429]
+  Batches skipping tasks: [2, 83, 58, 142]
+---------------------------------------
+[epoch   12] train_loss=2.0290 val_loss=2.8927
+2026-06-25 20:57:12,818 - dataloader_debug - INFO - --- Valid Epoch 12 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 165, 117, 165]
+  Global Accuracy (All): 0.6095
+  Global Accuracy (Att): 0.6708
+----------------------------------------
+2026-06-25 20:57:12,831 - dataloader_debug - INFO - --- Train Epoch 12 Summary ---
+  Total samples: 3408
+  High attention samples: 2463
+  Batches w/o high attention: 0
+  Task distribution: [1628, 614, 737, 429]
+  Batches skipping tasks: [3, 97, 51, 152]
+---------------------------------------
+bypassing sigterm
+Traceback (most recent call last):
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/call.py", line 38, in _call_and_handle_interrupt
+    return trainer_fn(*args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 650, in _fit_impl
+    self._run(model, ckpt_path=self.ckpt_path)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 1112, in _run
+    results = self._run_stage()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 1191, in _run_stage
+    self._run_train()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 1214, in _run_train
+    self.fit_loop.run()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/loop.py", line 199, in run
+    self.advance(*args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/fit_loop.py", line 267, in advance
+    self._outputs = self.epoch_loop.run(self._data_fetcher)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/loop.py", line 199, in run
+    self.advance(*args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/epoch/training_epoch_loop.py", line 213, in advance
+    batch_output = self.batch_loop.run(kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/loop.py", line 199, in run
+    self.advance(*args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/batch/training_batch_loop.py", line 88, in advance
+    outputs = self.optimizer_loop.run(optimizers, kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/loop.py", line 199, in run
+    self.advance(*args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/optimization/optimizer_loop.py", line 202, in advance
+    result = self._run_optimization(kwargs, self._optimizers[self.optim_progress.optimizer_position])
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/optimization/optimizer_loop.py", line 241, in _run_optimization
+    closure()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/optimization/optimizer_loop.py", line 149, in __call__
+    self._result = self.closure(*args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/optimization/optimizer_loop.py", line 135, in closure
+    step_output = self._step_fn()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/optimization/optimizer_loop.py", line 419, in _training_step
+    training_step_output = self.trainer._call_strategy_hook("training_step", *kwargs.values())
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 1494, in _call_strategy_hook
+    output = fn(*args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/strategies/strategy.py", line 378, in training_step
+    return self.model.training_step(*args, **kwargs)
+  File "/home/andrea.giampietro/EEG-Attention-decoding-with-CLAP/src/modules/contrastive_learning.py", line 101, in training_step
+    similarity_dict = self.criterion(
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1511, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1520, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/andrea.giampietro/EEG-Attention-decoding-with-CLAP/src/modules/clip_loss.py", line 40, in forward
+    losses, positive_list, negative_av,matrix_list= self.compute_task_loss(
+  File "/home/andrea.giampietro/EEG-Attention-decoding-with-CLAP/src/modules/clip_loss.py", line 114, in compute_task_loss
+    if task_mask0.sum() > 0:
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/torch/utils/data/_utils/signal_handling.py", line 66, in handler
+    _error_if_any_worker_fails()
+RuntimeError: DataLoader worker (pid 3744859) is killed by signal: Terminated. 
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/andrea.giampietro/EEG-Attention-decoding-with-CLAP/src/main.py", line 412, in <module>
+    trainer.fit(module, train_dataloaders=train_loader, val_dataloaders=valid_loader)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 608, in fit
+    call._call_and_handle_interrupt(
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/call.py", line 63, in _call_and_handle_interrupt
+    trainer._teardown()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 1175, in _teardown
+    self.strategy.teardown()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/strategies/strategy.py", line 499, in teardown
+    self.accelerator.teardown()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/accelerators/cuda.py", line 75, in teardown
+    _clear_cuda_memory()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_fabric/accelerators/cuda.py", line 366, in _clear_cuda_memory
+    torch.cuda.empty_cache()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/torch/cuda/memory.py", line 162, in empty_cache
+    torch._C._cuda_emptyCache()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/torch/utils/data/_utils/signal_handling.py", line 66, in handler
+    _error_if_any_worker_fails()
+RuntimeError: DataLoader worker (pid 3743674) is killed by signal: Terminated. 
+  TEST
+/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_fabric/__init__.py:29: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  __import__("pkg_resources").declare_namespace(__name__)
+[paths] host=edu02 host_profile_keys=[] cpu=128 cpu_effective=8
+[paths] dataset_dir=../dataset
+[paths] log_dir=../results
+[paths] workers=7
+[rank: 0] Global seed set to 42
+no augmentation
+[cv] mode=leave_song_out held_out_id=8
+Size of train dataset: 3410
+Size of valid dataset: 1100
+Size of test dataset: 104
+[eeg] SpectraEEG (raw 2D-CNN + band-power frequency branch)
+[audio] SampleCNN2DEEG (4 independent encoders, Akama baseline)
+EEG Contrastive learning
+use CLIP_loss as criterion
+[paths] tty=False (progress bar off)
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+Auto-discovered checkpoint: ../results/spectra_ct_raw_lso_song8/nmed-CL-preprocessing_eegmusic/version_1/checkpoints/best-checkpoint.ckpt
+[[[ START ]]] 2026-06-25 21:02:39.408679
+[load] checkpoint state_dict matched the model exactly
+You are using a CUDA device ('NVIDIA L40S') that has Tensor Cores. To properly utilize them, you should set `torch.set_float32_matmul_precision('medium' | 'high')` which will trade-off precision for performance. For more details, read https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+
+========== TEST RESULTS ==========
+Global Accuracy (All data):        0.3558
+Global Accuracy (High attention):  0.3516
+Per-task acc (All):    [nan, nan, nan, 0.35576921701431274]
+Per-task acc (Att):    [nan, nan, nan, 0.35164836049079895]
+Pairwise matrix 4x4 (All):
+tensor([[   nan,    nan,    nan,    nan],
+        [   nan,    nan,    nan,    nan],
+        [   nan,    nan,    nan,    nan],
+        [0.5385, 0.7981, 0.7692,    nan]])
+Pairwise matrix 4x4 (Att):
+tensor([[   nan,    nan,    nan,    nan],
+        [   nan,    nan,    nan,    nan],
+        [   nan,    nan,    nan,    nan],
+        [0.5604, 0.8022, 0.7582,    nan]])
+==================================
+== Test breakdown (shuffle_test_mode=none) ==
+n_windows total: 104
+n_windows high-attention: 91
+global accuracy (records, all): 0.3558
+global accuracy (records, attn): 0.3516
+global margin mean (all): -0.4611
+global margin mean (attn): -0.4052
+Figures saved to: ../results/spectra_ct_raw_lso_song8/nmed-CL-preprocessing_eegmusic/version_2
+[[[ FINISH ]]] 2026-06-25 21:02:46.112917
+  skip(done): classify_eeg|raw|raw|leave_song_out|3
+
+===== [21:02] spectra_clf_eeg_lso_song3  (classify_eeg|raw|spectra|leave_song_out|3)  elapsed 80m =====
+  TRAIN
+/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_fabric/__init__.py:29: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  __import__("pkg_resources").declare_namespace(__name__)
+[paths] host=edu02 host_profile_keys=[] cpu=128 cpu_effective=8
+[paths] dataset_dir=../dataset
+[paths] log_dir=../results
+[paths] workers=7
+[rank: 0] Global seed set to 42
+no augmentation
+[cv] mode=leave_song_out held_out_id=3
+Size of train dataset: 3410
+Size of valid dataset: 1133
+Size of test dataset: 104
+[eeg] SpectraEEG (raw 2D-CNN + band-power frequency branch)
+[audio] SampleCNN2DEEG (4 independent encoders, Akama baseline)
+Supervised classification (objective=classify_eeg, modality=eeg)
+[paths] tty=False (progress bar off, epoch summaries instead)
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+[[[ START ]]] 2026-06-25 21:03:08.587188
+You are using a CUDA device ('NVIDIA L40S') that has Tensor Cores. To properly utilize them, you should set `torch.set_float32_matmul_precision('medium' | 'high')` which will trade-off precision for performance. For more details, read https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
+Missing logger folder: ../results/spectra_clf_eeg_lso_song3/nmed-CL-preprocessing_eegmusic
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+
+  | Name        | Type             | Params
+-------------------------------------------------
+0 | encoder_eeg | SpectraEEG       | 153 K 
+1 | classifier  | Linear           | 404   
+2 | criterion   | CrossEntropyLoss | 0     
+-------------------------------------------------
+153 K     Trainable params
+0         Non-trainable params
+153 K     Total params
+0.615     Total estimated model params size (MB)
+SLURM auto-requeueing enabled. Setting signal handlers.
+[epoch    0] train_loss=n/a val_loss=1.2995
+2026-06-25 21:03:10,333 - dataloader_debug - INFO - --- Valid Epoch 0: acc=0.0000 n=16 (chance=0.25) ---
+[epoch    0] train_loss=1.2845 val_loss=1.2589
+2026-06-25 21:03:30,934 - dataloader_debug - INFO - --- Valid Epoch 0: acc=0.5293 n=1128 (chance=0.25) ---
+Metric Valid/loss improved. New best score: 1.259
+[epoch    1] train_loss=1.2641 val_loss=1.2711
+2026-06-25 21:03:52,265 - dataloader_debug - INFO - --- Valid Epoch 1: acc=0.5629 n=1128 (chance=0.25) ---
+[epoch    2] train_loss=1.5908 val_loss=1.2713
+2026-06-25 21:04:13,140 - dataloader_debug - INFO - --- Valid Epoch 2: acc=0.5594 n=1128 (chance=0.25) ---
+[epoch    3] train_loss=1.4566 val_loss=1.3136
+2026-06-25 21:04:33,361 - dataloader_debug - INFO - --- Valid Epoch 3: acc=0.4530 n=1128 (chance=0.25) ---
+[epoch    4] train_loss=0.9695 val_loss=1.2799
+2026-06-25 21:04:54,119 - dataloader_debug - INFO - --- Valid Epoch 4: acc=0.5621 n=1128 (chance=0.25) ---
+[epoch    5] train_loss=1.0518 val_loss=1.2999
+2026-06-25 21:05:14,223 - dataloader_debug - INFO - --- Valid Epoch 5: acc=0.5248 n=1128 (chance=0.25) ---
+[epoch    6] train_loss=0.8631 val_loss=1.3582
+2026-06-25 21:05:34,624 - dataloader_debug - INFO - --- Valid Epoch 6: acc=0.5585 n=1128 (chance=0.25) ---
+[epoch    7] train_loss=0.8294 val_loss=1.3687
+2026-06-25 21:05:55,003 - dataloader_debug - INFO - --- Valid Epoch 7: acc=0.5009 n=1128 (chance=0.25) ---
+[epoch    8] train_loss=1.1630 val_loss=1.3505
+2026-06-25 21:06:15,383 - dataloader_debug - INFO - --- Valid Epoch 8: acc=0.5204 n=1128 (chance=0.25) ---
+[epoch    9] train_loss=1.4324 val_loss=1.3829
+2026-06-25 21:06:35,958 - dataloader_debug - INFO - --- Valid Epoch 9: acc=0.4823 n=1128 (chance=0.25) ---
+[epoch   10] train_loss=1.1816 val_loss=1.3657
+2026-06-25 21:06:57,040 - dataloader_debug - INFO - --- Valid Epoch 10: acc=0.4681 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 10 records. Best score: 1.259. Signaling Trainer to stop.
+Trainer was signaled to stop but the required `min_epochs=50` or `min_steps=None` has not been met. Training will continue...
+[epoch   11] train_loss=1.2220 val_loss=1.3114
+2026-06-25 21:07:18,212 - dataloader_debug - INFO - --- Valid Epoch 11: acc=0.5204 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 11 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   12] train_loss=1.1800 val_loss=1.3110
+2026-06-25 21:07:39,209 - dataloader_debug - INFO - --- Valid Epoch 12: acc=0.5470 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 12 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   13] train_loss=1.0044 val_loss=1.3687
+2026-06-25 21:07:59,996 - dataloader_debug - INFO - --- Valid Epoch 13: acc=0.4450 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 13 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   14] train_loss=1.2807 val_loss=1.3299
+2026-06-25 21:08:20,948 - dataloader_debug - INFO - --- Valid Epoch 14: acc=0.4911 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 14 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   15] train_loss=1.0577 val_loss=1.3325
+2026-06-25 21:08:42,055 - dataloader_debug - INFO - --- Valid Epoch 15: acc=0.5301 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 15 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   16] train_loss=1.7329 val_loss=1.4131
+2026-06-25 21:09:02,817 - dataloader_debug - INFO - --- Valid Epoch 16: acc=0.4344 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 16 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   17] train_loss=1.2277 val_loss=1.3524
+2026-06-25 21:09:23,963 - dataloader_debug - INFO - --- Valid Epoch 17: acc=0.4911 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 17 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   18] train_loss=1.0083 val_loss=1.4451
+2026-06-25 21:09:44,607 - dataloader_debug - INFO - --- Valid Epoch 18: acc=0.3466 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 18 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   19] train_loss=1.4294 val_loss=1.4067
+2026-06-25 21:10:05,784 - dataloader_debug - INFO - --- Valid Epoch 19: acc=0.4122 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 19 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   20] train_loss=1.1380 val_loss=1.5437
+2026-06-25 21:10:26,950 - dataloader_debug - INFO - --- Valid Epoch 20: acc=0.4362 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 20 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   21] train_loss=1.1320 val_loss=1.3865
+2026-06-25 21:10:48,092 - dataloader_debug - INFO - --- Valid Epoch 21: acc=0.4007 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 21 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   22] train_loss=1.1398 val_loss=1.3663
+2026-06-25 21:11:08,934 - dataloader_debug - INFO - --- Valid Epoch 22: acc=0.4069 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 22 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   23] train_loss=0.9373 val_loss=1.3844
+2026-06-25 21:11:29,166 - dataloader_debug - INFO - --- Valid Epoch 23: acc=0.3980 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 23 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   24] train_loss=0.8698 val_loss=1.3669
+2026-06-25 21:11:50,334 - dataloader_debug - INFO - --- Valid Epoch 24: acc=0.4362 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 24 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   25] train_loss=1.1060 val_loss=1.4410
+2026-06-25 21:12:10,642 - dataloader_debug - INFO - --- Valid Epoch 25: acc=0.4282 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 25 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   26] train_loss=0.8635 val_loss=1.4480
+2026-06-25 21:12:31,920 - dataloader_debug - INFO - --- Valid Epoch 26: acc=0.4743 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 26 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   27] train_loss=1.0666 val_loss=1.7150
+2026-06-25 21:12:52,871 - dataloader_debug - INFO - --- Valid Epoch 27: acc=0.2305 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 27 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   28] train_loss=1.6977 val_loss=1.5719
+2026-06-25 21:13:14,239 - dataloader_debug - INFO - --- Valid Epoch 28: acc=0.4459 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 28 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   29] train_loss=0.7240 val_loss=1.5999
+2026-06-25 21:13:35,054 - dataloader_debug - INFO - --- Valid Epoch 29: acc=0.3945 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 29 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   30] train_loss=0.4562 val_loss=1.5674
+2026-06-25 21:13:56,046 - dataloader_debug - INFO - --- Valid Epoch 30: acc=0.3369 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 30 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   31] train_loss=0.6716 val_loss=1.4921
+2026-06-25 21:14:17,067 - dataloader_debug - INFO - --- Valid Epoch 31: acc=0.4034 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 31 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   32] train_loss=0.9988 val_loss=1.4316
+2026-06-25 21:14:37,843 - dataloader_debug - INFO - --- Valid Epoch 32: acc=0.4823 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 32 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   33] train_loss=1.3324 val_loss=1.4848
+2026-06-25 21:14:58,874 - dataloader_debug - INFO - --- Valid Epoch 33: acc=0.4034 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 33 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   34] train_loss=0.7703 val_loss=1.5531
+2026-06-25 21:15:19,667 - dataloader_debug - INFO - --- Valid Epoch 34: acc=0.3502 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 34 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   35] train_loss=0.8848 val_loss=1.6101
+2026-06-25 21:15:40,428 - dataloader_debug - INFO - --- Valid Epoch 35: acc=0.3165 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 35 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   36] train_loss=0.7601 val_loss=1.4311
+2026-06-25 21:16:02,007 - dataloader_debug - INFO - --- Valid Epoch 36: acc=0.4787 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 36 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   37] train_loss=0.9412 val_loss=1.5103
+2026-06-25 21:16:23,328 - dataloader_debug - INFO - --- Valid Epoch 37: acc=0.3484 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 37 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   38] train_loss=1.2842 val_loss=1.6741
+2026-06-25 21:16:44,307 - dataloader_debug - INFO - --- Valid Epoch 38: acc=0.3475 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 38 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   39] train_loss=1.3566 val_loss=2.5842
+2026-06-25 21:17:04,961 - dataloader_debug - INFO - --- Valid Epoch 39: acc=0.3652 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 39 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   40] train_loss=0.7590 val_loss=2.0520
+2026-06-25 21:17:25,381 - dataloader_debug - INFO - --- Valid Epoch 40: acc=0.2225 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 40 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   41] train_loss=1.1334 val_loss=1.6365
+2026-06-25 21:17:46,128 - dataloader_debug - INFO - --- Valid Epoch 41: acc=0.4450 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 41 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   42] train_loss=0.8178 val_loss=1.9451
+2026-06-25 21:18:06,857 - dataloader_debug - INFO - --- Valid Epoch 42: acc=0.4787 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 42 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   43] train_loss=0.9930 val_loss=2.2459
+2026-06-25 21:18:28,115 - dataloader_debug - INFO - --- Valid Epoch 43: acc=0.1427 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 43 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   44] train_loss=0.6097 val_loss=2.0141
+2026-06-25 21:18:50,003 - dataloader_debug - INFO - --- Valid Epoch 44: acc=0.3103 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 44 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   45] train_loss=1.0388 val_loss=1.9629
+2026-06-25 21:19:11,667 - dataloader_debug - INFO - --- Valid Epoch 45: acc=0.3067 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 45 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   46] train_loss=1.1181 val_loss=1.8528
+2026-06-25 21:19:32,445 - dataloader_debug - INFO - --- Valid Epoch 46: acc=0.3209 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 46 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   47] train_loss=0.8084 val_loss=3.0143
+2026-06-25 21:19:53,641 - dataloader_debug - INFO - --- Valid Epoch 47: acc=0.1702 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 47 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   48] train_loss=0.8948 val_loss=1.7923
+2026-06-25 21:20:15,199 - dataloader_debug - INFO - --- Valid Epoch 48: acc=0.3537 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 48 records. Best score: 1.259. Signaling Trainer to stop.
+[epoch   49] train_loss=0.3586 val_loss=2.0510
+2026-06-25 21:20:35,923 - dataloader_debug - INFO - --- Valid Epoch 49: acc=0.4264 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 49 records. Best score: 1.259. Signaling Trainer to stop.
+[[[ FINISH ]]] 2026-06-25 21:20:36.029457
+  TEST
+/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_fabric/__init__.py:29: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  __import__("pkg_resources").declare_namespace(__name__)
+[paths] host=edu02 host_profile_keys=[] cpu=128 cpu_effective=8
+[paths] dataset_dir=../dataset
+[paths] log_dir=../results
+[paths] workers=7
+[rank: 0] Global seed set to 42
+no augmentation
+[cv] mode=leave_song_out held_out_id=3
+Size of train dataset: 3410
+Size of valid dataset: 1133
+Size of test dataset: 104
+[eeg] SpectraEEG (raw 2D-CNN + band-power frequency branch)
+[audio] SampleCNN2DEEG (4 independent encoders, Akama baseline)
+Supervised classification (objective=classify_eeg, modality=eeg)
+[paths] tty=False (progress bar off)
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+Auto-discovered checkpoint: ../results/spectra_clf_eeg_lso_song3/nmed-CL-preprocessing_eegmusic/version_0/checkpoints/best-checkpoint.ckpt
+[[[ START ]]] 2026-06-25 21:21:15.381086
+[load] checkpoint state_dict matched the model exactly
+You are using a CUDA device ('NVIDIA L40S') that has Tensor Cores. To properly utilize them, you should set `torch.set_float32_matmul_precision('medium' | 'high')` which will trade-off precision for performance. For more details, read https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+
+===== SUPERVISED TEST RESULTS =====
+objective: classify_eeg  |  chance = 0.25
+Global accuracy (all data):        0.8462
+Global accuracy (high attention):  0.8462
+Per-class accuracy (all):          [0.8462, nan, nan, nan]
+===================================
+== Supervised test (objective=classify_eeg) ==
+chance: 0.2500
+n_windows total: 104
+n_windows high-attention: 104
+global accuracy (records, all): 0.8462
+global accuracy (records, attn): 0.8462
+Figures saved to: ../results/spectra_clf_eeg_lso_song3/nmed-CL-preprocessing_eegmusic/version_1
+[[[ FINISH ]]] 2026-06-25 21:21:17.741353
+  skip(done): contrastive|raw|raw|leave_song_out|3
+
+===== [21:21] spectra_ct_raw_lso_song3  (contrastive|raw|spectra|leave_song_out|3)  elapsed 99m =====
+  TRAIN
+/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_fabric/__init__.py:29: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  __import__("pkg_resources").declare_namespace(__name__)
+[paths] host=edu02 host_profile_keys=[] cpu=128 cpu_effective=8
+[paths] dataset_dir=../dataset
+[paths] log_dir=../results
+[paths] workers=7
+[rank: 0] Global seed set to 42
+no augmentation
+[cv] mode=leave_song_out held_out_id=3
+Size of train dataset: 3410
+Size of valid dataset: 1133
+Size of test dataset: 104
+[eeg] SpectraEEG (raw 2D-CNN + band-power frequency branch)
+[audio] SampleCNN2DEEG (4 independent encoders, Akama baseline)
+EEG Contrastive learning
+use CLIP_loss as criterion
+[paths] tty=False (progress bar off, epoch summaries instead)
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+[[[ START ]]] 2026-06-25 21:21:41.835307
+You are using a CUDA device ('NVIDIA L40S') that has Tensor Cores. To properly utilize them, you should set `torch.set_float32_matmul_precision('medium' | 'high')` which will trade-off precision for performance. For more details, read https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
+Missing logger folder: ../results/spectra_ct_raw_lso_song3/nmed-CL-preprocessing_eegmusic
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+
+  | Name           | Type           | Params
+--------------------------------------------------
+0 | encoder_raw_e  | SpectraEEG     | 153 K 
+1 | encoder_vocal  | SampleCNN2DEEG | 116 K 
+2 | encoder_drum   | SampleCNN2DEEG | 116 K 
+3 | encoder_bass   | SampleCNN2DEEG | 116 K 
+4 | encoder_others | SampleCNN2DEEG | 116 K 
+5 | criterion      | CLIP_Loss      | 0     
+--------------------------------------------------
+617 K     Trainable params
+0         Non-trainable params
+617 K     Total params
+2.472     Total estimated model params size (MB)
+SLURM auto-requeueing enabled. Setting signal handlers.
+[epoch    0] train_loss=n/a val_loss=3.5609
+2026-06-25 21:21:43,679 - dataloader_debug - INFO - --- Valid Epoch 0 Summary ---
+  Total samples: 16
+  High attention samples: 16
+  Task distribution: [16, 0, 0, 0]
+  Global Accuracy (All): 0.0000
+  Global Accuracy (Att): 0.0000
+----------------------------------------
+[epoch    0] train_loss=3.1489 val_loss=3.0131
+2026-06-25 21:27:28,436 - dataloader_debug - INFO - --- Valid Epoch 0 Summary ---
+  Total samples: 1128
+  High attention samples: 847
+  Task distribution: [638, 165, 116, 209]
+  Global Accuracy (All): 0.4770
+  Global Accuracy (Att): 0.5325
+----------------------------------------
+Metric Valid/loss improved. New best score: 3.013
+2026-06-25 21:27:28,755 - dataloader_debug - INFO - --- Train Epoch 0 Summary ---
+  Total samples: 3408
+  High attention samples: 2451
+  Batches w/o high attention: 0
+  Task distribution: [1583, 615, 737, 473]
+  Batches skipping tasks: [3, 91, 60, 131]
+---------------------------------------
+[epoch    1] train_loss=1.6036 val_loss=2.8976
+2026-06-25 21:33:13,579 - dataloader_debug - INFO - --- Valid Epoch 1 Summary ---
+  Total samples: 1128
+  High attention samples: 847
+  Task distribution: [638, 165, 116, 209]
+  Global Accuracy (All): 0.4894
+  Global Accuracy (Att): 0.5218
+----------------------------------------
+Metric Valid/loss improved by 0.115 >= min_delta = 0.0. New best score: 2.898
+2026-06-25 21:33:13,649 - dataloader_debug - INFO - --- Train Epoch 1 Summary ---
+  Total samples: 3408
+  High attention samples: 2451
+  Batches w/o high attention: 0
+  Task distribution: [1583, 615, 737, 473]
+  Batches skipping tasks: [3, 89, 60, 137]
+---------------------------------------
+[epoch    2] train_loss=2.0049 val_loss=2.8696
+2026-06-25 21:38:58,564 - dataloader_debug - INFO - --- Valid Epoch 2 Summary ---
+  Total samples: 1128
+  High attention samples: 847
+  Task distribution: [638, 165, 116, 209]
+  Global Accuracy (All): 0.4858
+  Global Accuracy (Att): 0.5573
+----------------------------------------
+Metric Valid/loss improved by 0.028 >= min_delta = 0.0. New best score: 2.870
+2026-06-25 21:38:58,714 - dataloader_debug - INFO - --- Train Epoch 2 Summary ---
+  Total samples: 3408
+  High attention samples: 2451
+  Batches w/o high attention: 0
+  Task distribution: [1583, 616, 736, 473]
+  Batches skipping tasks: [1, 80, 58, 122]
+---------------------------------------
+[epoch    3] train_loss=2.5795 val_loss=2.8659
+2026-06-25 21:44:43,873 - dataloader_debug - INFO - --- Valid Epoch 3 Summary ---
+  Total samples: 1128
+  High attention samples: 847
+  Task distribution: [638, 165, 116, 209]
+  Global Accuracy (All): 0.5018
+  Global Accuracy (Att): 0.5797
+----------------------------------------
+Metric Valid/loss improved by 0.004 >= min_delta = 0.0. New best score: 2.866
+2026-06-25 21:44:43,934 - dataloader_debug - INFO - --- Train Epoch 3 Summary ---
+  Total samples: 3408
+  High attention samples: 2452
+  Batches w/o high attention: 0
+  Task distribution: [1583, 616, 736, 473]
+  Batches skipping tasks: [3, 77, 61, 133]
+---------------------------------------
+[epoch    4] train_loss=1.5438 val_loss=2.7921
+2026-06-25 21:50:28,900 - dataloader_debug - INFO - --- Valid Epoch 4 Summary ---
+  Total samples: 1128
+  High attention samples: 847
+  Task distribution: [638, 165, 116, 209]
+  Global Accuracy (All): 0.5736
+  Global Accuracy (Att): 0.5785
+----------------------------------------
+Metric Valid/loss improved by 0.074 >= min_delta = 0.0. New best score: 2.792
+2026-06-25 21:50:28,962 - dataloader_debug - INFO - --- Train Epoch 4 Summary ---
+  Total samples: 3408
+  High attention samples: 2451
+  Batches w/o high attention: 0
+  Task distribution: [1582, 616, 737, 473]
+  Batches skipping tasks: [2, 91, 60, 130]
+---------------------------------------
+[epoch    5] train_loss=1.3752 val_loss=3.0594
+2026-06-25 21:56:13,902 - dataloader_debug - INFO - --- Valid Epoch 5 Summary ---
+  Total samples: 1128
+  High attention samples: 847
+  Task distribution: [638, 165, 116, 209]
+  Global Accuracy (All): 0.4335
+  Global Accuracy (Att): 0.4368
+----------------------------------------
+2026-06-25 21:56:13,913 - dataloader_debug - INFO - --- Train Epoch 5 Summary ---
+  Total samples: 3408
+  High attention samples: 2452
+  Batches w/o high attention: 0
+  Task distribution: [1584, 615, 737, 472]
+  Batches skipping tasks: [0, 92, 57, 123]
+---------------------------------------
+[epoch    6] train_loss=1.9307 val_loss=2.8253
+2026-06-25 22:01:58,984 - dataloader_debug - INFO - --- Valid Epoch 6 Summary ---
+  Total samples: 1128
+  High attention samples: 847
+  Task distribution: [638, 165, 116, 209]
+  Global Accuracy (All): 0.5505
+  Global Accuracy (Att): 0.5502
+----------------------------------------
+2026-06-25 22:01:58,997 - dataloader_debug - INFO - --- Train Epoch 6 Summary ---
+  Total samples: 3408
+  High attention samples: 2452
+  Batches w/o high attention: 0
+  Task distribution: [1583, 616, 736, 473]
+  Batches skipping tasks: [2, 82, 55, 113]
+---------------------------------------
+[epoch    7] train_loss=1.3475 val_loss=3.0174
+2026-06-25 22:07:43,882 - dataloader_debug - INFO - --- Valid Epoch 7 Summary ---
+  Total samples: 1128
+  High attention samples: 847
+  Task distribution: [638, 165, 116, 209]
+  Global Accuracy (All): 0.5780
+  Global Accuracy (Att): 0.7013
+----------------------------------------
+2026-06-25 22:07:43,902 - dataloader_debug - INFO - --- Train Epoch 7 Summary ---
+  Total samples: 3408
+  High attention samples: 2452
+  Batches w/o high attention: 0
+  Task distribution: [1584, 614, 737, 473]
+  Batches skipping tasks: [2, 89, 61, 144]
+---------------------------------------
+[epoch    8] train_loss=1.1144 val_loss=3.1940
+2026-06-25 22:13:28,880 - dataloader_debug - INFO - --- Valid Epoch 8 Summary ---
+  Total samples: 1128
+  High attention samples: 847
+  Task distribution: [638, 165, 116, 209]
+  Global Accuracy (All): 0.3980
+  Global Accuracy (Att): 0.3483
+----------------------------------------
+2026-06-25 22:13:28,894 - dataloader_debug - INFO - --- Train Epoch 8 Summary ---
+  Total samples: 3408
+  High attention samples: 2452
+  Batches w/o high attention: 0
+  Task distribution: [1582, 616, 737, 473]
+  Batches skipping tasks: [4, 96, 63, 128]
+---------------------------------------
+[epoch    9] train_loss=1.4137 val_loss=2.6876
+2026-06-25 22:19:13,892 - dataloader_debug - INFO - --- Valid Epoch 9 Summary ---
+  Total samples: 1128
+  High attention samples: 847
+  Task distribution: [638, 165, 116, 209]
+  Global Accuracy (All): 0.6649
+  Global Accuracy (Att): 0.6978
+----------------------------------------
+Metric Valid/loss improved by 0.105 >= min_delta = 0.0. New best score: 2.688
+2026-06-25 22:19:13,993 - dataloader_debug - INFO - --- Train Epoch 9 Summary ---
+  Total samples: 3408
+  High attention samples: 2452
+  Batches w/o high attention: 0
+  Task distribution: [1583, 615, 737, 473]
+  Batches skipping tasks: [1, 89, 60, 122]
+---------------------------------------
+[epoch   10] train_loss=1.6516 val_loss=3.0558
+2026-06-25 22:24:58,819 - dataloader_debug - INFO - --- Valid Epoch 10 Summary ---
+  Total samples: 1128
+  High attention samples: 847
+  Task distribution: [638, 165, 116, 209]
+  Global Accuracy (All): 0.4317
+  Global Accuracy (Att): 0.3707
+----------------------------------------
+2026-06-25 22:24:58,832 - dataloader_debug - INFO - --- Train Epoch 10 Summary ---
+  Total samples: 3408
+  High attention samples: 2452
+  Batches w/o high attention: 0
+  Task distribution: [1584, 614, 737, 473]
+  Batches skipping tasks: [5, 93, 55, 127]
+---------------------------------------
+[epoch   11] train_loss=1.7402 val_loss=2.7577
+2026-06-25 22:30:43,855 - dataloader_debug - INFO - --- Valid Epoch 11 Summary ---
+  Total samples: 1128
+  High attention samples: 847
+  Task distribution: [638, 165, 116, 209]
+  Global Accuracy (All): 0.6002
+  Global Accuracy (Att): 0.5832
+----------------------------------------
+2026-06-25 22:30:43,866 - dataloader_debug - INFO - --- Train Epoch 11 Summary ---
+  Total samples: 3408
+  High attention samples: 2451
+  Batches w/o high attention: 0
+  Task distribution: [1583, 616, 737, 472]
+  Batches skipping tasks: [0, 96, 59, 139]
+---------------------------------------
+[epoch   12] train_loss=1.1678 val_loss=2.8523
+2026-06-25 22:36:28,889 - dataloader_debug - INFO - --- Valid Epoch 12 Summary ---
+  Total samples: 1128
+  High attention samples: 847
+  Task distribution: [638, 165, 116, 209]
+  Global Accuracy (All): 0.5860
+  Global Accuracy (Att): 0.5714
+----------------------------------------
+2026-06-25 22:36:28,905 - dataloader_debug - INFO - --- Train Epoch 12 Summary ---
+  Total samples: 3408
+  High attention samples: 2452
+  Batches w/o high attention: 0
+  Task distribution: [1584, 614, 737, 473]
+  Batches skipping tasks: [4, 88, 46, 140]
+---------------------------------------
+bypassing sigterm
+Traceback (most recent call last):
+  File "/home/andrea.giampietro/EEG-Attention-decoding-with-CLAP/src/main.py", line 412, in <module>
+    trainer.fit(module, train_dataloaders=train_loader, val_dataloaders=valid_loader)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 608, in fit
+    call._call_and_handle_interrupt(
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/call.py", line 38, in _call_and_handle_interrupt
+    return trainer_fn(*args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 650, in _fit_impl
+    self._run(model, ckpt_path=self.ckpt_path)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 1112, in _run
+    results = self._run_stage()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 1191, in _run_stage
+    self._run_train()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 1214, in _run_train
+    self.fit_loop.run()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/loop.py", line 199, in run
+    self.advance(*args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/fit_loop.py", line 267, in advance
+    self._outputs = self.epoch_loop.run(self._data_fetcher)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/loop.py", line 199, in run
+    self.advance(*args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/epoch/training_epoch_loop.py", line 231, in advance
+    self.trainer._logger_connector.on_batch_end()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/connectors/logger_connector/logger_connector.py", line 200, in on_batch_end
+    metrics = self.metrics
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/connectors/logger_connector/logger_connector.py", line 237, in metrics
+    return self.trainer._results.metrics(on_step)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py", line 616, in metrics
+    metrics["pbar"][forked_name] = convert_tensors_to_scalars(value)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_fabric/utilities/apply_func.py", line 126, in convert_tensors_to_scalars
+    return apply_to_collection(data, Tensor, to_item)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_utilities/core/apply_func.py", line 66, in apply_to_collection
+    return function(data, *args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_fabric/utilities/apply_func.py", line 124, in to_item
+    return value.item()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/torch/utils/data/_utils/signal_handling.py", line 66, in handler
+    _error_if_any_worker_fails()
+RuntimeError: DataLoader worker (pid 3825412) is killed by signal: Terminated. 
+  TEST
+/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_fabric/__init__.py:29: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  __import__("pkg_resources").declare_namespace(__name__)
+[paths] host=edu02 host_profile_keys=[] cpu=128 cpu_effective=8
+[paths] dataset_dir=../dataset
+[paths] log_dir=../results
+[paths] workers=7
+[rank: 0] Global seed set to 42
+no augmentation
+[cv] mode=leave_song_out held_out_id=3
+Size of train dataset: 3410
+Size of valid dataset: 1133
+Size of test dataset: 104
+[eeg] SpectraEEG (raw 2D-CNN + band-power frequency branch)
+[audio] SampleCNN2DEEG (4 independent encoders, Akama baseline)
+EEG Contrastive learning
+use CLIP_loss as criterion
+[paths] tty=False (progress bar off)
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+Auto-discovered checkpoint: ../results/spectra_ct_raw_lso_song3/nmed-CL-preprocessing_eegmusic/version_0/checkpoints/best-checkpoint.ckpt
+[[[ START ]]] 2026-06-25 22:42:09.543107
+[load] checkpoint state_dict matched the model exactly
+You are using a CUDA device ('NVIDIA L40S') that has Tensor Cores. To properly utilize them, you should set `torch.set_float32_matmul_precision('medium' | 'high')` which will trade-off precision for performance. For more details, read https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+
+========== TEST RESULTS ==========
+Global Accuracy (All data):        0.7500
+Global Accuracy (High attention):  0.7500
+Per-task acc (All):    [0.75, nan, nan, nan]
+Per-task acc (Att):    [0.75, nan, nan, nan]
+Pairwise matrix 4x4 (All):
+tensor([[   nan, 0.9519, 0.8558, 0.7596],
+        [   nan,    nan,    nan,    nan],
+        [   nan,    nan,    nan,    nan],
+        [   nan,    nan,    nan,    nan]])
+Pairwise matrix 4x4 (Att):
+tensor([[   nan, 0.9519, 0.8558, 0.7596],
+        [   nan,    nan,    nan,    nan],
+        [   nan,    nan,    nan,    nan],
+        [   nan,    nan,    nan,    nan]])
+==================================
+== Test breakdown (shuffle_test_mode=none) ==
+n_windows total: 104
+n_windows high-attention: 104
+global accuracy (records, all): 0.7500
+global accuracy (records, attn): 0.7500
+global margin mean (all): +0.5122
+global margin mean (attn): +0.5122
+Figures saved to: ../results/spectra_ct_raw_lso_song3/nmed-CL-preprocessing_eegmusic/version_1
+[[[ FINISH ]]] 2026-06-25 22:42:16.854826
+  skip(done): classify_eeg|raw|raw|leave_song_out|18
+
+===== [22:42] spectra_clf_eeg_lso_song18  (classify_eeg|raw|spectra|leave_song_out|18)  elapsed 180m =====
+  TRAIN
+/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_fabric/__init__.py:29: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  __import__("pkg_resources").declare_namespace(__name__)
+[paths] host=edu02 host_profile_keys=[] cpu=128 cpu_effective=8
+[paths] dataset_dir=../dataset
+[paths] log_dir=../results
+[paths] workers=7
+[rank: 0] Global seed set to 42
+no augmentation
+[cv] mode=leave_song_out held_out_id=18
+Size of train dataset: 3421
+Size of valid dataset: 1100
+Size of test dataset: 104
+[eeg] SpectraEEG (raw 2D-CNN + band-power frequency branch)
+[audio] SampleCNN2DEEG (4 independent encoders, Akama baseline)
+Supervised classification (objective=classify_eeg, modality=eeg)
+[paths] tty=False (progress bar off, epoch summaries instead)
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+[[[ START ]]] 2026-06-25 22:42:41.240095
+You are using a CUDA device ('NVIDIA L40S') that has Tensor Cores. To properly utilize them, you should set `torch.set_float32_matmul_precision('medium' | 'high')` which will trade-off precision for performance. For more details, read https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
+Missing logger folder: ../results/spectra_clf_eeg_lso_song18/nmed-CL-preprocessing_eegmusic
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+
+  | Name        | Type             | Params
+-------------------------------------------------
+0 | encoder_eeg | SpectraEEG       | 153 K 
+1 | classifier  | Linear           | 404   
+2 | criterion   | CrossEntropyLoss | 0     
+-------------------------------------------------
+153 K     Trainable params
+0         Non-trainable params
+153 K     Total params
+0.615     Total estimated model params size (MB)
+SLURM auto-requeueing enabled. Setting signal handlers.
+[epoch    0] train_loss=n/a val_loss=1.2995
+2026-06-25 22:42:42,706 - dataloader_debug - INFO - --- Valid Epoch 0: acc=0.0000 n=16 (chance=0.25) ---
+[epoch    0] train_loss=1.2006 val_loss=1.2447
+2026-06-25 22:43:03,652 - dataloader_debug - INFO - --- Valid Epoch 0: acc=0.5611 n=1096 (chance=0.25) ---
+Metric Valid/loss improved. New best score: 1.245
+[epoch    1] train_loss=1.2926 val_loss=1.2934
+2026-06-25 22:43:25,340 - dataloader_debug - INFO - --- Valid Epoch 1: acc=0.5903 n=1096 (chance=0.25) ---
+[epoch    2] train_loss=1.4369 val_loss=1.2594
+2026-06-25 22:43:47,155 - dataloader_debug - INFO - --- Valid Epoch 2: acc=0.5529 n=1096 (chance=0.25) ---
+[epoch    3] train_loss=1.2934 val_loss=1.2774
+2026-06-25 22:44:08,831 - dataloader_debug - INFO - --- Valid Epoch 3: acc=0.5748 n=1096 (chance=0.25) ---
+[epoch    4] train_loss=1.1301 val_loss=1.2727
+2026-06-25 22:44:30,039 - dataloader_debug - INFO - --- Valid Epoch 4: acc=0.5411 n=1096 (chance=0.25) ---
+[epoch    5] train_loss=1.3324 val_loss=1.2097
+2026-06-25 22:44:51,549 - dataloader_debug - INFO - --- Valid Epoch 5: acc=0.5794 n=1096 (chance=0.25) ---
+Metric Valid/loss improved by 0.035 >= min_delta = 0.0. New best score: 1.210
+[epoch    6] train_loss=1.3349 val_loss=1.2617
+2026-06-25 22:45:12,334 - dataloader_debug - INFO - --- Valid Epoch 6: acc=0.5876 n=1096 (chance=0.25) ---
+[epoch    7] train_loss=1.1056 val_loss=1.3025
+2026-06-25 22:45:32,815 - dataloader_debug - INFO - --- Valid Epoch 7: acc=0.5219 n=1096 (chance=0.25) ---
+[epoch    8] train_loss=1.5845 val_loss=1.2612
+2026-06-25 22:45:53,465 - dataloader_debug - INFO - --- Valid Epoch 8: acc=0.5164 n=1096 (chance=0.25) ---
+[epoch    9] train_loss=1.2803 val_loss=1.2716
+2026-06-25 22:46:13,876 - dataloader_debug - INFO - --- Valid Epoch 9: acc=0.5365 n=1096 (chance=0.25) ---
+[epoch   10] train_loss=1.0284 val_loss=1.2955
+2026-06-25 22:46:34,483 - dataloader_debug - INFO - --- Valid Epoch 10: acc=0.5493 n=1096 (chance=0.25) ---
+[epoch   11] train_loss=0.9266 val_loss=1.3225
+2026-06-25 22:46:55,283 - dataloader_debug - INFO - --- Valid Epoch 11: acc=0.4498 n=1096 (chance=0.25) ---
+[epoch   12] train_loss=1.3393 val_loss=1.2481
+2026-06-25 22:47:16,099 - dataloader_debug - INFO - --- Valid Epoch 12: acc=0.5447 n=1096 (chance=0.25) ---
+[epoch   13] train_loss=1.2458 val_loss=1.2997
+2026-06-25 22:47:36,135 - dataloader_debug - INFO - --- Valid Epoch 13: acc=0.4681 n=1096 (chance=0.25) ---
+[epoch   14] train_loss=1.1223 val_loss=1.4215
+2026-06-25 22:47:56,839 - dataloader_debug - INFO - --- Valid Epoch 14: acc=0.3568 n=1096 (chance=0.25) ---
+[epoch   15] train_loss=1.3021 val_loss=1.3148
+2026-06-25 22:48:17,376 - dataloader_debug - INFO - --- Valid Epoch 15: acc=0.4763 n=1096 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 10 records. Best score: 1.210. Signaling Trainer to stop.
+Trainer was signaled to stop but the required `min_epochs=50` or `min_steps=None` has not been met. Training will continue...
+[epoch   16] train_loss=0.9771 val_loss=1.3457
+2026-06-25 22:48:38,158 - dataloader_debug - INFO - --- Valid Epoch 16: acc=0.4918 n=1096 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 11 records. Best score: 1.210. Signaling Trainer to stop.
+[epoch   17] train_loss=1.2052 val_loss=1.3568
+2026-06-25 22:48:58,477 - dataloader_debug - INFO - --- Valid Epoch 17: acc=0.4927 n=1096 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 12 records. Best score: 1.210. Signaling Trainer to stop.
+[epoch   18] train_loss=1.1851 val_loss=1.3977
+2026-06-25 22:49:19,187 - dataloader_debug - INFO - --- Valid Epoch 18: acc=0.4188 n=1096 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 13 records. Best score: 1.210. Signaling Trainer to stop.
+[epoch   19] train_loss=1.1090 val_loss=1.3414
+2026-06-25 22:49:39,519 - dataloader_debug - INFO - --- Valid Epoch 19: acc=0.4790 n=1096 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 14 records. Best score: 1.210. Signaling Trainer to stop.
+[epoch   20] train_loss=1.4201 val_loss=1.3432
+2026-06-25 22:50:00,478 - dataloader_debug - INFO - --- Valid Epoch 20: acc=0.4078 n=1096 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 15 records. Best score: 1.210. Signaling Trainer to stop.
+[epoch   21] train_loss=0.9598 val_loss=1.6379
+2026-06-25 22:50:20,723 - dataloader_debug - INFO - --- Valid Epoch 21: acc=0.2956 n=1096 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 16 records. Best score: 1.210. Signaling Trainer to stop.
+[epoch   22] train_loss=0.9962 val_loss=1.4286
+2026-06-25 22:50:40,963 - dataloader_debug - INFO - --- Valid Epoch 22: acc=0.3613 n=1096 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 17 records. Best score: 1.210. Signaling Trainer to stop.
+[epoch   23] train_loss=1.2213 val_loss=1.6355
+2026-06-25 22:51:01,359 - dataloader_debug - INFO - --- Valid Epoch 23: acc=0.1861 n=1096 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 18 records. Best score: 1.210. Signaling Trainer to stop.
+[epoch   24] train_loss=0.9760 val_loss=1.4446
+2026-06-25 22:51:22,192 - dataloader_debug - INFO - --- Valid Epoch 24: acc=0.3704 n=1096 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 19 records. Best score: 1.210. Signaling Trainer to stop.
+[epoch   25] train_loss=1.1378 val_loss=1.3461
+2026-06-25 22:51:42,727 - dataloader_debug - INFO - --- Valid Epoch 25: acc=0.4288 n=1096 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 20 records. Best score: 1.210. Signaling Trainer to stop.
+[epoch   26] train_loss=1.2681 val_loss=1.4194
+2026-06-25 22:52:03,574 - dataloader_debug - INFO - --- Valid Epoch 26: acc=0.4425 n=1096 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 21 records. Best score: 1.210. Signaling Trainer to stop.
+[epoch   27] train_loss=0.9454 val_loss=1.4340
+2026-06-25 22:52:23,973 - dataloader_debug - INFO - --- Valid Epoch 27: acc=0.4745 n=1096 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 22 records. Best score: 1.210. Signaling Trainer to stop.
+[epoch   28] train_loss=1.0606 val_loss=1.3859
+2026-06-25 22:52:44,746 - dataloader_debug - INFO - --- Valid Epoch 28: acc=0.4599 n=1096 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 23 records. Best score: 1.210. Signaling Trainer to stop.
+[epoch   29] train_loss=1.0123 val_loss=1.4760
+2026-06-25 22:53:05,368 - dataloader_debug - INFO - --- Valid Epoch 29: acc=0.4827 n=1096 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 24 records. Best score: 1.210. Signaling Trainer to stop.
+[epoch   30] train_loss=1.2160 val_loss=1.5122
+2026-06-25 22:53:25,643 - dataloader_debug - INFO - --- Valid Epoch 30: acc=0.4015 n=1096 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 25 records. Best score: 1.210. Signaling Trainer to stop.
+[epoch   31] train_loss=0.9576 val_loss=1.3356
+2026-06-25 22:53:46,333 - dataloader_debug - INFO - --- Valid Epoch 31: acc=0.5255 n=1096 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 26 records. Best score: 1.210. Signaling Trainer to stop.
+[epoch   32] train_loss=1.1702 val_loss=1.5202
+2026-06-25 22:54:06,506 - dataloader_debug - INFO - --- Valid Epoch 32: acc=0.3960 n=1096 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 27 records. Best score: 1.210. Signaling Trainer to stop.
+[epoch   33] train_loss=1.4541 val_loss=1.8039
+2026-06-25 22:54:27,747 - dataloader_debug - INFO - --- Valid Epoch 33: acc=0.2719 n=1096 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 28 records. Best score: 1.210. Signaling Trainer to stop.
+[epoch   34] train_loss=1.2071 val_loss=1.5045
+2026-06-25 22:54:48,335 - dataloader_debug - INFO - --- Valid Epoch 34: acc=0.3412 n=1096 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 29 records. Best score: 1.210. Signaling Trainer to stop.
+[epoch   35] train_loss=0.9789 val_loss=1.5718
+2026-06-25 22:55:09,322 - dataloader_debug - INFO - --- Valid Epoch 35: acc=0.2719 n=1096 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 30 records. Best score: 1.210. Signaling Trainer to stop.
+[epoch   36] train_loss=1.2087 val_loss=2.0434
+2026-06-25 22:55:30,412 - dataloader_debug - INFO - --- Valid Epoch 36: acc=0.1843 n=1096 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 31 records. Best score: 1.210. Signaling Trainer to stop.
+[epoch   37] train_loss=0.9769 val_loss=1.8719
+2026-06-25 22:55:51,352 - dataloader_debug - INFO - --- Valid Epoch 37: acc=0.2682 n=1096 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 32 records. Best score: 1.210. Signaling Trainer to stop.
+[epoch   38] train_loss=0.5633 val_loss=2.5317
+2026-06-25 22:56:12,171 - dataloader_debug - INFO - --- Valid Epoch 38: acc=0.1743 n=1096 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 33 records. Best score: 1.210. Signaling Trainer to stop.
+[epoch   39] train_loss=1.0075 val_loss=1.5673
+2026-06-25 22:56:33,034 - dataloader_debug - INFO - --- Valid Epoch 39: acc=0.4380 n=1096 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 34 records. Best score: 1.210. Signaling Trainer to stop.
+[epoch   40] train_loss=1.1296 val_loss=1.5909
+2026-06-25 22:56:53,570 - dataloader_debug - INFO - --- Valid Epoch 40: acc=0.4553 n=1096 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 35 records. Best score: 1.210. Signaling Trainer to stop.
+[epoch   41] train_loss=1.0475 val_loss=1.5905
+2026-06-25 22:57:14,101 - dataloader_debug - INFO - --- Valid Epoch 41: acc=0.3878 n=1096 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 36 records. Best score: 1.210. Signaling Trainer to stop.
+[epoch   42] train_loss=1.1383 val_loss=1.7423
+2026-06-25 22:57:34,574 - dataloader_debug - INFO - --- Valid Epoch 42: acc=0.2938 n=1096 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 37 records. Best score: 1.210. Signaling Trainer to stop.
+[epoch   43] train_loss=1.1872 val_loss=1.5151
+2026-06-25 22:57:55,196 - dataloader_debug - INFO - --- Valid Epoch 43: acc=0.5064 n=1096 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 38 records. Best score: 1.210. Signaling Trainer to stop.
+[epoch   44] train_loss=1.1893 val_loss=1.6136
+2026-06-25 22:58:15,983 - dataloader_debug - INFO - --- Valid Epoch 44: acc=0.5119 n=1096 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 39 records. Best score: 1.210. Signaling Trainer to stop.
+[epoch   45] train_loss=1.0099 val_loss=1.4128
+2026-06-25 22:58:36,551 - dataloader_debug - INFO - --- Valid Epoch 45: acc=0.5109 n=1096 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 40 records. Best score: 1.210. Signaling Trainer to stop.
+[epoch   46] train_loss=0.9316 val_loss=1.9061
+2026-06-25 22:58:57,586 - dataloader_debug - INFO - --- Valid Epoch 46: acc=0.2956 n=1096 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 41 records. Best score: 1.210. Signaling Trainer to stop.
+[epoch   47] train_loss=1.3494 val_loss=1.8032
+2026-06-25 22:59:18,207 - dataloader_debug - INFO - --- Valid Epoch 47: acc=0.3148 n=1096 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 42 records. Best score: 1.210. Signaling Trainer to stop.
+[epoch   48] train_loss=1.2222 val_loss=1.5274
+2026-06-25 22:59:38,789 - dataloader_debug - INFO - --- Valid Epoch 48: acc=0.4453 n=1096 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 43 records. Best score: 1.210. Signaling Trainer to stop.
+[epoch   49] train_loss=0.6975 val_loss=1.6510
+2026-06-25 22:59:59,688 - dataloader_debug - INFO - --- Valid Epoch 49: acc=0.3047 n=1096 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 44 records. Best score: 1.210. Signaling Trainer to stop.
+[[[ FINISH ]]] 2026-06-25 22:59:59.804401
+  TEST
+/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_fabric/__init__.py:29: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  __import__("pkg_resources").declare_namespace(__name__)
+[paths] host=edu02 host_profile_keys=[] cpu=128 cpu_effective=8
+[paths] dataset_dir=../dataset
+[paths] log_dir=../results
+[paths] workers=7
+[rank: 0] Global seed set to 42
+no augmentation
+[cv] mode=leave_song_out held_out_id=18
+Size of train dataset: 3421
+Size of valid dataset: 1100
+Size of test dataset: 104
+[eeg] SpectraEEG (raw 2D-CNN + band-power frequency branch)
+[audio] SampleCNN2DEEG (4 independent encoders, Akama baseline)
+Supervised classification (objective=classify_eeg, modality=eeg)
+[paths] tty=False (progress bar off)
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+Auto-discovered checkpoint: ../results/spectra_clf_eeg_lso_song18/nmed-CL-preprocessing_eegmusic/version_0/checkpoints/best-checkpoint.ckpt
+[[[ START ]]] 2026-06-25 23:00:32.955565
+[load] checkpoint state_dict matched the model exactly
+You are using a CUDA device ('NVIDIA L40S') that has Tensor Cores. To properly utilize them, you should set `torch.set_float32_matmul_precision('medium' | 'high')` which will trade-off precision for performance. For more details, read https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+
+===== SUPERVISED TEST RESULTS =====
+objective: classify_eeg  |  chance = 0.25
+Global accuracy (all data):        0.0000
+Global accuracy (high attention):  0.0000
+Per-class accuracy (all):          [nan, 0.0, nan, nan]
+===================================
+== Supervised test (objective=classify_eeg) ==
+chance: 0.2500
+n_windows total: 104
+n_windows high-attention: 104
+global accuracy (records, all): 0.0000
+global accuracy (records, attn): 0.0000
+Figures saved to: ../results/spectra_clf_eeg_lso_song18/nmed-CL-preprocessing_eegmusic/version_1
+[[[ FINISH ]]] 2026-06-25 23:00:36.328254
+
+===== [23:00] ct_raw_lso_song18  (contrastive|raw|raw|leave_song_out|18)  elapsed 198m =====
+  TRAIN
+/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_fabric/__init__.py:29: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  __import__("pkg_resources").declare_namespace(__name__)
+[paths] host=edu02 host_profile_keys=[] cpu=128 cpu_effective=8
+[paths] dataset_dir=../dataset
+[paths] log_dir=../results
+[paths] workers=7
+[rank: 0] Global seed set to 42
+no augmentation
+[cv] mode=leave_song_out held_out_id=18
+Size of train dataset: 3421
+Size of valid dataset: 1100
+Size of test dataset: 104
+[eeg] SampleCNN2DEEG (raw EEG, Akama baseline)
+[audio] SampleCNN2DEEG (4 independent encoders, Akama baseline)
+EEG Contrastive learning
+use CLIP_loss as criterion
+[paths] tty=False (progress bar off, epoch summaries instead)
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+[[[ START ]]] 2026-06-25 23:01:03.447458
+You are using a CUDA device ('NVIDIA L40S') that has Tensor Cores. To properly utilize them, you should set `torch.set_float32_matmul_precision('medium' | 'high')` which will trade-off precision for performance. For more details, read https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
+Missing logger folder: ../results/ct_raw_lso_song18/nmed-CL-preprocessing_eegmusic
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+
+  | Name           | Type           | Params
+--------------------------------------------------
+0 | encoder_raw_e  | SampleCNN2DEEG | 116 K 
+1 | encoder_vocal  | SampleCNN2DEEG | 116 K 
+2 | encoder_drum   | SampleCNN2DEEG | 116 K 
+3 | encoder_bass   | SampleCNN2DEEG | 116 K 
+4 | encoder_others | SampleCNN2DEEG | 116 K 
+5 | criterion      | CLIP_Loss      | 0     
+--------------------------------------------------
+580 K     Trainable params
+0         Non-trainable params
+580 K     Total params
+2.322     Total estimated model params size (MB)
+SLURM auto-requeueing enabled. Setting signal handlers.
+[epoch    0] train_loss=n/a val_loss=3.6562
+2026-06-25 23:01:05,278 - dataloader_debug - INFO - --- Valid Epoch 0 Summary ---
+  Total samples: 16
+  High attention samples: 16
+  Task distribution: [16, 0, 0, 0]
+  Global Accuracy (All): 0.0000
+  Global Accuracy (Att): 0.0000
+----------------------------------------
+[epoch    0] train_loss=2.6694 val_loss=2.7277
+2026-06-25 23:06:49,215 - dataloader_debug - INFO - --- Valid Epoch 0 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 121, 117, 209]
+  Global Accuracy (All): 0.5447
+  Global Accuracy (Att): 0.6622
+----------------------------------------
+Metric Valid/loss improved. New best score: 2.728
+2026-06-25 23:06:49,488 - dataloader_debug - INFO - --- Train Epoch 0 Summary ---
+  Total samples: 3416
+  High attention samples: 2459
+  Batches w/o high attention: 0
+  Task distribution: [1624, 583, 737, 472]
+  Batches skipping tasks: [4, 92, 60, 132]
+---------------------------------------
+[epoch    1] train_loss=1.8408 val_loss=3.3141
+2026-06-25 23:12:33,413 - dataloader_debug - INFO - --- Valid Epoch 1 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 121, 117, 209]
+  Global Accuracy (All): 0.3230
+  Global Accuracy (Att): 0.3047
+----------------------------------------
+2026-06-25 23:12:33,437 - dataloader_debug - INFO - --- Train Epoch 1 Summary ---
+  Total samples: 3416
+  High attention samples: 2462
+  Batches w/o high attention: 0
+  Task distribution: [1626, 581, 736, 473]
+  Batches skipping tasks: [1, 98, 62, 131]
+---------------------------------------
+[epoch    2] train_loss=2.0261 val_loss=3.5221
+2026-06-25 23:18:17,613 - dataloader_debug - INFO - --- Valid Epoch 2 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 121, 117, 209]
+  Global Accuracy (All): 0.2609
+  Global Accuracy (Att): 0.2199
+----------------------------------------
+2026-06-25 23:18:17,634 - dataloader_debug - INFO - --- Train Epoch 2 Summary ---
+  Total samples: 3416
+  High attention samples: 2459
+  Batches w/o high attention: 0
+  Task distribution: [1624, 583, 736, 473]
+  Batches skipping tasks: [3, 89, 62, 136]
+---------------------------------------
+[epoch    3] train_loss=1.6739 val_loss=3.2951
+2026-06-25 23:24:01,655 - dataloader_debug - INFO - --- Valid Epoch 3 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 121, 117, 209]
+  Global Accuracy (All): 0.3075
+  Global Accuracy (Att): 0.2826
+----------------------------------------
+2026-06-25 23:24:01,721 - dataloader_debug - INFO - --- Train Epoch 3 Summary ---
+  Total samples: 3416
+  High attention samples: 2460
+  Batches w/o high attention: 0
+  Task distribution: [1624, 583, 737, 472]
+  Batches skipping tasks: [3, 103, 65, 137]
+---------------------------------------
+[epoch    4] train_loss=0.9639 val_loss=3.7113
+2026-06-25 23:29:45,804 - dataloader_debug - INFO - --- Valid Epoch 4 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 121, 117, 209]
+  Global Accuracy (All): 0.2828
+  Global Accuracy (Att): 0.1769
+----------------------------------------
+2026-06-25 23:29:45,816 - dataloader_debug - INFO - --- Train Epoch 4 Summary ---
+  Total samples: 3416
+  High attention samples: 2459
+  Batches w/o high attention: 0
+  Task distribution: [1625, 583, 737, 471]
+  Batches skipping tasks: [7, 82, 56, 134]
+---------------------------------------
+[epoch    5] train_loss=1.6585 val_loss=2.8742
+2026-06-25 23:35:29,771 - dataloader_debug - INFO - --- Valid Epoch 5 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 121, 117, 209]
+  Global Accuracy (All): 0.4881
+  Global Accuracy (Att): 0.4656
+----------------------------------------
+2026-06-25 23:35:29,873 - dataloader_debug - INFO - --- Train Epoch 5 Summary ---
+  Total samples: 3416
+  High attention samples: 2460
+  Batches w/o high attention: 0
+  Task distribution: [1626, 581, 737, 472]
+  Batches skipping tasks: [4, 89, 56, 130]
+---------------------------------------
+[epoch    6] train_loss=1.0444 val_loss=2.7768
+2026-06-25 23:41:13,974 - dataloader_debug - INFO - --- Valid Epoch 6 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 121, 117, 209]
+  Global Accuracy (All): 0.5794
+  Global Accuracy (Att): 0.6867
+----------------------------------------
+2026-06-25 23:41:13,982 - dataloader_debug - INFO - --- Train Epoch 6 Summary ---
+  Total samples: 3416
+  High attention samples: 2461
+  Batches w/o high attention: 0
+  Task distribution: [1626, 581, 737, 472]
+  Batches skipping tasks: [2, 100, 62, 140]
+---------------------------------------
+[epoch    7] train_loss=1.3343 val_loss=3.0658
+2026-06-25 23:46:58,198 - dataloader_debug - INFO - --- Valid Epoch 7 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 121, 117, 209]
+  Global Accuracy (All): 0.4891
+  Global Accuracy (Att): 0.5209
+----------------------------------------
+2026-06-25 23:46:58,210 - dataloader_debug - INFO - --- Train Epoch 7 Summary ---
+  Total samples: 3416
+  High attention samples: 2460
+  Batches w/o high attention: 0
+  Task distribution: [1626, 582, 736, 472]
+  Batches skipping tasks: [5, 96, 69, 126]
+---------------------------------------
+[epoch    8] train_loss=1.1387 val_loss=3.3267
+2026-06-25 23:52:42,233 - dataloader_debug - INFO - --- Valid Epoch 8 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 121, 117, 209]
+  Global Accuracy (All): 0.3130
+  Global Accuracy (Att): 0.2789
+----------------------------------------
+2026-06-25 23:52:42,246 - dataloader_debug - INFO - --- Train Epoch 8 Summary ---
+  Total samples: 3416
+  High attention samples: 2459
+  Batches w/o high attention: 0
+  Task distribution: [1625, 582, 737, 472]
+  Batches skipping tasks: [3, 100, 55, 135]
+---------------------------------------
+[epoch    9] train_loss=1.5384 val_loss=3.2035
+2026-06-25 23:58:26,286 - dataloader_debug - INFO - --- Valid Epoch 9 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 121, 117, 209]
+  Global Accuracy (All): 0.2810
+  Global Accuracy (Att): 0.2531
+----------------------------------------
+2026-06-25 23:58:26,299 - dataloader_debug - INFO - --- Train Epoch 9 Summary ---
+  Total samples: 3416
+  High attention samples: 2460
+  Batches w/o high attention: 0
+  Task distribution: [1624, 583, 736, 473]
+  Batches skipping tasks: [1, 94, 48, 127]
+---------------------------------------
+[epoch   10] train_loss=1.5118 val_loss=3.3729
+2026-06-26 00:04:10,519 - dataloader_debug - INFO - --- Valid Epoch 10 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 121, 117, 209]
+  Global Accuracy (All): 0.4288
+  Global Accuracy (Att): 0.3317
+----------------------------------------
+Monitored metric Valid/loss did not improve in the last 10 records. Best score: 2.728. Signaling Trainer to stop.
+2026-06-26 00:04:10,531 - dataloader_debug - INFO - --- Train Epoch 10 Summary ---
+  Total samples: 3416
+  High attention samples: 2461
+  Batches w/o high attention: 0
+  Task distribution: [1628, 581, 735, 472]
+  Batches skipping tasks: [2, 88, 54, 128]
+---------------------------------------
+Trainer was signaled to stop but the required `min_epochs=50` or `min_steps=None` has not been met. Training will continue...
+[epoch   11] train_loss=1.4318 val_loss=2.7671
+2026-06-26 00:09:54,901 - dataloader_debug - INFO - --- Valid Epoch 11 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 121, 117, 209]
+  Global Accuracy (All): 0.5684
+  Global Accuracy (Att): 0.6609
+----------------------------------------
+Monitored metric Valid/loss did not improve in the last 11 records. Best score: 2.728. Signaling Trainer to stop.
+2026-06-26 00:09:54,909 - dataloader_debug - INFO - --- Train Epoch 11 Summary ---
+  Total samples: 3416
+  High attention samples: 2462
+  Batches w/o high attention: 0
+  Task distribution: [1626, 583, 734, 473]
+  Batches skipping tasks: [4, 105, 67, 134]
+---------------------------------------
+[epoch   12] train_loss=1.5071 val_loss=2.9731
+2026-06-26 00:15:39,500 - dataloader_debug - INFO - --- Valid Epoch 12 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 121, 117, 209]
+  Global Accuracy (All): 0.5036
+  Global Accuracy (Att): 0.5258
+----------------------------------------
+Monitored metric Valid/loss did not improve in the last 12 records. Best score: 2.728. Signaling Trainer to stop.
+2026-06-26 00:15:39,511 - dataloader_debug - INFO - --- Train Epoch 12 Summary ---
+  Total samples: 3416
+  High attention samples: 2461
+  Batches w/o high attention: 0
+  Task distribution: [1627, 582, 736, 471]
+  Batches skipping tasks: [3, 98, 63, 125]
+---------------------------------------
+bypassing sigterm
+Traceback (most recent call last):
+  File "/home/andrea.giampietro/EEG-Attention-decoding-with-CLAP/src/main.py", line 412, in <module>
+    trainer.fit(module, train_dataloaders=train_loader, val_dataloaders=valid_loader)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 608, in fit
+    call._call_and_handle_interrupt(
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/call.py", line 38, in _call_and_handle_interrupt
+    return trainer_fn(*args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 650, in _fit_impl
+    self._run(model, ckpt_path=self.ckpt_path)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 1112, in _run
+    results = self._run_stage()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 1191, in _run_stage
+    self._run_train()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 1214, in _run_train
+    self.fit_loop.run()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/loop.py", line 199, in run
+    self.advance(*args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/fit_loop.py", line 267, in advance
+    self._outputs = self.epoch_loop.run(self._data_fetcher)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/loop.py", line 199, in run
+    self.advance(*args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/epoch/training_epoch_loop.py", line 231, in advance
+    self.trainer._logger_connector.on_batch_end()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/connectors/logger_connector/logger_connector.py", line 200, in on_batch_end
+    metrics = self.metrics
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/connectors/logger_connector/logger_connector.py", line 237, in metrics
+    return self.trainer._results.metrics(on_step)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py", line 616, in metrics
+    metrics["pbar"][forked_name] = convert_tensors_to_scalars(value)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_fabric/utilities/apply_func.py", line 126, in convert_tensors_to_scalars
+    return apply_to_collection(data, Tensor, to_item)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_utilities/core/apply_func.py", line 66, in apply_to_collection
+    return function(data, *args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_fabric/utilities/apply_func.py", line 124, in to_item
+    return value.item()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/torch/utils/data/_utils/signal_handling.py", line 66, in handler
+    _error_if_any_worker_fails()
+RuntimeError: DataLoader worker (pid 3886282) is killed by signal: Terminated. 
+  TEST
+/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_fabric/__init__.py:29: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  __import__("pkg_resources").declare_namespace(__name__)
+[paths] host=edu02 host_profile_keys=[] cpu=128 cpu_effective=8
+[paths] dataset_dir=../dataset
+[paths] log_dir=../results
+[paths] workers=7
+[rank: 0] Global seed set to 42
+no augmentation
+[cv] mode=leave_song_out held_out_id=18
+Size of train dataset: 3421
+Size of valid dataset: 1100
+Size of test dataset: 104
+[eeg] SampleCNN2DEEG (raw EEG, Akama baseline)
+[audio] SampleCNN2DEEG (4 independent encoders, Akama baseline)
+EEG Contrastive learning
+use CLIP_loss as criterion
+[paths] tty=False (progress bar off)
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+Auto-discovered checkpoint: ../results/ct_raw_lso_song18/nmed-CL-preprocessing_eegmusic/version_0/checkpoints/best-checkpoint.ckpt
+[[[ START ]]] 2026-06-26 00:21:24.393645
+[load] checkpoint state_dict matched the model exactly
+You are using a CUDA device ('NVIDIA L40S') that has Tensor Cores. To properly utilize them, you should set `torch.set_float32_matmul_precision('medium' | 'high')` which will trade-off precision for performance. For more details, read https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+
+========== TEST RESULTS ==========
+Global Accuracy (All data):        0.0000
+Global Accuracy (High attention):  0.0000
+Per-task acc (All):    [nan, 0.0, nan, nan]
+Per-task acc (Att):    [nan, 0.0, nan, nan]
+Pairwise matrix 4x4 (All):
+tensor([[   nan,    nan,    nan,    nan],
+        [0.0000,    nan, 0.5000, 0.7692],
+        [   nan,    nan,    nan,    nan],
+        [   nan,    nan,    nan,    nan]])
+Pairwise matrix 4x4 (Att):
+tensor([[   nan,    nan,    nan,    nan],
+        [0.0000,    nan, 0.5000, 0.7692],
+        [   nan,    nan,    nan,    nan],
+        [   nan,    nan,    nan,    nan]])
+==================================
+== Test breakdown (shuffle_test_mode=none) ==
+n_windows total: 104
+n_windows high-attention: 104
+global accuracy (records, all): 0.0000
+global accuracy (records, attn): 0.0000
+global margin mean (all): -1.3028
+global margin mean (attn): -1.3028
+Figures saved to: ../results/ct_raw_lso_song18/nmed-CL-preprocessing_eegmusic/version_1
+[[[ FINISH ]]] 2026-06-26 00:21:30.351703
+
+===== [00:21] spectra_ct_raw_lso_song18  (contrastive|raw|spectra|leave_song_out|18)  elapsed 279m =====
+  TRAIN
+/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_fabric/__init__.py:29: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  __import__("pkg_resources").declare_namespace(__name__)
+[paths] host=edu02 host_profile_keys=[] cpu=128 cpu_effective=8
+[paths] dataset_dir=../dataset
+[paths] log_dir=../results
+[paths] workers=7
+[rank: 0] Global seed set to 42
+no augmentation
+[cv] mode=leave_song_out held_out_id=18
+Size of train dataset: 3421
+Size of valid dataset: 1100
+Size of test dataset: 104
+[eeg] SpectraEEG (raw 2D-CNN + band-power frequency branch)
+[audio] SampleCNN2DEEG (4 independent encoders, Akama baseline)
+EEG Contrastive learning
+use CLIP_loss as criterion
+[paths] tty=False (progress bar off, epoch summaries instead)
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+[[[ START ]]] 2026-06-26 00:21:51.149840
+You are using a CUDA device ('NVIDIA L40S') that has Tensor Cores. To properly utilize them, you should set `torch.set_float32_matmul_precision('medium' | 'high')` which will trade-off precision for performance. For more details, read https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
+Missing logger folder: ../results/spectra_ct_raw_lso_song18/nmed-CL-preprocessing_eegmusic
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+
+  | Name           | Type           | Params
+--------------------------------------------------
+0 | encoder_raw_e  | SpectraEEG     | 153 K 
+1 | encoder_vocal  | SampleCNN2DEEG | 116 K 
+2 | encoder_drum   | SampleCNN2DEEG | 116 K 
+3 | encoder_bass   | SampleCNN2DEEG | 116 K 
+4 | encoder_others | SampleCNN2DEEG | 116 K 
+5 | criterion      | CLIP_Loss      | 0     
+--------------------------------------------------
+617 K     Trainable params
+0         Non-trainable params
+617 K     Total params
+2.472     Total estimated model params size (MB)
+SLURM auto-requeueing enabled. Setting signal handlers.
+[epoch    0] train_loss=n/a val_loss=3.5609
+2026-06-26 00:21:53,050 - dataloader_debug - INFO - --- Valid Epoch 0 Summary ---
+  Total samples: 16
+  High attention samples: 16
+  Task distribution: [16, 0, 0, 0]
+  Global Accuracy (All): 0.0000
+  Global Accuracy (Att): 0.0000
+----------------------------------------
+[epoch    0] train_loss=2.3113 val_loss=3.0282
+2026-06-26 00:27:37,771 - dataloader_debug - INFO - --- Valid Epoch 0 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 121, 117, 209]
+  Global Accuracy (All): 0.4352
+  Global Accuracy (Att): 0.5012
+----------------------------------------
+Metric Valid/loss improved. New best score: 3.028
+2026-06-26 00:27:38,061 - dataloader_debug - INFO - --- Train Epoch 0 Summary ---
+  Total samples: 3416
+  High attention samples: 2462
+  Batches w/o high attention: 0
+  Task distribution: [1626, 583, 735, 472]
+  Batches skipping tasks: [3, 96, 66, 133]
+---------------------------------------
+[epoch    1] train_loss=1.7781 val_loss=2.9109
+2026-06-26 00:33:22,801 - dataloader_debug - INFO - --- Valid Epoch 1 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 121, 117, 209]
+  Global Accuracy (All): 0.5721
+  Global Accuracy (Att): 0.6818
+----------------------------------------
+Metric Valid/loss improved by 0.117 >= min_delta = 0.0. New best score: 2.911
+2026-06-26 00:33:22,866 - dataloader_debug - INFO - --- Train Epoch 1 Summary ---
+  Total samples: 3416
+  High attention samples: 2460
+  Batches w/o high attention: 0
+  Task distribution: [1624, 583, 736, 473]
+  Batches skipping tasks: [3, 93, 67, 127]
+---------------------------------------
+[epoch    2] train_loss=2.0701 val_loss=2.8892
+2026-06-26 00:39:07,509 - dataloader_debug - INFO - --- Valid Epoch 2 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 121, 117, 209]
+  Global Accuracy (All): 0.5374
+  Global Accuracy (Att): 0.6450
+----------------------------------------
+Metric Valid/loss improved by 0.022 >= min_delta = 0.0. New best score: 2.889
+2026-06-26 00:39:07,583 - dataloader_debug - INFO - --- Train Epoch 2 Summary ---
+  Total samples: 3416
+  High attention samples: 2462
+  Batches w/o high attention: 0
+  Task distribution: [1626, 582, 735, 473]
+  Batches skipping tasks: [2, 103, 57, 137]
+---------------------------------------
+[epoch    3] train_loss=1.9638 val_loss=2.8169
+2026-06-26 00:44:52,305 - dataloader_debug - INFO - --- Valid Epoch 3 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 121, 117, 209]
+  Global Accuracy (All): 0.5420
+  Global Accuracy (Att): 0.6536
+----------------------------------------
+Metric Valid/loss improved by 0.072 >= min_delta = 0.0. New best score: 2.817
+2026-06-26 00:44:52,367 - dataloader_debug - INFO - --- Train Epoch 3 Summary ---
+  Total samples: 3416
+  High attention samples: 2460
+  Batches w/o high attention: 0
+  Task distribution: [1626, 583, 735, 472]
+  Batches skipping tasks: [3, 100, 58, 133]
+---------------------------------------
+[epoch    4] train_loss=1.3180 val_loss=3.0001
+2026-06-26 00:50:37,028 - dataloader_debug - INFO - --- Valid Epoch 4 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 121, 117, 209]
+  Global Accuracy (All): 0.3987
+  Global Accuracy (Att): 0.3477
+----------------------------------------
+2026-06-26 00:50:37,048 - dataloader_debug - INFO - --- Train Epoch 4 Summary ---
+  Total samples: 3416
+  High attention samples: 2459
+  Batches w/o high attention: 0
+  Task distribution: [1625, 583, 736, 472]
+  Batches skipping tasks: [1, 97, 69, 133]
+---------------------------------------
+[epoch    5] train_loss=1.5013 val_loss=2.8896
+2026-06-26 00:56:21,789 - dataloader_debug - INFO - --- Valid Epoch 5 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 121, 117, 209]
+  Global Accuracy (All): 0.4818
+  Global Accuracy (Att): 0.5553
+----------------------------------------
+2026-06-26 00:56:21,802 - dataloader_debug - INFO - --- Train Epoch 5 Summary ---
+  Total samples: 3416
+  High attention samples: 2462
+  Batches w/o high attention: 0
+  Task distribution: [1627, 583, 734, 472]
+  Batches skipping tasks: [1, 103, 63, 134]
+---------------------------------------
+[epoch    6] train_loss=1.5521 val_loss=3.0832
+2026-06-26 01:02:06,570 - dataloader_debug - INFO - --- Valid Epoch 6 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 121, 117, 209]
+  Global Accuracy (All): 0.4571
+  Global Accuracy (Att): 0.5111
+----------------------------------------
+2026-06-26 01:02:06,581 - dataloader_debug - INFO - --- Train Epoch 6 Summary ---
+  Total samples: 3416
+  High attention samples: 2462
+  Batches w/o high attention: 0
+  Task distribution: [1625, 582, 737, 472]
+  Batches skipping tasks: [3, 98, 60, 132]
+---------------------------------------
+[epoch    7] train_loss=1.2061 val_loss=2.9482
+2026-06-26 01:07:51,383 - dataloader_debug - INFO - --- Valid Epoch 7 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 121, 117, 209]
+  Global Accuracy (All): 0.4334
+  Global Accuracy (Att): 0.4226
+----------------------------------------
+2026-06-26 01:07:51,396 - dataloader_debug - INFO - --- Train Epoch 7 Summary ---
+  Total samples: 3416
+  High attention samples: 2460
+  Batches w/o high attention: 0
+  Task distribution: [1625, 582, 736, 473]
+  Batches skipping tasks: [2, 89, 57, 123]
+---------------------------------------
+[epoch    8] train_loss=1.1189 val_loss=3.0787
+2026-06-26 01:13:36,305 - dataloader_debug - INFO - --- Valid Epoch 8 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 121, 117, 209]
+  Global Accuracy (All): 0.3996
+  Global Accuracy (Att): 0.4472
+----------------------------------------
+2026-06-26 01:13:36,321 - dataloader_debug - INFO - --- Train Epoch 8 Summary ---
+  Total samples: 3416
+  High attention samples: 2462
+  Batches w/o high attention: 0
+  Task distribution: [1625, 583, 736, 472]
+  Batches skipping tasks: [2, 92, 69, 120]
+---------------------------------------
+[epoch    9] train_loss=1.5402 val_loss=2.8439
+2026-06-26 01:19:21,100 - dataloader_debug - INFO - --- Valid Epoch 9 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 121, 117, 209]
+  Global Accuracy (All): 0.5538
+  Global Accuracy (Att): 0.5946
+----------------------------------------
+2026-06-26 01:19:21,114 - dataloader_debug - INFO - --- Train Epoch 9 Summary ---
+  Total samples: 3416
+  High attention samples: 2459
+  Batches w/o high attention: 0
+  Task distribution: [1623, 583, 737, 473]
+  Batches skipping tasks: [2, 94, 54, 131]
+---------------------------------------
+[epoch   10] train_loss=1.1147 val_loss=2.7510
+2026-06-26 01:25:05,832 - dataloader_debug - INFO - --- Valid Epoch 10 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 121, 117, 209]
+  Global Accuracy (All): 0.5447
+  Global Accuracy (Att): 0.6757
+----------------------------------------
+Metric Valid/loss improved by 0.066 >= min_delta = 0.0. New best score: 2.751
+2026-06-26 01:25:05,920 - dataloader_debug - INFO - --- Train Epoch 10 Summary ---
+  Total samples: 3416
+  High attention samples: 2461
+  Batches w/o high attention: 0
+  Task distribution: [1626, 583, 735, 472]
+  Batches skipping tasks: [0, 90, 59, 132]
+---------------------------------------
+[epoch   11] train_loss=0.9851 val_loss=2.6283
+2026-06-26 01:30:50,585 - dataloader_debug - INFO - --- Valid Epoch 11 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 121, 117, 209]
+  Global Accuracy (All): 0.5821
+  Global Accuracy (Att): 0.6978
+----------------------------------------
+Metric Valid/loss improved by 0.123 >= min_delta = 0.0. New best score: 2.628
+2026-06-26 01:30:50,655 - dataloader_debug - INFO - --- Train Epoch 11 Summary ---
+  Total samples: 3416
+  High attention samples: 2460
+  Batches w/o high attention: 0
+  Task distribution: [1624, 583, 736, 473]
+  Batches skipping tasks: [0, 97, 65, 124]
+---------------------------------------
+[epoch   12] train_loss=1.1755 val_loss=2.6995
+2026-06-26 01:36:35,430 - dataloader_debug - INFO - --- Valid Epoch 12 Summary ---
+  Total samples: 1096
+  High attention samples: 814
+  Task distribution: [649, 121, 117, 209]
+  Global Accuracy (All): 0.5958
+  Global Accuracy (Att): 0.7224
+----------------------------------------
+2026-06-26 01:36:35,467 - dataloader_debug - INFO - --- Train Epoch 12 Summary ---
+  Total samples: 3416
+  High attention samples: 2460
+  Batches w/o high attention: 0
+  Task distribution: [1623, 583, 737, 473]
+  Batches skipping tasks: [1, 98, 61, 131]
+---------------------------------------
+bypassing sigterm
+Traceback (most recent call last):
+  File "/home/andrea.giampietro/EEG-Attention-decoding-with-CLAP/src/main.py", line 412, in <module>
+    trainer.fit(module, train_dataloaders=train_loader, val_dataloaders=valid_loader)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 608, in fit
+    call._call_and_handle_interrupt(
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/call.py", line 38, in _call_and_handle_interrupt
+    return trainer_fn(*args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 650, in _fit_impl
+    self._run(model, ckpt_path=self.ckpt_path)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 1112, in _run
+    results = self._run_stage()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 1191, in _run_stage
+    self._run_train()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 1214, in _run_train
+    self.fit_loop.run()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/loop.py", line 199, in run
+    self.advance(*args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/fit_loop.py", line 267, in advance
+    self._outputs = self.epoch_loop.run(self._data_fetcher)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/loop.py", line 199, in run
+    self.advance(*args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/epoch/training_epoch_loop.py", line 213, in advance
+    batch_output = self.batch_loop.run(kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/loop.py", line 199, in run
+    self.advance(*args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/batch/training_batch_loop.py", line 88, in advance
+    outputs = self.optimizer_loop.run(optimizers, kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/loop.py", line 199, in run
+    self.advance(*args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/optimization/optimizer_loop.py", line 202, in advance
+    result = self._run_optimization(kwargs, self._optimizers[self.optim_progress.optimizer_position])
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/optimization/optimizer_loop.py", line 241, in _run_optimization
+    closure()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/optimization/optimizer_loop.py", line 149, in __call__
+    self._result = self.closure(*args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/optimization/optimizer_loop.py", line 135, in closure
+    step_output = self._step_fn()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/optimization/optimizer_loop.py", line 419, in _training_step
+    training_step_output = self.trainer._call_strategy_hook("training_step", *kwargs.values())
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 1494, in _call_strategy_hook
+    output = fn(*args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/strategies/strategy.py", line 378, in training_step
+    return self.model.training_step(*args, **kwargs)
+  File "/home/andrea.giampietro/EEG-Attention-decoding-with-CLAP/src/modules/contrastive_learning.py", line 101, in training_step
+    similarity_dict = self.criterion(
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1511, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1520, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/andrea.giampietro/EEG-Attention-decoding-with-CLAP/src/modules/clip_loss.py", line 40, in forward
+    losses, positive_list, negative_av,matrix_list= self.compute_task_loss(
+  File "/home/andrea.giampietro/EEG-Attention-decoding-with-CLAP/src/modules/clip_loss.py", line 114, in compute_task_loss
+    if task_mask0.sum() > 0:
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/torch/utils/data/_utils/signal_handling.py", line 66, in handler
+    _error_if_any_worker_fails()
+RuntimeError: DataLoader worker (pid 3899838) is killed by signal: Terminated. 
+  TEST
+/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_fabric/__init__.py:29: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  __import__("pkg_resources").declare_namespace(__name__)
+[paths] host=edu02 host_profile_keys=[] cpu=128 cpu_effective=8
+[paths] dataset_dir=../dataset
+[paths] log_dir=../results
+[paths] workers=7
+[rank: 0] Global seed set to 42
+no augmentation
+[cv] mode=leave_song_out held_out_id=18
+Size of train dataset: 3421
+Size of valid dataset: 1100
+Size of test dataset: 104
+[eeg] SpectraEEG (raw 2D-CNN + band-power frequency branch)
+[audio] SampleCNN2DEEG (4 independent encoders, Akama baseline)
+EEG Contrastive learning
+use CLIP_loss as criterion
+[paths] tty=False (progress bar off)
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+Auto-discovered checkpoint: ../results/spectra_ct_raw_lso_song18/nmed-CL-preprocessing_eegmusic/version_0/checkpoints/best-checkpoint.ckpt
+[[[ START ]]] 2026-06-26 01:42:20.317083
+[load] checkpoint state_dict matched the model exactly
+You are using a CUDA device ('NVIDIA L40S') that has Tensor Cores. To properly utilize them, you should set `torch.set_float32_matmul_precision('medium' | 'high')` which will trade-off precision for performance. For more details, read https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+
+========== TEST RESULTS ==========
+Global Accuracy (All data):        0.0000
+Global Accuracy (High attention):  0.0000
+Per-task acc (All):    [nan, 0.0, nan, nan]
+Per-task acc (Att):    [nan, 0.0, nan, nan]
+Pairwise matrix 4x4 (All):
+tensor([[   nan,    nan,    nan,    nan],
+        [0.0000,    nan, 0.3077, 0.8462],
+        [   nan,    nan,    nan,    nan],
+        [   nan,    nan,    nan,    nan]])
+Pairwise matrix 4x4 (Att):
+tensor([[   nan,    nan,    nan,    nan],
+        [0.0000,    nan, 0.3077, 0.8462],
+        [   nan,    nan,    nan,    nan],
+        [   nan,    nan,    nan,    nan]])
+==================================
+== Test breakdown (shuffle_test_mode=none) ==
+n_windows total: 104
+n_windows high-attention: 104
+global accuracy (records, all): 0.0000
+global accuracy (records, attn): 0.0000
+global margin mean (all): -2.1173
+global margin mean (attn): -2.1173
+Figures saved to: ../results/spectra_ct_raw_lso_song18/nmed-CL-preprocessing_eegmusic/version_1
+[[[ FINISH ]]] 2026-06-26 01:42:27.493464
+  skip(done): classify_eeg|raw|raw|leave_song_out|50
+
+===== [01:42] spectra_clf_eeg_lso_song50  (classify_eeg|raw|spectra|leave_song_out|50)  elapsed 360m =====
+  TRAIN
+/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_fabric/__init__.py:29: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  __import__("pkg_resources").declare_namespace(__name__)
+[paths] host=edu02 host_profile_keys=[] cpu=128 cpu_effective=8
+[paths] dataset_dir=../dataset
+[paths] log_dir=../results
+[paths] workers=7
+[rank: 0] Global seed set to 42
+no augmentation
+[cv] mode=leave_song_out held_out_id=50
+Size of train dataset: 3377
+Size of valid dataset: 1133
+Size of test dataset: 104
+[eeg] SpectraEEG (raw 2D-CNN + band-power frequency branch)
+[audio] SampleCNN2DEEG (4 independent encoders, Akama baseline)
+Supervised classification (objective=classify_eeg, modality=eeg)
+[paths] tty=False (progress bar off, epoch summaries instead)
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+[[[ START ]]] 2026-06-26 01:42:54.561759
+You are using a CUDA device ('NVIDIA L40S') that has Tensor Cores. To properly utilize them, you should set `torch.set_float32_matmul_precision('medium' | 'high')` which will trade-off precision for performance. For more details, read https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
+Missing logger folder: ../results/spectra_clf_eeg_lso_song50/nmed-CL-preprocessing_eegmusic
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+
+  | Name        | Type             | Params
+-------------------------------------------------
+0 | encoder_eeg | SpectraEEG       | 153 K 
+1 | classifier  | Linear           | 404   
+2 | criterion   | CrossEntropyLoss | 0     
+-------------------------------------------------
+153 K     Trainable params
+0         Non-trainable params
+153 K     Total params
+0.615     Total estimated model params size (MB)
+SLURM auto-requeueing enabled. Setting signal handlers.
+[epoch    0] train_loss=n/a val_loss=1.2995
+2026-06-26 01:42:55,856 - dataloader_debug - INFO - --- Valid Epoch 0: acc=0.0000 n=16 (chance=0.25) ---
+[epoch    0] train_loss=1.2850 val_loss=1.2764
+2026-06-26 01:43:16,097 - dataloader_debug - INFO - --- Valid Epoch 0: acc=0.4902 n=1128 (chance=0.25) ---
+Metric Valid/loss improved. New best score: 1.276
+[epoch    1] train_loss=1.4846 val_loss=1.2645
+2026-06-26 01:43:37,035 - dataloader_debug - INFO - --- Valid Epoch 1: acc=0.5718 n=1128 (chance=0.25) ---
+Metric Valid/loss improved by 0.012 >= min_delta = 0.0. New best score: 1.264
+[epoch    2] train_loss=1.3783 val_loss=1.2537
+2026-06-26 01:43:57,454 - dataloader_debug - INFO - --- Valid Epoch 2: acc=0.5727 n=1128 (chance=0.25) ---
+Metric Valid/loss improved by 0.011 >= min_delta = 0.0. New best score: 1.254
+[epoch    3] train_loss=1.3538 val_loss=1.3155
+2026-06-26 01:44:18,328 - dataloader_debug - INFO - --- Valid Epoch 3: acc=0.5736 n=1128 (chance=0.25) ---
+[epoch    4] train_loss=1.2747 val_loss=1.2560
+2026-06-26 01:44:38,287 - dataloader_debug - INFO - --- Valid Epoch 4: acc=0.5674 n=1128 (chance=0.25) ---
+[epoch    5] train_loss=1.1187 val_loss=1.2949
+2026-06-26 01:44:58,823 - dataloader_debug - INFO - --- Valid Epoch 5: acc=0.5674 n=1128 (chance=0.25) ---
+[epoch    6] train_loss=1.2778 val_loss=1.2755
+2026-06-26 01:45:18,755 - dataloader_debug - INFO - --- Valid Epoch 6: acc=0.5443 n=1128 (chance=0.25) ---
+[epoch    7] train_loss=1.3545 val_loss=1.3854
+2026-06-26 01:45:39,447 - dataloader_debug - INFO - --- Valid Epoch 7: acc=0.4504 n=1128 (chance=0.25) ---
+[epoch    8] train_loss=1.1520 val_loss=1.3178
+2026-06-26 01:45:59,473 - dataloader_debug - INFO - --- Valid Epoch 8: acc=0.5293 n=1128 (chance=0.25) ---
+[epoch    9] train_loss=1.4909 val_loss=1.2650
+2026-06-26 01:46:19,477 - dataloader_debug - INFO - --- Valid Epoch 9: acc=0.5736 n=1128 (chance=0.25) ---
+[epoch   10] train_loss=1.4827 val_loss=1.2983
+2026-06-26 01:46:39,609 - dataloader_debug - INFO - --- Valid Epoch 10: acc=0.5691 n=1128 (chance=0.25) ---
+[epoch   11] train_loss=0.9842 val_loss=1.3614
+2026-06-26 01:46:59,878 - dataloader_debug - INFO - --- Valid Epoch 11: acc=0.4504 n=1128 (chance=0.25) ---
+[epoch   12] train_loss=1.2703 val_loss=1.3333
+2026-06-26 01:47:20,302 - dataloader_debug - INFO - --- Valid Epoch 12: acc=0.4353 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 10 records. Best score: 1.254. Signaling Trainer to stop.
+Trainer was signaled to stop but the required `min_epochs=50` or `min_steps=None` has not been met. Training will continue...
+[epoch   13] train_loss=1.2624 val_loss=1.3415
+2026-06-26 01:47:40,757 - dataloader_debug - INFO - --- Valid Epoch 13: acc=0.4521 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 11 records. Best score: 1.254. Signaling Trainer to stop.
+[epoch   14] train_loss=1.3049 val_loss=1.3222
+2026-06-26 01:48:01,148 - dataloader_debug - INFO - --- Valid Epoch 14: acc=0.4663 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 12 records. Best score: 1.254. Signaling Trainer to stop.
+[epoch   15] train_loss=1.3211 val_loss=1.2644
+2026-06-26 01:48:21,738 - dataloader_debug - INFO - --- Valid Epoch 15: acc=0.5505 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 13 records. Best score: 1.254. Signaling Trainer to stop.
+[epoch   16] train_loss=1.0126 val_loss=1.2719
+2026-06-26 01:48:42,875 - dataloader_debug - INFO - --- Valid Epoch 16: acc=0.5488 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 14 records. Best score: 1.254. Signaling Trainer to stop.
+[epoch   17] train_loss=1.8972 val_loss=1.3319
+2026-06-26 01:49:03,430 - dataloader_debug - INFO - --- Valid Epoch 17: acc=0.4149 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 15 records. Best score: 1.254. Signaling Trainer to stop.
+[epoch   18] train_loss=0.8977 val_loss=1.3646
+2026-06-26 01:49:23,800 - dataloader_debug - INFO - --- Valid Epoch 18: acc=0.3830 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 16 records. Best score: 1.254. Signaling Trainer to stop.
+[epoch   19] train_loss=1.1467 val_loss=1.3391
+2026-06-26 01:49:45,240 - dataloader_debug - INFO - --- Valid Epoch 19: acc=0.4610 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 17 records. Best score: 1.254. Signaling Trainer to stop.
+[epoch   20] train_loss=1.5742 val_loss=1.3448
+2026-06-26 01:50:06,114 - dataloader_debug - INFO - --- Valid Epoch 20: acc=0.5257 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 18 records. Best score: 1.254. Signaling Trainer to stop.
+[epoch   21] train_loss=1.0416 val_loss=1.3941
+2026-06-26 01:50:27,088 - dataloader_debug - INFO - --- Valid Epoch 21: acc=0.4238 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 19 records. Best score: 1.254. Signaling Trainer to stop.
+[epoch   22] train_loss=0.8098 val_loss=1.3848
+2026-06-26 01:50:47,592 - dataloader_debug - INFO - --- Valid Epoch 22: acc=0.4273 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 20 records. Best score: 1.254. Signaling Trainer to stop.
+[epoch   23] train_loss=1.4285 val_loss=1.3634
+2026-06-26 01:51:07,762 - dataloader_debug - INFO - --- Valid Epoch 23: acc=0.4796 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 21 records. Best score: 1.254. Signaling Trainer to stop.
+[epoch   24] train_loss=1.2327 val_loss=1.3389
+2026-06-26 01:51:28,013 - dataloader_debug - INFO - --- Valid Epoch 24: acc=0.5124 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 22 records. Best score: 1.254. Signaling Trainer to stop.
+[epoch   25] train_loss=0.7341 val_loss=1.4081
+2026-06-26 01:51:48,005 - dataloader_debug - INFO - --- Valid Epoch 25: acc=0.4663 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 23 records. Best score: 1.254. Signaling Trainer to stop.
+[epoch   26] train_loss=0.8132 val_loss=1.3492
+2026-06-26 01:52:07,920 - dataloader_debug - INFO - --- Valid Epoch 26: acc=0.4477 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 24 records. Best score: 1.254. Signaling Trainer to stop.
+[epoch   27] train_loss=1.2467 val_loss=1.3958
+2026-06-26 01:52:28,006 - dataloader_debug - INFO - --- Valid Epoch 27: acc=0.3972 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 25 records. Best score: 1.254. Signaling Trainer to stop.
+[epoch   28] train_loss=1.0253 val_loss=1.5114
+2026-06-26 01:52:48,088 - dataloader_debug - INFO - --- Valid Epoch 28: acc=0.5284 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 26 records. Best score: 1.254. Signaling Trainer to stop.
+[epoch   29] train_loss=1.1091 val_loss=1.3853
+2026-06-26 01:53:08,261 - dataloader_debug - INFO - --- Valid Epoch 29: acc=0.4060 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 27 records. Best score: 1.254. Signaling Trainer to stop.
+[epoch   30] train_loss=0.9509 val_loss=1.3522
+2026-06-26 01:53:28,361 - dataloader_debug - INFO - --- Valid Epoch 30: acc=0.5151 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 28 records. Best score: 1.254. Signaling Trainer to stop.
+[epoch   31] train_loss=0.7594 val_loss=1.4023
+2026-06-26 01:53:48,728 - dataloader_debug - INFO - --- Valid Epoch 31: acc=0.5257 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 29 records. Best score: 1.254. Signaling Trainer to stop.
+[epoch   32] train_loss=1.0251 val_loss=1.3871
+2026-06-26 01:54:09,289 - dataloader_debug - INFO - --- Valid Epoch 32: acc=0.4770 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 30 records. Best score: 1.254. Signaling Trainer to stop.
+[epoch   33] train_loss=1.2152 val_loss=1.3825
+2026-06-26 01:54:30,056 - dataloader_debug - INFO - --- Valid Epoch 33: acc=0.4309 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 31 records. Best score: 1.254. Signaling Trainer to stop.
+[epoch   34] train_loss=0.7450 val_loss=1.4761
+2026-06-26 01:54:51,035 - dataloader_debug - INFO - --- Valid Epoch 34: acc=0.4326 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 32 records. Best score: 1.254. Signaling Trainer to stop.
+[epoch   35] train_loss=0.8192 val_loss=1.4415
+2026-06-26 01:55:11,482 - dataloader_debug - INFO - --- Valid Epoch 35: acc=0.5044 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 33 records. Best score: 1.254. Signaling Trainer to stop.
+[epoch   36] train_loss=1.0010 val_loss=1.3678
+2026-06-26 01:55:32,105 - dataloader_debug - INFO - --- Valid Epoch 36: acc=0.4424 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 34 records. Best score: 1.254. Signaling Trainer to stop.
+[epoch   37] train_loss=1.1441 val_loss=1.4624
+2026-06-26 01:55:52,554 - dataloader_debug - INFO - --- Valid Epoch 37: acc=0.3812 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 35 records. Best score: 1.254. Signaling Trainer to stop.
+[epoch   38] train_loss=0.9750 val_loss=1.4700
+2026-06-26 01:56:12,738 - dataloader_debug - INFO - --- Valid Epoch 38: acc=0.3874 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 36 records. Best score: 1.254. Signaling Trainer to stop.
+[epoch   39] train_loss=0.8633 val_loss=1.4916
+2026-06-26 01:56:32,915 - dataloader_debug - INFO - --- Valid Epoch 39: acc=0.5115 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 37 records. Best score: 1.254. Signaling Trainer to stop.
+[epoch   40] train_loss=1.1643 val_loss=1.5382
+2026-06-26 01:56:52,992 - dataloader_debug - INFO - --- Valid Epoch 40: acc=0.4131 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 38 records. Best score: 1.254. Signaling Trainer to stop.
+[epoch   41] train_loss=0.9503 val_loss=1.3858
+2026-06-26 01:57:13,180 - dataloader_debug - INFO - --- Valid Epoch 41: acc=0.4184 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 39 records. Best score: 1.254. Signaling Trainer to stop.
+[epoch   42] train_loss=1.1038 val_loss=1.5430
+2026-06-26 01:57:33,217 - dataloader_debug - INFO - --- Valid Epoch 42: acc=0.4699 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 40 records. Best score: 1.254. Signaling Trainer to stop.
+[epoch   43] train_loss=1.2272 val_loss=1.4868
+2026-06-26 01:57:53,517 - dataloader_debug - INFO - --- Valid Epoch 43: acc=0.5275 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 41 records. Best score: 1.254. Signaling Trainer to stop.
+[epoch   44] train_loss=1.0499 val_loss=1.4779
+2026-06-26 01:58:13,811 - dataloader_debug - INFO - --- Valid Epoch 44: acc=0.5089 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 42 records. Best score: 1.254. Signaling Trainer to stop.
+[epoch   45] train_loss=0.9488 val_loss=1.5450
+2026-06-26 01:58:34,454 - dataloader_debug - INFO - --- Valid Epoch 45: acc=0.3067 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 43 records. Best score: 1.254. Signaling Trainer to stop.
+[epoch   46] train_loss=0.5713 val_loss=1.5663
+2026-06-26 01:58:54,778 - dataloader_debug - INFO - --- Valid Epoch 46: acc=0.2908 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 44 records. Best score: 1.254. Signaling Trainer to stop.
+[epoch   47] train_loss=0.8134 val_loss=1.5162
+2026-06-26 01:59:16,298 - dataloader_debug - INFO - --- Valid Epoch 47: acc=0.4176 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 45 records. Best score: 1.254. Signaling Trainer to stop.
+[epoch   48] train_loss=1.0268 val_loss=1.6445
+2026-06-26 01:59:36,858 - dataloader_debug - INFO - --- Valid Epoch 48: acc=0.4965 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 46 records. Best score: 1.254. Signaling Trainer to stop.
+[epoch   49] train_loss=1.1497 val_loss=2.8276
+2026-06-26 01:59:56,994 - dataloader_debug - INFO - --- Valid Epoch 49: acc=0.1534 n=1128 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 47 records. Best score: 1.254. Signaling Trainer to stop.
+[[[ FINISH ]]] 2026-06-26 01:59:57.093884
+  TEST
+/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_fabric/__init__.py:29: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  __import__("pkg_resources").declare_namespace(__name__)
+[paths] host=edu02 host_profile_keys=[] cpu=128 cpu_effective=8
+[paths] dataset_dir=../dataset
+[paths] log_dir=../results
+[paths] workers=7
+[rank: 0] Global seed set to 42
+no augmentation
+[cv] mode=leave_song_out held_out_id=50
+Size of train dataset: 3377
+Size of valid dataset: 1133
+Size of test dataset: 104
+[eeg] SpectraEEG (raw 2D-CNN + band-power frequency branch)
+[audio] SampleCNN2DEEG (4 independent encoders, Akama baseline)
+Supervised classification (objective=classify_eeg, modality=eeg)
+[paths] tty=False (progress bar off)
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+Auto-discovered checkpoint: ../results/spectra_clf_eeg_lso_song50/nmed-CL-preprocessing_eegmusic/version_0/checkpoints/best-checkpoint.ckpt
+[[[ START ]]] 2026-06-26 02:00:24.832370
+[load] checkpoint state_dict matched the model exactly
+You are using a CUDA device ('NVIDIA L40S') that has Tensor Cores. To properly utilize them, you should set `torch.set_float32_matmul_precision('medium' | 'high')` which will trade-off precision for performance. For more details, read https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+
+===== SUPERVISED TEST RESULTS =====
+objective: classify_eeg  |  chance = 0.25
+Global accuracy (all data):        0.0000
+Global accuracy (high attention):  0.0000
+Per-class accuracy (all):          [nan, nan, 0.0, nan]
+===================================
+== Supervised test (objective=classify_eeg) ==
+chance: 0.2500
+n_windows total: 104
+n_windows high-attention: 78
+global accuracy (records, all): 0.0000
+global accuracy (records, attn): 0.0000
+Figures saved to: ../results/spectra_clf_eeg_lso_song50/nmed-CL-preprocessing_eegmusic/version_1
+[[[ FINISH ]]] 2026-06-26 02:00:27.141857
+
+===== [02:00] ct_raw_lso_song50  (contrastive|raw|raw|leave_song_out|50)  elapsed 378m =====
+  TRAIN
+/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_fabric/__init__.py:29: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  __import__("pkg_resources").declare_namespace(__name__)
+[paths] host=edu02 host_profile_keys=[] cpu=128 cpu_effective=8
+[paths] dataset_dir=../dataset
+[paths] log_dir=../results
+[paths] workers=7
+[rank: 0] Global seed set to 42
+no augmentation
+[cv] mode=leave_song_out held_out_id=50
+Size of train dataset: 3377
+Size of valid dataset: 1133
+Size of test dataset: 104
+[eeg] SampleCNN2DEEG (raw EEG, Akama baseline)
+[audio] SampleCNN2DEEG (4 independent encoders, Akama baseline)
+EEG Contrastive learning
+use CLIP_loss as criterion
+[paths] tty=False (progress bar off, epoch summaries instead)
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+[[[ START ]]] 2026-06-26 02:00:51.636027
+You are using a CUDA device ('NVIDIA L40S') that has Tensor Cores. To properly utilize them, you should set `torch.set_float32_matmul_precision('medium' | 'high')` which will trade-off precision for performance. For more details, read https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
+Missing logger folder: ../results/ct_raw_lso_song50/nmed-CL-preprocessing_eegmusic
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+
+  | Name           | Type           | Params
+--------------------------------------------------
+0 | encoder_raw_e  | SampleCNN2DEEG | 116 K 
+1 | encoder_vocal  | SampleCNN2DEEG | 116 K 
+2 | encoder_drum   | SampleCNN2DEEG | 116 K 
+3 | encoder_bass   | SampleCNN2DEEG | 116 K 
+4 | encoder_others | SampleCNN2DEEG | 116 K 
+5 | criterion      | CLIP_Loss      | 0     
+--------------------------------------------------
+580 K     Trainable params
+0         Non-trainable params
+580 K     Total params
+2.322     Total estimated model params size (MB)
+SLURM auto-requeueing enabled. Setting signal handlers.
+[epoch    0] train_loss=n/a val_loss=3.6562
+2026-06-26 02:00:53,394 - dataloader_debug - INFO - --- Valid Epoch 0 Summary ---
+  Total samples: 16
+  High attention samples: 16
+  Task distribution: [16, 0, 0, 0]
+  Global Accuracy (All): 0.0000
+  Global Accuracy (Att): 0.0000
+----------------------------------------
+[epoch    0] train_loss=2.2464 val_loss=2.9148
+2026-06-26 02:06:34,685 - dataloader_debug - INFO - --- Valid Epoch 0 Summary ---
+  Total samples: 1128
+  High attention samples: 847
+  Task distribution: [649, 165, 105, 209]
+  Global Accuracy (All): 0.4858
+  Global Accuracy (Att): 0.5466
+----------------------------------------
+Metric Valid/loss improved. New best score: 2.915
+2026-06-26 02:06:34,953 - dataloader_debug - INFO - --- Train Epoch 0 Summary ---
+  Total samples: 3376
+  High attention samples: 2442
+  Batches w/o high attention: 0
+  Task distribution: [1628, 615, 660, 473]
+  Batches skipping tasks: [1, 69, 68, 128]
+---------------------------------------
+[epoch    1] train_loss=1.8569 val_loss=2.7375
+2026-06-26 02:12:16,233 - dataloader_debug - INFO - --- Valid Epoch 1 Summary ---
+  Total samples: 1128
+  High attention samples: 847
+  Task distribution: [649, 165, 105, 209]
+  Global Accuracy (All): 0.5754
+  Global Accuracy (Att): 0.7013
+----------------------------------------
+Metric Valid/loss improved by 0.177 >= min_delta = 0.0. New best score: 2.737
+2026-06-26 02:12:16,292 - dataloader_debug - INFO - --- Train Epoch 1 Summary ---
+  Total samples: 3376
+  High attention samples: 2441
+  Batches w/o high attention: 0
+  Task distribution: [1627, 616, 660, 473]
+  Batches skipping tasks: [1, 85, 66, 131]
+---------------------------------------
+[epoch    2] train_loss=1.7367 val_loss=2.7772
+2026-06-26 02:17:57,634 - dataloader_debug - INFO - --- Valid Epoch 2 Summary ---
+  Total samples: 1128
+  High attention samples: 847
+  Task distribution: [649, 165, 105, 209]
+  Global Accuracy (All): 0.5372
+  Global Accuracy (Att): 0.6139
+----------------------------------------
+2026-06-26 02:17:57,648 - dataloader_debug - INFO - --- Train Epoch 2 Summary ---
+  Total samples: 3376
+  High attention samples: 2441
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 660, 472]
+  Batches skipping tasks: [1, 83, 79, 123]
+---------------------------------------
+[epoch    3] train_loss=2.3478 val_loss=2.8441
+2026-06-26 02:23:38,900 - dataloader_debug - INFO - --- Valid Epoch 3 Summary ---
+  Total samples: 1128
+  High attention samples: 847
+  Task distribution: [649, 165, 105, 209]
+  Global Accuracy (All): 0.5727
+  Global Accuracy (Att): 0.6978
+----------------------------------------
+2026-06-26 02:23:38,914 - dataloader_debug - INFO - --- Train Epoch 3 Summary ---
+  Total samples: 3376
+  High attention samples: 2441
+  Batches w/o high attention: 0
+  Task distribution: [1627, 616, 660, 473]
+  Batches skipping tasks: [3, 86, 79, 129]
+---------------------------------------
+[epoch    4] train_loss=1.3407 val_loss=3.0826
+2026-06-26 02:29:20,335 - dataloader_debug - INFO - --- Valid Epoch 4 Summary ---
+  Total samples: 1128
+  High attention samples: 847
+  Task distribution: [649, 165, 105, 209]
+  Global Accuracy (All): 0.4069
+  Global Accuracy (Att): 0.3506
+----------------------------------------
+2026-06-26 02:29:20,348 - dataloader_debug - INFO - --- Train Epoch 4 Summary ---
+  Total samples: 3376
+  High attention samples: 2441
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 660, 472]
+  Batches skipping tasks: [1, 85, 73, 127]
+---------------------------------------
+[epoch    5] train_loss=1.4492 val_loss=2.8089
+2026-06-26 02:35:01,681 - dataloader_debug - INFO - --- Valid Epoch 5 Summary ---
+  Total samples: 1128
+  High attention samples: 847
+  Task distribution: [649, 165, 105, 209]
+  Global Accuracy (All): 0.4956
+  Global Accuracy (Att): 0.5773
+----------------------------------------
+2026-06-26 02:35:01,693 - dataloader_debug - INFO - --- Train Epoch 5 Summary ---
+  Total samples: 3376
+  High attention samples: 2442
+  Batches w/o high attention: 0
+  Task distribution: [1628, 615, 660, 473]
+  Batches skipping tasks: [2, 84, 71, 115]
+---------------------------------------
+[epoch    6] train_loss=1.0541 val_loss=2.7790
+2026-06-26 02:40:42,938 - dataloader_debug - INFO - --- Valid Epoch 6 Summary ---
+  Total samples: 1128
+  High attention samples: 847
+  Task distribution: [649, 165, 105, 209]
+  Global Accuracy (All): 0.5807
+  Global Accuracy (Att): 0.6269
+----------------------------------------
+2026-06-26 02:40:42,952 - dataloader_debug - INFO - --- Train Epoch 6 Summary ---
+  Total samples: 3376
+  High attention samples: 2441
+  Batches w/o high attention: 0
+  Task distribution: [1627, 616, 660, 473]
+  Batches skipping tasks: [4, 92, 70, 135]
+---------------------------------------
+[epoch    7] train_loss=1.7736 val_loss=2.8058
+2026-06-26 02:46:24,248 - dataloader_debug - INFO - --- Valid Epoch 7 Summary ---
+  Total samples: 1128
+  High attention samples: 847
+  Task distribution: [649, 165, 105, 209]
+  Global Accuracy (All): 0.5904
+  Global Accuracy (Att): 0.7261
+----------------------------------------
+2026-06-26 02:46:24,260 - dataloader_debug - INFO - --- Train Epoch 7 Summary ---
+  Total samples: 3376
+  High attention samples: 2441
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 659, 473]
+  Batches skipping tasks: [3, 75, 78, 118]
+---------------------------------------
+[epoch    8] train_loss=1.1803 val_loss=2.7420
+2026-06-26 02:52:05,716 - dataloader_debug - INFO - --- Valid Epoch 8 Summary ---
+  Total samples: 1128
+  High attention samples: 847
+  Task distribution: [649, 165, 105, 209]
+  Global Accuracy (All): 0.5824
+  Global Accuracy (Att): 0.7025
+----------------------------------------
+2026-06-26 02:52:05,730 - dataloader_debug - INFO - --- Train Epoch 8 Summary ---
+  Total samples: 3376
+  High attention samples: 2441
+  Batches w/o high attention: 0
+  Task distribution: [1627, 616, 660, 473]
+  Batches skipping tasks: [4, 87, 63, 126]
+---------------------------------------
+[epoch    9] train_loss=1.1486 val_loss=3.6091
+2026-06-26 02:57:47,014 - dataloader_debug - INFO - --- Valid Epoch 9 Summary ---
+  Total samples: 1128
+  High attention samples: 847
+  Task distribution: [649, 165, 105, 209]
+  Global Accuracy (All): 0.2863
+  Global Accuracy (Att): 0.2231
+----------------------------------------
+2026-06-26 02:57:47,027 - dataloader_debug - INFO - --- Train Epoch 9 Summary ---
+  Total samples: 3376
+  High attention samples: 2441
+  Batches w/o high attention: 0
+  Task distribution: [1627, 616, 660, 473]
+  Batches skipping tasks: [1, 87, 76, 124]
+---------------------------------------
+[epoch   10] train_loss=1.5764 val_loss=3.4072
+2026-06-26 03:03:28,462 - dataloader_debug - INFO - --- Valid Epoch 10 Summary ---
+  Total samples: 1128
+  High attention samples: 847
+  Task distribution: [649, 165, 105, 209]
+  Global Accuracy (All): 0.2580
+  Global Accuracy (Att): 0.1972
+----------------------------------------
+2026-06-26 03:03:28,528 - dataloader_debug - INFO - --- Train Epoch 10 Summary ---
+  Total samples: 3376
+  High attention samples: 2442
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 659, 473]
+  Batches skipping tasks: [5, 83, 75, 124]
+---------------------------------------
+[epoch   11] train_loss=1.8481 val_loss=3.7277
+2026-06-26 03:09:09,859 - dataloader_debug - INFO - --- Valid Epoch 11 Summary ---
+  Total samples: 1128
+  High attention samples: 847
+  Task distribution: [649, 165, 105, 209]
+  Global Accuracy (All): 0.2668
+  Global Accuracy (Att): 0.2054
+----------------------------------------
+Monitored metric Valid/loss did not improve in the last 10 records. Best score: 2.737. Signaling Trainer to stop.
+2026-06-26 03:09:09,871 - dataloader_debug - INFO - --- Train Epoch 11 Summary ---
+  Total samples: 3376
+  High attention samples: 2442
+  Batches w/o high attention: 0
+  Task distribution: [1627, 616, 660, 473]
+  Batches skipping tasks: [3, 87, 73, 131]
+---------------------------------------
+Trainer was signaled to stop but the required `min_epochs=50` or `min_steps=None` has not been met. Training will continue...
+[epoch   12] train_loss=1.4258 val_loss=2.6933
+2026-06-26 03:14:51,762 - dataloader_debug - INFO - --- Valid Epoch 12 Summary ---
+  Total samples: 1128
+  High attention samples: 847
+  Task distribution: [649, 165, 105, 209]
+  Global Accuracy (All): 0.5966
+  Global Accuracy (Att): 0.7214
+----------------------------------------
+Metric Valid/loss improved by 0.044 >= min_delta = 0.0. New best score: 2.693
+2026-06-26 03:14:51,914 - dataloader_debug - INFO - --- Train Epoch 12 Summary ---
+  Total samples: 3376
+  High attention samples: 2441
+  Batches w/o high attention: 0
+  Task distribution: [1628, 615, 660, 473]
+  Batches skipping tasks: [3, 84, 64, 128]
+---------------------------------------
+bypassing sigterm
+Traceback (most recent call last):
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/call.py", line 38, in _call_and_handle_interrupt
+    return trainer_fn(*args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 650, in _fit_impl
+    self._run(model, ckpt_path=self.ckpt_path)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 1112, in _run
+    results = self._run_stage()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 1191, in _run_stage
+    self._run_train()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 1214, in _run_train
+    self.fit_loop.run()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/loop.py", line 199, in run
+    self.advance(*args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/fit_loop.py", line 267, in advance
+    self._outputs = self.epoch_loop.run(self._data_fetcher)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/loop.py", line 200, in run
+    self.on_advance_end()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/epoch/training_epoch_loop.py", line 250, in on_advance_end
+    self._run_validation()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/epoch/training_epoch_loop.py", line 308, in _run_validation
+    self.val_loop.run()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/loop.py", line 199, in run
+    self.advance(*args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/dataloader/evaluation_loop.py", line 152, in advance
+    dl_outputs = self.epoch_loop.run(self._data_fetcher, dl_max_batches, kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/loop.py", line 199, in run
+    self.advance(*args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/epoch/evaluation_epoch_loop.py", line 137, in advance
+    output = self._evaluation_step(**kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/epoch/evaluation_epoch_loop.py", line 234, in _evaluation_step
+    output = self.trainer._call_strategy_hook(hook_name, *kwargs.values())
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 1494, in _call_strategy_hook
+    output = fn(*args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/strategies/strategy.py", line 390, in validation_step
+    return self.model.validation_step(*args, **kwargs)
+  File "/home/andrea.giampietro/EEG-Attention-decoding-with-CLAP/src/modules/contrastive_learning.py", line 181, in validation_step
+    similarity_dict = self.criterion(
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1511, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1520, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/andrea.giampietro/EEG-Attention-decoding-with-CLAP/src/modules/clip_loss.py", line 53, in forward
+    filtered_losses, filtered_positive_list, filtered_negative_av, filtered_matrix = self.compute_task_loss(
+  File "/home/andrea.giampietro/EEG-Attention-decoding-with-CLAP/src/modules/clip_loss.py", line 129, in compute_task_loss
+    sim_e_m_0 = self.similarity_f(z_eeg_0.unsqueeze(
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1511, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1520, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/torch/nn/modules/distance.py", line 89, in forward
+    return F.cosine_similarity(x1, x2, self.dim, self.eps)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/torch/utils/data/_utils/signal_handling.py", line 66, in handler
+    _error_if_any_worker_fails()
+RuntimeError: DataLoader worker (pid 3960737) is killed by signal: Terminated. 
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/andrea.giampietro/EEG-Attention-decoding-with-CLAP/src/main.py", line 412, in <module>
+    trainer.fit(module, train_dataloaders=train_loader, val_dataloaders=valid_loader)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 608, in fit
+    call._call_and_handle_interrupt(
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/call.py", line 63, in _call_and_handle_interrupt
+    trainer._teardown()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 1175, in _teardown
+    self.strategy.teardown()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/strategies/strategy.py", line 492, in teardown
+    _optimizers_to_device(self.optimizers, torch.device("cpu"))
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_fabric/utilities/optimizer.py", line 28, in _optimizers_to_device
+    _optimizer_to_device(opt, device)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_fabric/utilities/optimizer.py", line 34, in _optimizer_to_device
+    optimizer.state[p] = apply_to_collection(v, Tensor, move_data_to_device, device)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_utilities/core/apply_func.py", line 72, in apply_to_collection
+    return {k: function(v, *args, **kwargs) for k, v in data.items()}
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_utilities/core/apply_func.py", line 72, in <dictcomp>
+    return {k: function(v, *args, **kwargs) for k, v in data.items()}
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_fabric/utilities/apply_func.py", line 101, in move_data_to_device
+    return apply_to_collection(batch, dtype=_TransferableDataType, function=batch_to)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_utilities/core/apply_func.py", line 66, in apply_to_collection
+    return function(data, *args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_fabric/utilities/apply_func.py", line 95, in batch_to
+    data_output = data.to(device, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/torch/utils/data/_utils/signal_handling.py", line 66, in handler
+    _error_if_any_worker_fails()
+RuntimeError: DataLoader worker (pid 3961330) is killed by signal: Terminated. 
+  TEST
+/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_fabric/__init__.py:29: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  __import__("pkg_resources").declare_namespace(__name__)
+[paths] host=edu02 host_profile_keys=[] cpu=128 cpu_effective=8
+[paths] dataset_dir=../dataset
+[paths] log_dir=../results
+[paths] workers=7
+[rank: 0] Global seed set to 42
+no augmentation
+[cv] mode=leave_song_out held_out_id=50
+Size of train dataset: 3377
+Size of valid dataset: 1133
+Size of test dataset: 104
+[eeg] SampleCNN2DEEG (raw EEG, Akama baseline)
+[audio] SampleCNN2DEEG (4 independent encoders, Akama baseline)
+EEG Contrastive learning
+use CLIP_loss as criterion
+[paths] tty=False (progress bar off)
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+Auto-discovered checkpoint: ../results/ct_raw_lso_song50/nmed-CL-preprocessing_eegmusic/version_0/checkpoints/best-checkpoint.ckpt
+[[[ START ]]] 2026-06-26 03:21:25.866421
+[load] checkpoint state_dict matched the model exactly
+You are using a CUDA device ('NVIDIA L40S') that has Tensor Cores. To properly utilize them, you should set `torch.set_float32_matmul_precision('medium' | 'high')` which will trade-off precision for performance. For more details, read https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+
+========== TEST RESULTS ==========
+Global Accuracy (All data):        0.0096
+Global Accuracy (High attention):  0.0128
+Per-task acc (All):    [nan, nan, 0.009615384973585606, nan]
+Per-task acc (Att):    [nan, nan, 0.012820512987673283, nan]
+Pairwise matrix 4x4 (All):
+tensor([[   nan,    nan,    nan,    nan],
+        [   nan,    nan,    nan,    nan],
+        [0.0096, 0.7788,    nan, 0.9327],
+        [   nan,    nan,    nan,    nan]])
+Pairwise matrix 4x4 (Att):
+tensor([[   nan,    nan,    nan,    nan],
+        [   nan,    nan,    nan,    nan],
+        [0.0128, 0.8333,    nan, 0.9359],
+        [   nan,    nan,    nan,    nan]])
+==================================
+== Test breakdown (shuffle_test_mode=none) ==
+n_windows total: 104
+n_windows high-attention: 78
+global accuracy (records, all): 0.0096
+global accuracy (records, attn): 0.0128
+global margin mean (all): -2.7121
+global margin mean (attn): -2.7077
+Figures saved to: ../results/ct_raw_lso_song50/nmed-CL-preprocessing_eegmusic/version_1
+[[[ FINISH ]]] 2026-06-26 03:21:33.109668
+[budget] 459m -> stop
+
+######## SPECTRA AGGREGATE (within + leave_song_out) ########
+objective / eeg_repr / eval        folds   MACRO  GLOBAL
+classify_audio/raw/leave_song_out     17   0.172   0.190
+classify_audio/raw/within              1   0.967   0.963
+classify_eeg/raw/leave_song_out       16   0.246   0.246
+classify_eeg/raw/within                1   0.250   0.471
+classify_eeg/spectra/leave_song_out     7   0.231   0.264
+classify_eeg/spectra/within            1   0.250   0.471
+contrastive/raw/leave_song_out         8   0.244   0.244
+contrastive/raw/within                 1   0.778   0.814
+contrastive/spectra/leave_song_out     6   0.311   0.356
+contrastive/spectra/within             1   0.380   0.497
+chance=0.25 ; compare spectra vs raw at eval=leave_song_out (the honest metric)
+######## DONE ########

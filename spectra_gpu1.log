@@ -1,0 +1,272 @@
+nohup: ignoring input
+[env] Fri Jun 26 09:38:33 AM CEST 2026 env=eeg_attention CUDA_VISIBLE_DEVICES=1 SHARD=1/2
+[env] torch=2.2.2+cu121 cuda=True dev=NVIDIA L40S
+[resume] folds already done: 68
+  skip(done): classify_eeg|raw|raw|leave_song_out|7
+  skip(done): classify_eeg|raw|spectra|leave_song_out|7
+  skip(done): contrastive|raw|raw|leave_song_out|7
+  skip(done): contrastive|raw|spectra|leave_song_out|7
+  skip(done): classify_eeg|raw|raw|leave_song_out|8
+  skip(done): classify_eeg|raw|spectra|leave_song_out|8
+  skip(done): contrastive|raw|raw|leave_song_out|8
+  skip(done): contrastive|raw|spectra|leave_song_out|8
+  skip(done): classify_eeg|raw|raw|leave_song_out|18
+  skip(done): classify_eeg|raw|spectra|leave_song_out|18
+  skip(done): contrastive|raw|raw|leave_song_out|18
+  skip(done): contrastive|raw|spectra|leave_song_out|18
+  skip(done): classify_eeg|raw|raw|leave_song_out|16
+
+===== [09:38] spectra_clf_eeg_lso_song16  (classify_eeg|raw|spectra|leave_song_out|16)  elapsed 0m =====
+  TRAIN
+/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_fabric/__init__.py:29: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  __import__("pkg_resources").declare_namespace(__name__)
+[paths] host=edu02 host_profile_keys=[] cpu=128 cpu_effective=8
+[paths] dataset_dir=../dataset
+[paths] log_dir=../results
+[paths] workers=7
+[rank: 0] Global seed set to 42
+no augmentation
+[cv] mode=leave_song_out held_out_id=16
+Size of train dataset: 3432
+Size of valid dataset: 1122
+Size of test dataset: 104
+[eeg] SpectraEEG (raw 2D-CNN + band-power frequency branch)
+[audio] SampleCNN2DEEG (4 independent encoders, Akama baseline)
+Supervised classification (objective=classify_eeg, modality=eeg)
+[paths] tty=False (progress bar off, epoch summaries instead)
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+[[[ START ]]] 2026-06-26 09:39:41.229773
+You are using a CUDA device ('NVIDIA L40S') that has Tensor Cores. To properly utilize them, you should set `torch.set_float32_matmul_precision('medium' | 'high')` which will trade-off precision for performance. For more details, read https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
+Missing logger folder: ../results/spectra_clf_eeg_lso_song16/nmed-CL-preprocessing_eegmusic
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [1]
+
+  | Name        | Type             | Params
+-------------------------------------------------
+0 | encoder_eeg | SpectraEEG       | 153 K 
+1 | classifier  | Linear           | 404   
+2 | criterion   | CrossEntropyLoss | 0     
+-------------------------------------------------
+153 K     Trainable params
+0         Non-trainable params
+153 K     Total params
+0.615     Total estimated model params size (MB)
+SLURM auto-requeueing enabled. Setting signal handlers.
+[epoch    0] train_loss=n/a val_loss=1.2995
+2026-06-26 09:39:44,536 - dataloader_debug - INFO - --- Valid Epoch 0: acc=0.0000 n=16 (chance=0.25) ---
+[epoch    0] train_loss=0.9849 val_loss=1.2663
+2026-06-26 09:40:07,753 - dataloader_debug - INFO - --- Valid Epoch 0: acc=0.5714 n=1120 (chance=0.25) ---
+Metric Valid/loss improved. New best score: 1.266
+[epoch    1] train_loss=1.3030 val_loss=1.2637
+2026-06-26 09:40:30,720 - dataloader_debug - INFO - --- Valid Epoch 1: acc=0.5795 n=1120 (chance=0.25) ---
+Metric Valid/loss improved by 0.003 >= min_delta = 0.0. New best score: 1.264
+[epoch    2] train_loss=1.1677 val_loss=1.2610
+2026-06-26 09:40:53,444 - dataloader_debug - INFO - --- Valid Epoch 2: acc=0.5804 n=1120 (chance=0.25) ---
+Metric Valid/loss improved by 0.003 >= min_delta = 0.0. New best score: 1.261
+[epoch    3] train_loss=1.1702 val_loss=1.1985
+2026-06-26 09:41:15,968 - dataloader_debug - INFO - --- Valid Epoch 3: acc=0.5795 n=1120 (chance=0.25) ---
+Metric Valid/loss improved by 0.063 >= min_delta = 0.0. New best score: 1.198
+[epoch    4] train_loss=1.2757 val_loss=1.3419
+2026-06-26 09:41:38,347 - dataloader_debug - INFO - --- Valid Epoch 4: acc=0.5741 n=1120 (chance=0.25) ---
+[epoch    5] train_loss=1.0675 val_loss=1.2677
+2026-06-26 09:42:00,777 - dataloader_debug - INFO - --- Valid Epoch 5: acc=0.5616 n=1120 (chance=0.25) ---
+[epoch    6] train_loss=1.1584 val_loss=1.3084
+2026-06-26 09:42:23,074 - dataloader_debug - INFO - --- Valid Epoch 6: acc=0.5188 n=1120 (chance=0.25) ---
+[epoch    7] train_loss=1.0755 val_loss=1.3303
+2026-06-26 09:42:45,577 - dataloader_debug - INFO - --- Valid Epoch 7: acc=0.4813 n=1120 (chance=0.25) ---
+[epoch    8] train_loss=1.4170 val_loss=1.2567
+2026-06-26 09:43:08,383 - dataloader_debug - INFO - --- Valid Epoch 8: acc=0.5339 n=1120 (chance=0.25) ---
+[epoch    9] train_loss=1.3890 val_loss=1.3400
+2026-06-26 09:43:30,832 - dataloader_debug - INFO - --- Valid Epoch 9: acc=0.3902 n=1120 (chance=0.25) ---
+[epoch   10] train_loss=1.0149 val_loss=1.2993
+2026-06-26 09:43:53,434 - dataloader_debug - INFO - --- Valid Epoch 10: acc=0.4938 n=1120 (chance=0.25) ---
+[epoch   11] train_loss=1.0959 val_loss=1.3720
+2026-06-26 09:44:15,791 - dataloader_debug - INFO - --- Valid Epoch 11: acc=0.4920 n=1120 (chance=0.25) ---
+[epoch   12] train_loss=1.1125 val_loss=1.3757
+2026-06-26 09:44:38,068 - dataloader_debug - INFO - --- Valid Epoch 12: acc=0.3955 n=1120 (chance=0.25) ---
+[epoch   13] train_loss=1.0930 val_loss=1.3417
+2026-06-26 09:45:00,593 - dataloader_debug - INFO - --- Valid Epoch 13: acc=0.5018 n=1120 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 10 records. Best score: 1.198. Signaling Trainer to stop.
+Trainer was signaled to stop but the required `min_epochs=50` or `min_steps=None` has not been met. Training will continue...
+[epoch   14] train_loss=0.9951 val_loss=1.3319
+2026-06-26 09:45:25,748 - dataloader_debug - INFO - --- Valid Epoch 14: acc=0.5196 n=1120 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 11 records. Best score: 1.198. Signaling Trainer to stop.
+[epoch   15] train_loss=0.9571 val_loss=1.3477
+2026-06-26 09:45:51,175 - dataloader_debug - INFO - --- Valid Epoch 15: acc=0.4911 n=1120 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 12 records. Best score: 1.198. Signaling Trainer to stop.
+[epoch   16] train_loss=1.2155 val_loss=1.3109
+2026-06-26 09:46:13,735 - dataloader_debug - INFO - --- Valid Epoch 16: acc=0.5116 n=1120 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 13 records. Best score: 1.198. Signaling Trainer to stop.
+[epoch   17] train_loss=1.0851 val_loss=1.3067
+2026-06-26 09:46:36,161 - dataloader_debug - INFO - --- Valid Epoch 17: acc=0.5402 n=1120 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 14 records. Best score: 1.198. Signaling Trainer to stop.
+[epoch   18] train_loss=1.1937 val_loss=1.3724
+2026-06-26 09:46:59,164 - dataloader_debug - INFO - --- Valid Epoch 18: acc=0.4580 n=1120 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 15 records. Best score: 1.198. Signaling Trainer to stop.
+[epoch   19] train_loss=1.5697 val_loss=1.3731
+2026-06-26 09:47:21,926 - dataloader_debug - INFO - --- Valid Epoch 19: acc=0.4982 n=1120 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 16 records. Best score: 1.198. Signaling Trainer to stop.
+[epoch   20] train_loss=0.9385 val_loss=1.3250
+2026-06-26 09:47:44,419 - dataloader_debug - INFO - --- Valid Epoch 20: acc=0.5402 n=1120 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 17 records. Best score: 1.198. Signaling Trainer to stop.
+[epoch   21] train_loss=1.4500 val_loss=1.4168
+2026-06-26 09:48:07,095 - dataloader_debug - INFO - --- Valid Epoch 21: acc=0.3812 n=1120 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 18 records. Best score: 1.198. Signaling Trainer to stop.
+[epoch   22] train_loss=1.1300 val_loss=1.3317
+2026-06-26 09:48:29,588 - dataloader_debug - INFO - --- Valid Epoch 22: acc=0.4071 n=1120 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 19 records. Best score: 1.198. Signaling Trainer to stop.
+[epoch   23] train_loss=0.9352 val_loss=1.3403
+2026-06-26 09:48:52,226 - dataloader_debug - INFO - --- Valid Epoch 23: acc=0.4134 n=1120 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 20 records. Best score: 1.198. Signaling Trainer to stop.
+[epoch   24] train_loss=1.0019 val_loss=1.4529
+2026-06-26 09:49:15,199 - dataloader_debug - INFO - --- Valid Epoch 24: acc=0.3429 n=1120 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 21 records. Best score: 1.198. Signaling Trainer to stop.
+[epoch   25] train_loss=1.3932 val_loss=1.3512
+2026-06-26 09:49:37,724 - dataloader_debug - INFO - --- Valid Epoch 25: acc=0.4518 n=1120 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 22 records. Best score: 1.198. Signaling Trainer to stop.
+[epoch   26] train_loss=1.5526 val_loss=1.4053
+2026-06-26 09:50:00,107 - dataloader_debug - INFO - --- Valid Epoch 26: acc=0.4277 n=1120 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 23 records. Best score: 1.198. Signaling Trainer to stop.
+[epoch   27] train_loss=0.7897 val_loss=1.4278
+2026-06-26 09:50:22,899 - dataloader_debug - INFO - --- Valid Epoch 27: acc=0.3312 n=1120 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 24 records. Best score: 1.198. Signaling Trainer to stop.
+[epoch   28] train_loss=0.9128 val_loss=1.3843
+2026-06-26 09:50:45,605 - dataloader_debug - INFO - --- Valid Epoch 28: acc=0.3777 n=1120 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 25 records. Best score: 1.198. Signaling Trainer to stop.
+[epoch   29] train_loss=1.1228 val_loss=1.5154
+2026-06-26 09:51:09,602 - dataloader_debug - INFO - --- Valid Epoch 29: acc=0.3330 n=1120 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 26 records. Best score: 1.198. Signaling Trainer to stop.
+[epoch   30] train_loss=1.2049 val_loss=1.4835
+2026-06-26 09:51:34,112 - dataloader_debug - INFO - --- Valid Epoch 30: acc=0.5321 n=1120 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 27 records. Best score: 1.198. Signaling Trainer to stop.
+[epoch   31] train_loss=0.9957 val_loss=1.5718
+2026-06-26 09:51:57,584 - dataloader_debug - INFO - --- Valid Epoch 31: acc=0.3830 n=1120 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 28 records. Best score: 1.198. Signaling Trainer to stop.
+[epoch   32] train_loss=0.8613 val_loss=1.7572
+2026-06-26 09:52:20,240 - dataloader_debug - INFO - --- Valid Epoch 32: acc=0.2554 n=1120 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 29 records. Best score: 1.198. Signaling Trainer to stop.
+[epoch   33] train_loss=1.1163 val_loss=1.3932
+2026-06-26 09:52:42,892 - dataloader_debug - INFO - --- Valid Epoch 33: acc=0.5116 n=1120 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 30 records. Best score: 1.198. Signaling Trainer to stop.
+[epoch   34] train_loss=0.7969 val_loss=1.6261
+2026-06-26 09:53:05,312 - dataloader_debug - INFO - --- Valid Epoch 34: acc=0.3830 n=1120 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 31 records. Best score: 1.198. Signaling Trainer to stop.
+[epoch   35] train_loss=0.5115 val_loss=1.4094
+2026-06-26 09:53:27,915 - dataloader_debug - INFO - --- Valid Epoch 35: acc=0.4705 n=1120 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 32 records. Best score: 1.198. Signaling Trainer to stop.
+[epoch   36] train_loss=0.7901 val_loss=1.8489
+2026-06-26 09:53:50,637 - dataloader_debug - INFO - --- Valid Epoch 36: acc=0.2295 n=1120 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 33 records. Best score: 1.198. Signaling Trainer to stop.
+[epoch   37] train_loss=0.6554 val_loss=1.6286
+2026-06-26 09:54:12,907 - dataloader_debug - INFO - --- Valid Epoch 37: acc=0.5304 n=1120 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 34 records. Best score: 1.198. Signaling Trainer to stop.
+[epoch   38] train_loss=0.6412 val_loss=1.6069
+2026-06-26 09:54:35,386 - dataloader_debug - INFO - --- Valid Epoch 38: acc=0.3143 n=1120 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 35 records. Best score: 1.198. Signaling Trainer to stop.
+[epoch   39] train_loss=1.0280 val_loss=2.9186
+2026-06-26 09:54:57,824 - dataloader_debug - INFO - --- Valid Epoch 39: acc=0.1866 n=1120 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 36 records. Best score: 1.198. Signaling Trainer to stop.
+[epoch   40] train_loss=0.9616 val_loss=1.4041
+2026-06-26 09:55:20,184 - dataloader_debug - INFO - --- Valid Epoch 40: acc=0.4902 n=1120 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 37 records. Best score: 1.198. Signaling Trainer to stop.
+[epoch   41] train_loss=0.8561 val_loss=2.2189
+2026-06-26 09:55:42,772 - dataloader_debug - INFO - --- Valid Epoch 41: acc=0.2196 n=1120 (chance=0.25) ---
+Monitored metric Valid/loss did not improve in the last 38 records. Best score: 1.198. Signaling Trainer to stop.
+bypassing sigterm
+bypassing sigterm
+Traceback (most recent call last):
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/torch/utils/data/dataloader.py", line 1133, in _try_get_data
+    data = self._data_queue.get(timeout=timeout)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/multiprocessing/queues.py", line 113, in get
+    if not self._poll(timeout):
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/multiprocessing/connection.py", line 257, in poll
+    return self._poll(timeout)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/multiprocessing/connection.py", line 424, in _poll
+    r = wait([self], timeout)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/multiprocessing/connection.py", line 931, in wait
+    ready = selector.select(timeout)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/selectors.py", line 416, in select
+    fd_event_list = self._selector.poll(timeout)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/torch/utils/data/_utils/signal_handling.py", line 66, in handler
+    _error_if_any_worker_fails()
+RuntimeError: DataLoader worker (pid 4008183) is killed by signal: Terminated. 
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/call.py", line 38, in _call_and_handle_interrupt
+    return trainer_fn(*args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 650, in _fit_impl
+    self._run(model, ckpt_path=self.ckpt_path)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 1112, in _run
+    results = self._run_stage()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 1191, in _run_stage
+    self._run_train()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 1214, in _run_train
+    self.fit_loop.run()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/loop.py", line 199, in run
+    self.advance(*args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/fit_loop.py", line 267, in advance
+    self._outputs = self.epoch_loop.run(self._data_fetcher)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/loop.py", line 200, in run
+    self.on_advance_end()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/epoch/training_epoch_loop.py", line 250, in on_advance_end
+    self._run_validation()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/epoch/training_epoch_loop.py", line 308, in _run_validation
+    self.val_loop.run()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/loop.py", line 199, in run
+    self.advance(*args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/dataloader/evaluation_loop.py", line 152, in advance
+    dl_outputs = self.epoch_loop.run(self._data_fetcher, dl_max_batches, kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/loop.py", line 199, in run
+    self.advance(*args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/loops/epoch/evaluation_epoch_loop.py", line 121, in advance
+    batch = next(data_fetcher)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/utilities/fetching.py", line 184, in __next__
+    return self.fetching_function()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/utilities/fetching.py", line 265, in fetching_function
+    self._fetch_next_batch(self.dataloader_iter)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/utilities/fetching.py", line 280, in _fetch_next_batch
+    batch = next(iterator)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/torch/utils/data/dataloader.py", line 631, in __next__
+    data = self._next_data()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/torch/utils/data/dataloader.py", line 1329, in _next_data
+    idx, data = self._get_data()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/torch/utils/data/dataloader.py", line 1295, in _get_data
+    success, data = self._try_get_data()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/torch/utils/data/dataloader.py", line 1146, in _try_get_data
+    raise RuntimeError(f'DataLoader worker (pid(s) {pids_str}) exited unexpectedly') from e
+RuntimeError: DataLoader worker (pid(s) 4008183) exited unexpectedly
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/andrea.giampietro/EEG-Attention-decoding-with-CLAP/src/main.py", line 412, in <module>
+    trainer.fit(module, train_dataloaders=train_loader, val_dataloaders=valid_loader)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 608, in fit
+    call._call_and_handle_interrupt(
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/call.py", line 63, in _call_and_handle_interrupt
+    trainer._teardown()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 1175, in _teardown
+    self.strategy.teardown()
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/pytorch_lightning/strategies/strategy.py", line 492, in teardown
+    _optimizers_to_device(self.optimizers, torch.device("cpu"))
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_fabric/utilities/optimizer.py", line 28, in _optimizers_to_device
+    _optimizer_to_device(opt, device)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_fabric/utilities/optimizer.py", line 34, in _optimizer_to_device
+    optimizer.state[p] = apply_to_collection(v, Tensor, move_data_to_device, device)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_utilities/core/apply_func.py", line 72, in apply_to_collection
+    return {k: function(v, *args, **kwargs) for k, v in data.items()}
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_utilities/core/apply_func.py", line 72, in <dictcomp>
+    return {k: function(v, *args, **kwargs) for k, v in data.items()}
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_fabric/utilities/apply_func.py", line 101, in move_data_to_device
+    return apply_to_collection(batch, dtype=_TransferableDataType, function=batch_to)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_utilities/core/apply_func.py", line 66, in apply_to_collection
+    return function(data, *args, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_fabric/utilities/apply_func.py", line 95, in batch_to
+    data_output = data.to(device, **kwargs)
+  File "/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/torch/utils/data/_utils/signal_handling.py", line 66, in handler
+    _error_if_any_worker_fails()
+RuntimeError: DataLoader worker (pid 4007444) is killed by signal: Terminated. 

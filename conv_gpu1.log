@@ -1,0 +1,1281 @@
+nohup: ignoring input
+[env] Fri Jun 26 10:28:51 AM CEST 2026 env=eeg_attention CUDA=1 SHARD=1/2 CAP=360m
+[env] torch=2.2.2+cu121 cuda=True dev=NVIDIA L40S
+
+===== [10:28] conv_ct_raw_lso_song16  (contrastive|raw|raw|leave_song_out|16)  elapsed 0m =====
+  TRAIN (CAP=360m, to convergence)
+/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_fabric/__init__.py:29: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  __import__("pkg_resources").declare_namespace(__name__)
+[paths] host=edu02 host_profile_keys=[] cpu=128 cpu_effective=8
+[paths] dataset_dir=../dataset
+[paths] log_dir=../results
+[paths] workers=7
+[rank: 0] Global seed set to 42
+no augmentation
+[cv] mode=leave_song_out held_out_id=16
+Size of train dataset: 3432
+Size of valid dataset: 1122
+Size of test dataset: 104
+[eeg] SampleCNN2DEEG (raw EEG, Akama baseline)
+[audio] SampleCNN2DEEG (4 independent encoders, Akama baseline)
+EEG Contrastive learning
+use CLIP_loss as criterion
+[paths] tty=False (progress bar off, epoch summaries instead)
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+[[[ START ]]] 2026-06-26 10:29:17.311041
+You are using a CUDA device ('NVIDIA L40S') that has Tensor Cores. To properly utilize them, you should set `torch.set_float32_matmul_precision('medium' | 'high')` which will trade-off precision for performance. For more details, read https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
+Missing logger folder: ../results/conv_ct_raw_lso_song16/nmed-CL-preprocessing_eegmusic
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [1]
+
+  | Name           | Type           | Params
+--------------------------------------------------
+0 | encoder_raw_e  | SampleCNN2DEEG | 116 K 
+1 | encoder_vocal  | SampleCNN2DEEG | 116 K 
+2 | encoder_drum   | SampleCNN2DEEG | 116 K 
+3 | encoder_bass   | SampleCNN2DEEG | 116 K 
+4 | encoder_others | SampleCNN2DEEG | 116 K 
+5 | criterion      | CLIP_Loss      | 0     
+--------------------------------------------------
+580 K     Trainable params
+0         Non-trainable params
+580 K     Total params
+2.322     Total estimated model params size (MB)
+SLURM auto-requeueing enabled. Setting signal handlers.
+[epoch    0] train_loss=n/a val_loss=3.6562
+2026-06-26 10:29:19,025 - dataloader_debug - INFO - --- Valid Epoch 0 Summary ---
+  Total samples: 16
+  High attention samples: 16
+  Task distribution: [16, 0, 0, 0]
+  Global Accuracy (All): 0.0000
+  Global Accuracy (Att): 0.0000
+----------------------------------------
+[epoch    0] train_loss=2.3738 val_loss=3.2552
+2026-06-26 10:35:10,678 - dataloader_debug - INFO - --- Valid Epoch 0 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.2116
+  Global Accuracy (Att): 0.2133
+----------------------------------------
+Metric Valid/loss improved. New best score: 3.255
+2026-06-26 10:35:10,984 - dataloader_debug - INFO - --- Train Epoch 0 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [3, 88, 56, 139]
+---------------------------------------
+[epoch    1] train_loss=2.1733 val_loss=2.7967
+2026-06-26 10:41:01,443 - dataloader_debug - INFO - --- Valid Epoch 1 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.5518
+  Global Accuracy (Att): 0.6200
+----------------------------------------
+Metric Valid/loss improved by 0.458 >= min_delta = 0.0. New best score: 2.797
+2026-06-26 10:41:01,578 - dataloader_debug - INFO - --- Train Epoch 1 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [4, 81, 57, 142]
+---------------------------------------
+[epoch    2] train_loss=1.4600 val_loss=3.0491
+2026-06-26 10:46:54,217 - dataloader_debug - INFO - --- Valid Epoch 2 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.3598
+  Global Accuracy (Att): 0.3671
+----------------------------------------
+2026-06-26 10:46:54,238 - dataloader_debug - INFO - --- Train Epoch 2 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [3, 92, 65, 153]
+---------------------------------------
+[epoch    3] train_loss=1.2079 val_loss=2.7333
+2026-06-26 10:52:47,030 - dataloader_debug - INFO - --- Valid Epoch 3 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.5795
+  Global Accuracy (Att): 0.6783
+----------------------------------------
+Metric Valid/loss improved by 0.063 >= min_delta = 0.0. New best score: 2.733
+2026-06-26 10:52:47,159 - dataloader_debug - INFO - --- Train Epoch 3 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [3, 94, 67, 134]
+---------------------------------------
+[epoch    4] train_loss=1.8088 val_loss=2.8506
+2026-06-26 10:58:39,508 - dataloader_debug - INFO - --- Valid Epoch 4 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.5866
+  Global Accuracy (Att): 0.7051
+----------------------------------------
+2026-06-26 10:58:39,523 - dataloader_debug - INFO - --- Train Epoch 4 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [3, 84, 60, 148]
+---------------------------------------
+[epoch    5] train_loss=1.4527 val_loss=2.7497
+2026-06-26 11:04:31,661 - dataloader_debug - INFO - --- Valid Epoch 5 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.6259
+  Global Accuracy (Att): 0.6888
+----------------------------------------
+2026-06-26 11:04:31,674 - dataloader_debug - INFO - --- Train Epoch 5 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [3, 95, 62, 139]
+---------------------------------------
+[epoch    6] train_loss=0.9526 val_loss=2.8761
+2026-06-26 11:10:24,328 - dataloader_debug - INFO - --- Valid Epoch 6 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.5446
+  Global Accuracy (Att): 0.5618
+----------------------------------------
+2026-06-26 11:10:24,339 - dataloader_debug - INFO - --- Train Epoch 6 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [2, 91, 59, 143]
+---------------------------------------
+[epoch    7] train_loss=1.6152 val_loss=3.3757
+2026-06-26 11:16:17,092 - dataloader_debug - INFO - --- Valid Epoch 7 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.2830
+  Global Accuracy (Att): 0.2751
+----------------------------------------
+2026-06-26 11:16:17,116 - dataloader_debug - INFO - --- Train Epoch 7 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [3, 86, 68, 145]
+---------------------------------------
+[epoch    8] train_loss=1.2820 val_loss=2.9133
+2026-06-26 11:22:09,286 - dataloader_debug - INFO - --- Valid Epoch 8 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.5312
+  Global Accuracy (Att): 0.5746
+----------------------------------------
+2026-06-26 11:22:09,302 - dataloader_debug - INFO - --- Train Epoch 8 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [4, 93, 64, 131]
+---------------------------------------
+[epoch    9] train_loss=1.3802 val_loss=2.8950
+2026-06-26 11:27:59,542 - dataloader_debug - INFO - --- Valid Epoch 9 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.5491
+  Global Accuracy (Att): 0.6107
+----------------------------------------
+2026-06-26 11:27:59,558 - dataloader_debug - INFO - --- Train Epoch 9 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [2, 87, 68, 149]
+---------------------------------------
+[epoch   10] train_loss=1.1819 val_loss=3.0543
+2026-06-26 11:33:49,365 - dataloader_debug - INFO - --- Valid Epoch 10 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.4571
+  Global Accuracy (Att): 0.4079
+----------------------------------------
+2026-06-26 11:33:49,388 - dataloader_debug - INFO - --- Train Epoch 10 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [1, 78, 55, 146]
+---------------------------------------
+[epoch   11] train_loss=1.1640 val_loss=3.0100
+2026-06-26 11:39:38,801 - dataloader_debug - INFO - --- Valid Epoch 11 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.5179
+  Global Accuracy (Att): 0.5035
+----------------------------------------
+2026-06-26 11:39:38,822 - dataloader_debug - INFO - --- Train Epoch 11 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [6, 90, 69, 148]
+---------------------------------------
+[epoch   12] train_loss=1.2252 val_loss=2.8077
+2026-06-26 11:45:28,148 - dataloader_debug - INFO - --- Valid Epoch 12 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.4786
+  Global Accuracy (Att): 0.4930
+----------------------------------------
+2026-06-26 11:45:28,173 - dataloader_debug - INFO - --- Train Epoch 12 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [4, 84, 61, 149]
+---------------------------------------
+[epoch   13] train_loss=1.0893 val_loss=2.8945
+2026-06-26 11:51:17,938 - dataloader_debug - INFO - --- Valid Epoch 13 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.5437
+  Global Accuracy (Att): 0.5839
+----------------------------------------
+Monitored metric Valid/loss did not improve in the last 10 records. Best score: 2.733. Signaling Trainer to stop.
+2026-06-26 11:51:17,955 - dataloader_debug - INFO - --- Train Epoch 13 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [4, 84, 64, 132]
+---------------------------------------
+Trainer was signaled to stop but the required `min_epochs=50` or `min_steps=None` has not been met. Training will continue...
+[epoch   14] train_loss=1.1381 val_loss=3.1163
+2026-06-26 11:57:08,085 - dataloader_debug - INFO - --- Valid Epoch 14 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.4723
+  Global Accuracy (Att): 0.5117
+----------------------------------------
+Monitored metric Valid/loss did not improve in the last 11 records. Best score: 2.733. Signaling Trainer to stop.
+2026-06-26 11:57:08,098 - dataloader_debug - INFO - --- Train Epoch 14 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [4, 97, 58, 152]
+---------------------------------------
+[epoch   15] train_loss=1.4517 val_loss=2.9526
+2026-06-26 12:02:58,422 - dataloader_debug - INFO - --- Valid Epoch 15 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.4366
+  Global Accuracy (Att): 0.3986
+----------------------------------------
+Monitored metric Valid/loss did not improve in the last 12 records. Best score: 2.733. Signaling Trainer to stop.
+2026-06-26 12:02:58,451 - dataloader_debug - INFO - --- Train Epoch 15 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [3, 96, 59, 131]
+---------------------------------------
+[epoch   16] train_loss=1.1554 val_loss=2.9096
+2026-06-26 12:08:48,643 - dataloader_debug - INFO - --- Valid Epoch 16 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.4777
+  Global Accuracy (Att): 0.4953
+----------------------------------------
+Monitored metric Valid/loss did not improve in the last 13 records. Best score: 2.733. Signaling Trainer to stop.
+2026-06-26 12:08:48,662 - dataloader_debug - INFO - --- Train Epoch 16 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [2, 81, 66, 133]
+---------------------------------------
+[epoch   17] train_loss=0.7387 val_loss=3.4582
+2026-06-26 12:14:38,464 - dataloader_debug - INFO - --- Valid Epoch 17 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.3902
+  Global Accuracy (Att): 0.3159
+----------------------------------------
+Monitored metric Valid/loss did not improve in the last 14 records. Best score: 2.733. Signaling Trainer to stop.
+2026-06-26 12:14:38,475 - dataloader_debug - INFO - --- Train Epoch 17 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [5, 88, 58, 144]
+---------------------------------------
+[epoch   18] train_loss=1.1013 val_loss=2.8103
+2026-06-26 12:20:28,776 - dataloader_debug - INFO - --- Valid Epoch 18 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.5134
+  Global Accuracy (Att): 0.5828
+----------------------------------------
+Monitored metric Valid/loss did not improve in the last 15 records. Best score: 2.733. Signaling Trainer to stop.
+2026-06-26 12:20:28,866 - dataloader_debug - INFO - --- Train Epoch 18 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [1, 92, 55, 141]
+---------------------------------------
+[epoch   19] train_loss=1.1542 val_loss=2.5152
+2026-06-26 12:26:18,551 - dataloader_debug - INFO - --- Valid Epoch 19 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.7393
+  Global Accuracy (Att): 0.7168
+----------------------------------------
+Metric Valid/loss improved by 0.218 >= min_delta = 0.0. New best score: 2.515
+2026-06-26 12:26:18,676 - dataloader_debug - INFO - --- Train Epoch 19 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [1, 87, 53, 142]
+---------------------------------------
+[epoch   20] train_loss=1.1711 val_loss=2.6831
+2026-06-26 12:32:09,351 - dataloader_debug - INFO - --- Valid Epoch 20 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.6518
+  Global Accuracy (Att): 0.6445
+----------------------------------------
+2026-06-26 12:32:09,362 - dataloader_debug - INFO - --- Train Epoch 20 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [3, 93, 64, 127]
+---------------------------------------
+[epoch   21] train_loss=1.7617 val_loss=2.8864
+2026-06-26 12:37:59,323 - dataloader_debug - INFO - --- Valid Epoch 21 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.4911
+  Global Accuracy (Att): 0.4312
+----------------------------------------
+2026-06-26 12:37:59,336 - dataloader_debug - INFO - --- Train Epoch 21 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [1, 92, 64, 144]
+---------------------------------------
+[epoch   22] train_loss=0.8643 val_loss=2.7429
+2026-06-26 12:43:49,708 - dataloader_debug - INFO - --- Valid Epoch 22 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.5723
+  Global Accuracy (Att): 0.5839
+----------------------------------------
+2026-06-26 12:43:49,720 - dataloader_debug - INFO - --- Train Epoch 22 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [3, 93, 58, 138]
+---------------------------------------
+[epoch   23] train_loss=1.3952 val_loss=3.0242
+2026-06-26 12:49:39,655 - dataloader_debug - INFO - --- Valid Epoch 23 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.4321
+  Global Accuracy (Att): 0.4196
+----------------------------------------
+2026-06-26 12:49:39,668 - dataloader_debug - INFO - --- Train Epoch 23 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [2, 76, 60, 136]
+---------------------------------------
+[epoch   24] train_loss=1.6205 val_loss=2.9042
+2026-06-26 12:55:30,198 - dataloader_debug - INFO - --- Valid Epoch 24 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.5045
+  Global Accuracy (Att): 0.5023
+----------------------------------------
+2026-06-26 12:55:30,212 - dataloader_debug - INFO - --- Train Epoch 24 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [2, 83, 61, 139]
+---------------------------------------
+[epoch   25] train_loss=2.0601 val_loss=2.7206
+2026-06-26 13:01:19,985 - dataloader_debug - INFO - --- Valid Epoch 25 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.6071
+  Global Accuracy (Att): 0.6981
+----------------------------------------
+2026-06-26 13:01:20,023 - dataloader_debug - INFO - --- Train Epoch 25 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [3, 90, 62, 144]
+---------------------------------------
+[epoch   26] train_loss=0.7979 val_loss=2.8172
+2026-06-26 13:07:10,245 - dataloader_debug - INFO - --- Valid Epoch 26 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.5473
+  Global Accuracy (Att): 0.5501
+----------------------------------------
+2026-06-26 13:07:10,256 - dataloader_debug - INFO - --- Train Epoch 26 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [2, 81, 66, 141]
+---------------------------------------
+[epoch   27] train_loss=1.3676 val_loss=3.0632
+2026-06-26 13:13:00,259 - dataloader_debug - INFO - --- Valid Epoch 27 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.3446
+  Global Accuracy (Att): 0.2751
+----------------------------------------
+2026-06-26 13:13:00,275 - dataloader_debug - INFO - --- Train Epoch 27 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [5, 93, 66, 137]
+---------------------------------------
+[epoch   28] train_loss=1.1854 val_loss=2.9283
+2026-06-26 13:18:50,765 - dataloader_debug - INFO - --- Valid Epoch 28 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.5437
+  Global Accuracy (Att): 0.5291
+----------------------------------------
+2026-06-26 13:18:50,785 - dataloader_debug - INFO - --- Train Epoch 28 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [3, 97, 58, 140]
+---------------------------------------
+[epoch   29] train_loss=1.7963 val_loss=2.8529
+2026-06-26 13:24:41,289 - dataloader_debug - INFO - --- Valid Epoch 29 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.4920
+  Global Accuracy (Att): 0.4545
+----------------------------------------
+Monitored metric Valid/loss did not improve in the last 10 records. Best score: 2.515. Signaling Trainer to stop.
+2026-06-26 13:24:41,298 - dataloader_debug - INFO - --- Train Epoch 29 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [1, 100, 65, 140]
+---------------------------------------
+[epoch   30] train_loss=1.5461 val_loss=2.6166
+2026-06-26 13:30:31,854 - dataloader_debug - INFO - --- Valid Epoch 30 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.6723
+  Global Accuracy (Att): 0.6422
+----------------------------------------
+Monitored metric Valid/loss did not improve in the last 11 records. Best score: 2.515. Signaling Trainer to stop.
+2026-06-26 13:30:31,868 - dataloader_debug - INFO - --- Train Epoch 30 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [4, 86, 65, 144]
+---------------------------------------
+[epoch   31] train_loss=1.3284 val_loss=3.4664
+2026-06-26 13:36:21,646 - dataloader_debug - INFO - --- Valid Epoch 31 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.3179
+  Global Accuracy (Att): 0.2529
+----------------------------------------
+Monitored metric Valid/loss did not improve in the last 12 records. Best score: 2.515. Signaling Trainer to stop.
+2026-06-26 13:36:21,659 - dataloader_debug - INFO - --- Train Epoch 31 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [3, 92, 74, 145]
+---------------------------------------
+[epoch   32] train_loss=1.4049 val_loss=2.8018
+2026-06-26 13:42:11,256 - dataloader_debug - INFO - --- Valid Epoch 32 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.5875
+  Global Accuracy (Att): 0.5886
+----------------------------------------
+Monitored metric Valid/loss did not improve in the last 13 records. Best score: 2.515. Signaling Trainer to stop.
+2026-06-26 13:42:11,267 - dataloader_debug - INFO - --- Train Epoch 32 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [0, 86, 60, 142]
+---------------------------------------
+[epoch   33] train_loss=0.9949 val_loss=2.5516
+2026-06-26 13:48:01,569 - dataloader_debug - INFO - --- Valid Epoch 33 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.6777
+  Global Accuracy (Att): 0.6690
+----------------------------------------
+Monitored metric Valid/loss did not improve in the last 14 records. Best score: 2.515. Signaling Trainer to stop.
+2026-06-26 13:48:01,583 - dataloader_debug - INFO - --- Train Epoch 33 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [3, 91, 64, 134]
+---------------------------------------
+[epoch   34] train_loss=1.2827 val_loss=3.1118
+2026-06-26 13:53:51,444 - dataloader_debug - INFO - --- Valid Epoch 34 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.3116
+  Global Accuracy (Att): 0.2972
+----------------------------------------
+Monitored metric Valid/loss did not improve in the last 15 records. Best score: 2.515. Signaling Trainer to stop.
+2026-06-26 13:53:51,463 - dataloader_debug - INFO - --- Train Epoch 34 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [2, 83, 57, 132]
+---------------------------------------
+[epoch   35] train_loss=1.5580 val_loss=2.6990
+2026-06-26 13:59:40,769 - dataloader_debug - INFO - --- Valid Epoch 35 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.6045
+  Global Accuracy (Att): 0.5653
+----------------------------------------
+Monitored metric Valid/loss did not improve in the last 16 records. Best score: 2.515. Signaling Trainer to stop.
+2026-06-26 13:59:40,778 - dataloader_debug - INFO - --- Train Epoch 35 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [1, 91, 60, 134]
+---------------------------------------
+[epoch   36] train_loss=0.9709 val_loss=2.9171
+2026-06-26 14:05:30,741 - dataloader_debug - INFO - --- Valid Epoch 36 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.5321
+  Global Accuracy (Att): 0.5245
+----------------------------------------
+Monitored metric Valid/loss did not improve in the last 17 records. Best score: 2.515. Signaling Trainer to stop.
+2026-06-26 14:05:30,753 - dataloader_debug - INFO - --- Train Epoch 36 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [4, 104, 65, 137]
+---------------------------------------
+[epoch   37] train_loss=1.3333 val_loss=3.6804
+2026-06-26 14:11:20,962 - dataloader_debug - INFO - --- Valid Epoch 37 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.3491
+  Global Accuracy (Att): 0.2657
+----------------------------------------
+Monitored metric Valid/loss did not improve in the last 18 records. Best score: 2.515. Signaling Trainer to stop.
+2026-06-26 14:11:20,974 - dataloader_debug - INFO - --- Train Epoch 37 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [0, 86, 61, 135]
+---------------------------------------
+[epoch   38] train_loss=1.0813 val_loss=2.7513
+2026-06-26 14:17:10,665 - dataloader_debug - INFO - --- Valid Epoch 38 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.6071
+  Global Accuracy (Att): 0.5874
+----------------------------------------
+Monitored metric Valid/loss did not improve in the last 19 records. Best score: 2.515. Signaling Trainer to stop.
+2026-06-26 14:17:10,676 - dataloader_debug - INFO - --- Train Epoch 38 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [4, 83, 61, 140]
+---------------------------------------
+[epoch   39] train_loss=1.2460 val_loss=2.8201
+2026-06-26 14:23:00,817 - dataloader_debug - INFO - --- Valid Epoch 39 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.4268
+  Global Accuracy (Att): 0.3823
+----------------------------------------
+Monitored metric Valid/loss did not improve in the last 20 records. Best score: 2.515. Signaling Trainer to stop.
+2026-06-26 14:23:00,830 - dataloader_debug - INFO - --- Train Epoch 39 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [1, 78, 60, 130]
+---------------------------------------
+[epoch   40] train_loss=1.4536 val_loss=2.4815
+2026-06-26 14:28:50,719 - dataloader_debug - INFO - --- Valid Epoch 40 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.6839
+  Global Accuracy (Att): 0.7110
+----------------------------------------
+Metric Valid/loss improved by 0.034 >= min_delta = 0.0. New best score: 2.481
+2026-06-26 14:28:50,775 - dataloader_debug - INFO - --- Train Epoch 40 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [0, 89, 79, 127]
+---------------------------------------
+[epoch   41] train_loss=1.0876 val_loss=3.0115
+2026-06-26 14:34:40,346 - dataloader_debug - INFO - --- Valid Epoch 41 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.4143
+  Global Accuracy (Att): 0.3392
+----------------------------------------
+2026-06-26 14:34:40,360 - dataloader_debug - INFO - --- Train Epoch 41 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [2, 97, 61, 151]
+---------------------------------------
+[epoch   42] train_loss=0.8382 val_loss=2.6383
+2026-06-26 14:40:30,499 - dataloader_debug - INFO - --- Valid Epoch 42 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.6661
+  Global Accuracy (Att): 0.6375
+----------------------------------------
+2026-06-26 14:40:30,512 - dataloader_debug - INFO - --- Train Epoch 42 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [2, 93, 63, 137]
+---------------------------------------
+[epoch   43] train_loss=0.6373 val_loss=2.4092
+2026-06-26 14:46:20,211 - dataloader_debug - INFO - --- Valid Epoch 43 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.6982
+  Global Accuracy (Att): 0.7552
+----------------------------------------
+Metric Valid/loss improved by 0.072 >= min_delta = 0.0. New best score: 2.409
+2026-06-26 14:46:20,349 - dataloader_debug - INFO - --- Train Epoch 43 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [0, 90, 66, 141]
+---------------------------------------
+[epoch   44] train_loss=0.6632 val_loss=2.3333
+2026-06-26 14:52:10,664 - dataloader_debug - INFO - --- Valid Epoch 44 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.7866
+  Global Accuracy (Att): 0.8193
+----------------------------------------
+Metric Valid/loss improved by 0.076 >= min_delta = 0.0. New best score: 2.333
+2026-06-26 14:52:10,731 - dataloader_debug - INFO - --- Train Epoch 44 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [0, 77, 58, 139]
+---------------------------------------
+[epoch   45] train_loss=1.0466 val_loss=2.8968
+2026-06-26 14:58:01,125 - dataloader_debug - INFO - --- Valid Epoch 45 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.5750
+  Global Accuracy (Att): 0.5664
+----------------------------------------
+2026-06-26 14:58:01,152 - dataloader_debug - INFO - --- Train Epoch 45 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [0, 86, 54, 141]
+---------------------------------------
+[epoch   46] train_loss=1.4859 val_loss=3.3131
+2026-06-26 15:03:51,280 - dataloader_debug - INFO - --- Valid Epoch 46 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.3000
+  Global Accuracy (Att): 0.2529
+----------------------------------------
+2026-06-26 15:03:51,309 - dataloader_debug - INFO - --- Train Epoch 46 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [3, 100, 59, 144]
+---------------------------------------
+[epoch   47] train_loss=0.6729 val_loss=2.6840
+2026-06-26 15:09:42,266 - dataloader_debug - INFO - --- Valid Epoch 47 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.5991
+  Global Accuracy (Att): 0.5606
+----------------------------------------
+2026-06-26 15:09:42,281 - dataloader_debug - INFO - --- Train Epoch 47 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [2, 87, 73, 131]
+---------------------------------------
+[epoch   48] train_loss=0.7251 val_loss=3.0405
+2026-06-26 15:15:32,356 - dataloader_debug - INFO - --- Valid Epoch 48 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.4893
+  Global Accuracy (Att): 0.4487
+----------------------------------------
+2026-06-26 15:15:32,364 - dataloader_debug - INFO - --- Train Epoch 48 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [2, 95, 62, 129]
+---------------------------------------
+[epoch   49] train_loss=0.9007 val_loss=2.5959
+2026-06-26 15:21:22,588 - dataloader_debug - INFO - --- Valid Epoch 49 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 119, 187]
+  Global Accuracy (All): 0.6536
+  Global Accuracy (Att): 0.6795
+----------------------------------------
+2026-06-26 15:21:22,602 - dataloader_debug - INFO - --- Train Epoch 49 Summary ---
+  Total samples: 3432
+  High attention samples: 2475
+  Batches w/o high attention: 0
+  Task distribution: [1628, 616, 737, 451]
+  Batches skipping tasks: [7, 84, 65, 137]
+---------------------------------------
+[[[ FINISH ]]] 2026-06-26 15:21:22.931383
+  TEST
+/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_fabric/__init__.py:29: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  __import__("pkg_resources").declare_namespace(__name__)
+[paths] host=edu02 host_profile_keys=[] cpu=128 cpu_effective=8
+[paths] dataset_dir=../dataset
+[paths] log_dir=../results
+[paths] workers=7
+[rank: 0] Global seed set to 42
+no augmentation
+[cv] mode=leave_song_out held_out_id=16
+Size of train dataset: 3432
+Size of valid dataset: 1122
+Size of test dataset: 104
+[eeg] SampleCNN2DEEG (raw EEG, Akama baseline)
+[audio] SampleCNN2DEEG (4 independent encoders, Akama baseline)
+EEG Contrastive learning
+use CLIP_loss as criterion
+[paths] tty=False (progress bar off)
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+Auto-discovered checkpoint: ../results/conv_ct_raw_lso_song16/nmed-CL-preprocessing_eegmusic/version_0/checkpoints/best-checkpoint.ckpt
+[[[ START ]]] 2026-06-26 15:22:36.045443
+[load] checkpoint state_dict matched the model exactly
+You are using a CUDA device ('NVIDIA L40S') that has Tensor Cores. To properly utilize them, you should set `torch.set_float32_matmul_precision('medium' | 'high')` which will trade-off precision for performance. For more details, read https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [1]
+all_lists is empty
+all_lists is empty
+all_lists is empty
+
+========== TEST RESULTS ==========
+Global Accuracy (All data):        0.0000
+Global Accuracy (High attention):  0.0000
+Per-task acc (All):    [nan, nan, nan, 0.0]
+Per-task acc (Att):    [nan, nan, nan, 0.0]
+Pairwise matrix 4x4 (All):
+tensor([[   nan,    nan,    nan,    nan],
+        [   nan,    nan,    nan,    nan],
+        [   nan,    nan,    nan,    nan],
+        [0.0000, 0.0192, 0.4519,    nan]])
+Pairwise matrix 4x4 (Att):
+tensor([[   nan,    nan,    nan,    nan],
+        [   nan,    nan,    nan,    nan],
+        [   nan,    nan,    nan,    nan],
+        [0.0000, 0.0192, 0.5000,    nan]])
+==================================
+== Test breakdown (shuffle_test_mode=none) ==
+n_windows total: 104
+n_windows high-attention: 52
+global accuracy (records, all): 0.0000
+global accuracy (records, attn): 0.0000
+global margin mean (all): -2.9920
+global margin mean (attn): -2.9699
+Figures saved to: ../results/conv_ct_raw_lso_song16/nmed-CL-preprocessing_eegmusic/version_1
+[[[ FINISH ]]] 2026-06-26 15:22:45.711563
+
+===== [15:22] conv_ct_raw_lso_song44  (contrastive|raw|raw|leave_song_out|44)  elapsed 293m =====
+  TRAIN (CAP=360m, to convergence)
+/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/lightning_fabric/__init__.py:29: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  __import__("pkg_resources").declare_namespace(__name__)
+[paths] host=edu02 host_profile_keys=[] cpu=128 cpu_effective=8
+[paths] dataset_dir=../dataset
+[paths] log_dir=../results
+[paths] workers=7
+[rank: 0] Global seed set to 42
+no augmentation
+[cv] mode=leave_song_out held_out_id=44
+Size of train dataset: 3421
+Size of valid dataset: 1122
+Size of test dataset: 104
+[eeg] SampleCNN2DEEG (raw EEG, Akama baseline)
+[audio] SampleCNN2DEEG (4 independent encoders, Akama baseline)
+EEG Contrastive learning
+use CLIP_loss as criterion
+[paths] tty=False (progress bar off, epoch summaries instead)
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+[[[ START ]]] 2026-06-26 15:23:17.686081
+You are using a CUDA device ('NVIDIA L40S') that has Tensor Cores. To properly utilize them, you should set `torch.set_float32_matmul_precision('medium' | 'high')` which will trade-off precision for performance. For more details, read https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
+Missing logger folder: ../results/conv_ct_raw_lso_song44/nmed-CL-preprocessing_eegmusic
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [1]
+
+  | Name           | Type           | Params
+--------------------------------------------------
+0 | encoder_raw_e  | SampleCNN2DEEG | 116 K 
+1 | encoder_vocal  | SampleCNN2DEEG | 116 K 
+2 | encoder_drum   | SampleCNN2DEEG | 116 K 
+3 | encoder_bass   | SampleCNN2DEEG | 116 K 
+4 | encoder_others | SampleCNN2DEEG | 116 K 
+5 | criterion      | CLIP_Loss      | 0     
+--------------------------------------------------
+580 K     Trainable params
+0         Non-trainable params
+580 K     Total params
+2.322     Total estimated model params size (MB)
+SLURM auto-requeueing enabled. Setting signal handlers.
+[epoch    0] train_loss=n/a val_loss=3.6562
+2026-06-26 15:23:19,565 - dataloader_debug - INFO - --- Valid Epoch 0 Summary ---
+  Total samples: 16
+  High attention samples: 16
+  Task distribution: [16, 0, 0, 0]
+  Global Accuracy (All): 0.0000
+  Global Accuracy (Att): 0.0000
+----------------------------------------
+[epoch    0] train_loss=2.0215 val_loss=3.1781
+2026-06-26 15:29:08,725 - dataloader_debug - INFO - --- Valid Epoch 0 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 97, 209]
+  Global Accuracy (All): 0.3277
+  Global Accuracy (Att): 0.3450
+----------------------------------------
+Metric Valid/loss improved. New best score: 3.178
+2026-06-26 15:29:09,009 - dataloader_debug - INFO - --- Train Epoch 0 Summary ---
+  Total samples: 3416
+  High attention samples: 2481
+  Batches w/o high attention: 0
+  Task distribution: [1623, 616, 704, 473]
+  Batches skipping tasks: [2, 80, 63, 128]
+---------------------------------------
+[epoch    1] train_loss=2.2885 val_loss=2.8757
+2026-06-26 15:34:56,775 - dataloader_debug - INFO - --- Valid Epoch 1 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 97, 209]
+  Global Accuracy (All): 0.4455
+  Global Accuracy (Att): 0.4942
+----------------------------------------
+Metric Valid/loss improved by 0.302 >= min_delta = 0.0. New best score: 2.876
+2026-06-26 15:34:56,867 - dataloader_debug - INFO - --- Train Epoch 1 Summary ---
+  Total samples: 3416
+  High attention samples: 2483
+  Batches w/o high attention: 1
+  Task distribution: [1625, 615, 703, 473]
+  Batches skipping tasks: [1, 80, 62, 130]
+---------------------------------------
+[epoch    2] train_loss=2.1820 val_loss=3.0902
+2026-06-26 15:40:45,143 - dataloader_debug - INFO - --- Valid Epoch 2 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 97, 209]
+  Global Accuracy (All): 0.3500
+  Global Accuracy (Att): 0.3508
+----------------------------------------
+2026-06-26 15:40:45,161 - dataloader_debug - INFO - --- Train Epoch 2 Summary ---
+  Total samples: 3416
+  High attention samples: 2481
+  Batches w/o high attention: 0
+  Task distribution: [1624, 616, 703, 473]
+  Batches skipping tasks: [2, 89, 66, 138]
+---------------------------------------
+[epoch    3] train_loss=1.8353 val_loss=2.9505
+2026-06-26 15:46:33,557 - dataloader_debug - INFO - --- Valid Epoch 3 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 97, 209]
+  Global Accuracy (All): 0.5312
+  Global Accuracy (Att): 0.6061
+----------------------------------------
+2026-06-26 15:46:33,571 - dataloader_debug - INFO - --- Train Epoch 3 Summary ---
+  Total samples: 3416
+  High attention samples: 2482
+  Batches w/o high attention: 0
+  Task distribution: [1624, 616, 704, 472]
+  Batches skipping tasks: [3, 93, 70, 132]
+---------------------------------------
+[epoch    4] train_loss=1.2503 val_loss=3.1086
+2026-06-26 15:52:21,910 - dataloader_debug - INFO - --- Valid Epoch 4 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 97, 209]
+  Global Accuracy (All): 0.5518
+  Global Accuracy (Att): 0.6480
+----------------------------------------
+2026-06-26 15:52:21,924 - dataloader_debug - INFO - --- Train Epoch 4 Summary ---
+  Total samples: 3416
+  High attention samples: 2481
+  Batches w/o high attention: 0
+  Task distribution: [1624, 616, 703, 473]
+  Batches skipping tasks: [5, 89, 67, 136]
+---------------------------------------
+[epoch    5] train_loss=1.6295 val_loss=3.0417
+2026-06-26 15:58:10,527 - dataloader_debug - INFO - --- Valid Epoch 5 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 97, 209]
+  Global Accuracy (All): 0.4268
+  Global Accuracy (Att): 0.4126
+----------------------------------------
+2026-06-26 15:58:10,541 - dataloader_debug - INFO - --- Train Epoch 5 Summary ---
+  Total samples: 3416
+  High attention samples: 2482
+  Batches w/o high attention: 0
+  Task distribution: [1626, 614, 704, 472]
+  Batches skipping tasks: [6, 96, 53, 124]
+---------------------------------------
+[epoch    6] train_loss=1.0341 val_loss=2.9330
+2026-06-26 16:03:58,249 - dataloader_debug - INFO - --- Valid Epoch 6 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 97, 209]
+  Global Accuracy (All): 0.4357
+  Global Accuracy (Att): 0.4056
+----------------------------------------
+2026-06-26 16:03:58,261 - dataloader_debug - INFO - --- Train Epoch 6 Summary ---
+  Total samples: 3416
+  High attention samples: 2483
+  Batches w/o high attention: 0
+  Task distribution: [1625, 615, 704, 472]
+  Batches skipping tasks: [2, 94, 61, 131]
+---------------------------------------
+[epoch    7] train_loss=1.4701 val_loss=3.1292
+2026-06-26 16:09:46,633 - dataloader_debug - INFO - --- Valid Epoch 7 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 97, 209]
+  Global Accuracy (All): 0.3652
+  Global Accuracy (Att): 0.3147
+----------------------------------------
+2026-06-26 16:09:46,646 - dataloader_debug - INFO - --- Train Epoch 7 Summary ---
+  Total samples: 3416
+  High attention samples: 2482
+  Batches w/o high attention: 0
+  Task distribution: [1624, 616, 703, 473]
+  Batches skipping tasks: [1, 96, 84, 125]
+---------------------------------------
+[epoch    8] train_loss=1.1432 val_loss=3.0758
+2026-06-26 16:15:32,114 - dataloader_debug - INFO - --- Valid Epoch 8 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 97, 209]
+  Global Accuracy (All): 0.5152
+  Global Accuracy (Att): 0.5641
+----------------------------------------
+2026-06-26 16:15:32,134 - dataloader_debug - INFO - --- Train Epoch 8 Summary ---
+  Total samples: 3416
+  High attention samples: 2482
+  Batches w/o high attention: 0
+  Task distribution: [1624, 616, 703, 473]
+  Batches skipping tasks: [4, 95, 62, 129]
+---------------------------------------
+[epoch    9] train_loss=2.0561 val_loss=3.6879
+2026-06-26 16:21:20,434 - dataloader_debug - INFO - --- Valid Epoch 9 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 97, 209]
+  Global Accuracy (All): 0.2357
+  Global Accuracy (Att): 0.1795
+----------------------------------------
+2026-06-26 16:21:20,454 - dataloader_debug - INFO - --- Train Epoch 9 Summary ---
+  Total samples: 3416
+  High attention samples: 2482
+  Batches w/o high attention: 0
+  Task distribution: [1624, 616, 704, 472]
+  Batches skipping tasks: [4, 96, 68, 121]
+---------------------------------------
+[epoch   10] train_loss=1.0044 val_loss=3.6473
+2026-06-26 16:27:09,125 - dataloader_debug - INFO - --- Valid Epoch 10 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 97, 209]
+  Global Accuracy (All): 0.1830
+  Global Accuracy (Att): 0.1364
+----------------------------------------
+2026-06-26 16:27:09,140 - dataloader_debug - INFO - --- Train Epoch 10 Summary ---
+  Total samples: 3416
+  High attention samples: 2484
+  Batches w/o high attention: 0
+  Task distribution: [1626, 616, 702, 472]
+  Batches skipping tasks: [2, 86, 67, 123]
+---------------------------------------
+[epoch   11] train_loss=1.7431 val_loss=3.4624
+2026-06-26 16:32:57,783 - dataloader_debug - INFO - --- Valid Epoch 11 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 97, 209]
+  Global Accuracy (All): 0.1920
+  Global Accuracy (Att): 0.1480
+----------------------------------------
+Monitored metric Valid/loss did not improve in the last 10 records. Best score: 2.876. Signaling Trainer to stop.
+2026-06-26 16:32:57,800 - dataloader_debug - INFO - --- Train Epoch 11 Summary ---
+  Total samples: 3416
+  High attention samples: 2484
+  Batches w/o high attention: 0
+  Task distribution: [1625, 616, 702, 473]
+  Batches skipping tasks: [4, 87, 67, 123]
+---------------------------------------
+Trainer was signaled to stop but the required `min_epochs=50` or `min_steps=None` has not been met. Training will continue...
+[epoch   12] train_loss=1.6805 val_loss=3.4338
+2026-06-26 16:38:46,546 - dataloader_debug - INFO - --- Valid Epoch 12 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 97, 209]
+  Global Accuracy (All): 0.3241
+  Global Accuracy (Att): 0.3578
+----------------------------------------
+Monitored metric Valid/loss did not improve in the last 11 records. Best score: 2.876. Signaling Trainer to stop.
+2026-06-26 16:38:46,564 - dataloader_debug - INFO - --- Train Epoch 12 Summary ---
+  Total samples: 3416
+  High attention samples: 2481
+  Batches w/o high attention: 0
+  Task distribution: [1626, 615, 703, 472]
+  Batches skipping tasks: [4, 97, 73, 128]
+---------------------------------------
+[epoch   13] train_loss=1.0474 val_loss=3.1887
+2026-06-26 16:44:35,432 - dataloader_debug - INFO - --- Valid Epoch 13 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 97, 209]
+  Global Accuracy (All): 0.3518
+  Global Accuracy (Att): 0.3240
+----------------------------------------
+Monitored metric Valid/loss did not improve in the last 12 records. Best score: 2.876. Signaling Trainer to stop.
+2026-06-26 16:44:35,446 - dataloader_debug - INFO - --- Train Epoch 13 Summary ---
+  Total samples: 3416
+  High attention samples: 2482
+  Batches w/o high attention: 0
+  Task distribution: [1624, 616, 703, 473]
+  Batches skipping tasks: [6, 93, 69, 126]
+---------------------------------------
+[epoch   14] train_loss=1.1085 val_loss=3.0035
+2026-06-26 16:50:24,529 - dataloader_debug - INFO - --- Valid Epoch 14 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 97, 209]
+  Global Accuracy (All): 0.4259
+  Global Accuracy (Att): 0.4371
+----------------------------------------
+Monitored metric Valid/loss did not improve in the last 13 records. Best score: 2.876. Signaling Trainer to stop.
+2026-06-26 16:50:24,542 - dataloader_debug - INFO - --- Train Epoch 14 Summary ---
+  Total samples: 3416
+  High attention samples: 2483
+  Batches w/o high attention: 0
+  Task distribution: [1627, 616, 702, 471]
+  Batches skipping tasks: [5, 81, 71, 123]
+---------------------------------------
+[epoch   15] train_loss=1.5247 val_loss=3.2029
+2026-06-26 16:56:13,544 - dataloader_debug - INFO - --- Valid Epoch 15 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 97, 209]
+  Global Accuracy (All): 0.3589
+  Global Accuracy (Att): 0.3275
+----------------------------------------
+Monitored metric Valid/loss did not improve in the last 14 records. Best score: 2.876. Signaling Trainer to stop.
+2026-06-26 16:56:13,569 - dataloader_debug - INFO - --- Train Epoch 15 Summary ---
+  Total samples: 3416
+  High attention samples: 2484
+  Batches w/o high attention: 0
+  Task distribution: [1625, 616, 702, 473]
+  Batches skipping tasks: [2, 82, 72, 137]
+---------------------------------------
+[epoch   16] train_loss=1.6494 val_loss=3.8537
+2026-06-26 17:02:02,147 - dataloader_debug - INFO - --- Valid Epoch 16 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 97, 209]
+  Global Accuracy (All): 0.3286
+  Global Accuracy (Att): 0.2587
+----------------------------------------
+Monitored metric Valid/loss did not improve in the last 15 records. Best score: 2.876. Signaling Trainer to stop.
+2026-06-26 17:02:02,166 - dataloader_debug - INFO - --- Train Epoch 16 Summary ---
+  Total samples: 3416
+  High attention samples: 2483
+  Batches w/o high attention: 0
+  Task distribution: [1626, 615, 703, 472]
+  Batches skipping tasks: [2, 90, 65, 128]
+---------------------------------------
+[epoch   17] train_loss=1.4510 val_loss=3.4859
+2026-06-26 17:07:51,155 - dataloader_debug - INFO - --- Valid Epoch 17 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 97, 209]
+  Global Accuracy (All): 0.1866
+  Global Accuracy (Att): 0.1410
+----------------------------------------
+Monitored metric Valid/loss did not improve in the last 16 records. Best score: 2.876. Signaling Trainer to stop.
+2026-06-26 17:07:51,173 - dataloader_debug - INFO - --- Train Epoch 17 Summary ---
+  Total samples: 3416
+  High attention samples: 2483
+  Batches w/o high attention: 0
+  Task distribution: [1627, 615, 703, 471]
+  Batches skipping tasks: [2, 89, 64, 130]
+---------------------------------------
+[epoch   18] train_loss=1.2331 val_loss=2.9060
+2026-06-26 17:13:40,362 - dataloader_debug - INFO - --- Valid Epoch 18 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 97, 209]
+  Global Accuracy (All): 0.4705
+  Global Accuracy (Att): 0.4790
+----------------------------------------
+Monitored metric Valid/loss did not improve in the last 17 records. Best score: 2.876. Signaling Trainer to stop.
+2026-06-26 17:13:40,378 - dataloader_debug - INFO - --- Train Epoch 18 Summary ---
+  Total samples: 3416
+  High attention samples: 2483
+  Batches w/o high attention: 0
+  Task distribution: [1625, 615, 703, 473]
+  Batches skipping tasks: [3, 78, 64, 115]
+---------------------------------------
+[epoch   19] train_loss=1.2133 val_loss=3.0997
+2026-06-26 17:19:29,431 - dataloader_debug - INFO - --- Valid Epoch 19 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 97, 209]
+  Global Accuracy (All): 0.4616
+  Global Accuracy (Att): 0.4161
+----------------------------------------
+Monitored metric Valid/loss did not improve in the last 18 records. Best score: 2.876. Signaling Trainer to stop.
+2026-06-26 17:19:29,444 - dataloader_debug - INFO - --- Train Epoch 19 Summary ---
+  Total samples: 3416
+  High attention samples: 2483
+  Batches w/o high attention: 0
+  Task distribution: [1625, 615, 704, 472]
+  Batches skipping tasks: [3, 90, 67, 128]
+---------------------------------------
+[epoch   20] train_loss=0.7892 val_loss=3.4386
+2026-06-26 17:25:18,713 - dataloader_debug - INFO - --- Valid Epoch 20 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 97, 209]
+  Global Accuracy (All): 0.2375
+  Global Accuracy (Att): 0.1993
+----------------------------------------
+Monitored metric Valid/loss did not improve in the last 19 records. Best score: 2.876. Signaling Trainer to stop.
+2026-06-26 17:25:18,729 - dataloader_debug - INFO - --- Train Epoch 20 Summary ---
+  Total samples: 3416
+  High attention samples: 2483
+  Batches w/o high attention: 0
+  Task distribution: [1626, 613, 704, 473]
+  Batches skipping tasks: [3, 91, 56, 136]
+---------------------------------------
+[epoch   21] train_loss=1.6280 val_loss=3.0506
+2026-06-26 17:31:07,387 - dataloader_debug - INFO - --- Valid Epoch 21 Summary ---
+  Total samples: 1120
+  High attention samples: 858
+  Task distribution: [649, 165, 97, 209]
+  Global Accuracy (All): 0.5232
+  Global Accuracy (Att): 0.5186
+----------------------------------------
+Monitored metric Valid/loss did not improve in the last 20 records. Best score: 2.876. Signaling Trainer to stop.
+2026-06-26 17:31:07,405 - dataloader_debug - INFO - --- Train Epoch 21 Summary ---
+  Total samples: 3416
+  High attention samples: 2481
+  Batches w/o high attention: 0
+  Task distribution: [1627, 615, 703, 471]
+  Batches skipping tasks: [5, 85, 69, 140]
+---------------------------------------
