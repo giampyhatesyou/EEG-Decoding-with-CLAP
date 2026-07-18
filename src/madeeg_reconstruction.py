@@ -236,6 +236,23 @@ def kfold_indices(n, k, rng):
     return [idx[i::k] for i in range(k)]
 
 
+def synth_attended_eeg(att, lags_op, W_op, rng, snr):
+    """SELF-TEST ONLY. Synthetic EEG (n_ch, L) that is a FIXED linear mixture of the ATTENDED
+    source representation `att` (n_bands, L): each channel = a band-weighted mix (a row of
+    W_op) delayed by a fixed per-channel lag in [0, n_lags] samples, plus gaussian noise
+    (signal/noise std ratio = `snr`). The forward operator (lags_op, W_op) is shared across
+    trials, so a backward ridge model can recover `att` -> r(attended) >> r(unattended).
+    Never called by the real reconstruction path (only under --self_test)."""
+    n_ch, L = W_op.shape[0], att.shape[1]
+    mix = W_op @ att                                     # (n_ch, L) band mixture per channel
+    eeg = np.empty((n_ch, L))
+    for ch in range(n_ch):
+        lag = int(lags_op[ch])
+        sh = np.roll(mix[ch], lag); sh[:lag] = 0.0       # causal delay: EEG lags the stimulus
+        eeg[ch] = sh / (sh.std() + 1e-8) + rng.standard_normal(L) / snr
+    return eeg
+
+
 # --------------------------------------------------------------------------- #
 def main():
     ap = argparse.ArgumentParser(description="MAD-EEG stimulus-reconstruction AAD")
@@ -243,6 +260,11 @@ def main():
     ap.add_argument("--log_dir", default="../results")
     ap.add_argument("--training_date", default="madeeg_recon")
     ap.add_argument("--inspect", type=int, default=0, help="print schema for first N trials and exit")
+    ap.add_argument("--self_test", action="store_true",
+                    help="positive control: replace EEG with a synthetic mixture of the ATTENDED "
+                         "source at the model lags + noise, run the real ridge+AAD, print PASS/FAIL, exit")
+    ap.add_argument("--self_test_snr", type=float, default=4.0,
+                    help="--self_test only: signal/noise std ratio of the synthetic EEG")
     ap.add_argument("--ensemble", default="duo", choices=["duo", "trio", "both"])
     ap.add_argument("--target", default="mel", choices=["mel", "envelope"], help="reconstruction target")
     ap.add_argument("--n_mels", type=int, default=8)
@@ -306,6 +328,44 @@ def main():
                                 pred=int(np.argmax(sims)), correct=int(np.argmax(sims) == tgt),
                                 r_attended=sims[tgt], r_best_unattended=max(s for j, s in enumerate(sims) if j != tgt),
                                 inner_val_r=inner_val_r))
+
+    if args.self_test:
+        # Positive control (see synth_attended_eeg): swap every trial's EEG for a synthetic
+        # linear mixture of ITS attended source at lags 0..n_lags + noise, then run the REAL
+        # pipeline (fit_ridge_pool + decide) unchanged. Passing proves that chance-level AAD on
+        # the real EEG is a genuine absence of decodable signal, not a loader/decoder bug.
+        lags_op = W_op = None
+        built, stims = [], []
+        for s, k in trials:
+            eeg, reps, tgt, npr, ens = build_trial(data, meta, s, k, args.target_fs, band,
+                                                    args.clamp, args.compression, n_bands)
+            if W_op is None:                       # one fixed forward operator, shared by all trials
+                n_ch = eeg.shape[0]
+                lags_op = rng.randint(0, n_lags + 1, size=n_ch)
+                W_op = rng.standard_normal((n_ch, n_bands))
+            built.append([synth_attended_eeg(reps[tgt], lags_op, W_op, rng, args.self_test_snr),
+                          reps, tgt, npr, ens])
+            stims.append(k)
+        st_records = []
+        for fold in kfold_indices(len(built), args.cv_folds, rng):
+            te = set(fold.tolist()); tr = [i for i in range(len(built)) if i not in te]
+            predict, _, val_r = fit_ridge_pool([built[i] for i in tr], n_lags, lam_grid, rng)
+            decide("synthetic", [stims[i] for i in fold], [built[i] for i in fold], predict, st_records, val_r)
+        rec = pd.DataFrame(st_records)
+        acc, ra, ru = rec.correct.mean(), rec.r_attended.mean(), rec.r_best_unattended.mean()
+        chance = float(np.mean(1.0 / rec.n_present))
+        ok = acc >= 0.90 and ra > ru
+        print("\n== MAD-EEG SELF-TEST (synthetic attended-signal positive control) ==")
+        print(f"n_trials={len(rec)} chance={chance:.3f} snr={args.self_test_snr} "
+              f"n_ch={n_ch} n_bands={n_bands} lags={n_lags}")
+        print(f"AAD accuracy={acc:.4f}  mean r(attended)={ra:.4f}  mean r(best unattended)={ru:.4f}")
+        print(f"[{'PASS' if ok else 'FAIL'}] " + (
+              "ridge recovers the attended source (r_att >> r_unatt, AAD>=0.90) -> pipeline is "
+              "wired correctly, so chance-level AAD on real EEG is genuine signal absence."
+              if ok else
+              "ridge did NOT recover a signal it should trivially decode -> fix the loader/decoder "
+              "before interpreting the real-data result."))
+        return
 
     records = []
     for subj in meta:
