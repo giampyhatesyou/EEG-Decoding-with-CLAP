@@ -7,18 +7,8 @@
 #           already tested (any tag) -> re-running continues where it stopped.
 # Budget  : stops LAUNCHING new folds after BUDGET seconds; each train capped by CAP.
 set -uo pipefail
-cd "$(dirname "$0")"
-
-# --- env (no-op if already in eeg_attention) ---
-if [ "${CONDA_DEFAULT_ENV:-}" != "eeg_attention" ]; then
-  for c in /opt/conda/etc/profile.d/conda.sh /etc/profile.d/conda.sh \
-           "$HOME/.conda/etc/profile.d/conda.sh" "$HOME/miniconda3/etc/profile.d/conda.sh" \
-           "$HOME/anaconda3/etc/profile.d/conda.sh"; do
-    [ -f "$c" ] && . "$c" && break
-  done
-  conda activate eeg_attention 2>/dev/null || true
-fi
-PY=python
+source "$(dirname "$0")/sweep_common.sh"   # conda env + $PY + $PROTO
+cd "$(dirname "$0")/src"   # entrypoints main.py/checkpoint_test.py live in src/
 echo "[env] $(date) python=$(command -v $PY) env=${CONDA_DEFAULT_ENV:-none}"
 $PY - <<'PYC'
 import torch
@@ -29,12 +19,7 @@ PYC
 BUDGET=${BUDGET:-23400}     # 6.5h launch cutoff (override: BUDGET=... )
 CAP=${CAP:-80m}            # per-training-fold hard cap
 
-PROTO="--dataset preprocessing_eegmusic --test_dataset preprocessing_eegmusic_test \
---max_epochs 1000 --batch_size 8 --eeg_length 768 --loss_function clip_loss \
---eeg_normalization MetaAI --clamp_value 20 --learning_rate 0.003 --supervised 1 \
---dim_reduction 1 --split_seed 42 --detach_z_c 0 --window_size 1280 --stride 256 \
---test_window_size 768 --test_stride 256 --start_position 0 --key all \
---attention_values 4 5 --devices 1 --shifting_time 0 --seed 42 --cv_mode leave_song_out"
+PROTO="$PROTO --cv_mode leave_song_out"   # base $PROTO from sweep_common.sh
 
 # --- build done-set from ALL existing runs (resume across sessions and tags) ---
 $PY - <<'PYC' > /tmp/lso_done.txt
@@ -49,7 +34,7 @@ def hp(d):
     except Exception: pass
     return c
 seen=set()
-for f in glob.glob('results/*/nmed-CL-*/version_*/test_records.csv'):
+for f in glob.glob('../results/*/nmed-CL-*/version_*/test_records.csv'):
     c=hp(os.path.dirname(f))
     if c['cv_held_out_id'] in ('-1','?'): continue
     seen.add(f"{c['objective']}|{c['audio_repr']}|{c['cv_held_out_id']}")
@@ -67,7 +52,7 @@ run_fold(){   # $1 objective  $2 repr  $3 song  $4 tag
   echo "  TRAIN"
   timeout $CAP $PY -u main.py $PROTO --audio_repr "$repr" $objflag \
         --cv_held_out_id "$song" --training_date "$tag"
-  if compgen -G "results/$tag/nmed-CL-*/version_*/checkpoints/best-checkpoint.ckpt" >/dev/null; then
+  if compgen -G "../results/$tag/nmed-CL-*/version_*/checkpoints/best-checkpoint.ckpt" >/dev/null; then
     echo "  TEST"
     $PY -u checkpoint_test.py $PROTO --audio_repr "$repr" $objflag \
         --cv_held_out_id "$song" --training_date "$tag" --test_breakdown 1
@@ -114,7 +99,7 @@ def hp(d):
     except Exception: pass
     return c
 byfold={}   # dedup by (obj,repr,song) -> df
-for f in glob.glob('results/*/nmed-CL-*/version_*/test_records.csv'):
+for f in glob.glob('../results/*/nmed-CL-*/version_*/test_records.csv'):
     c=hp(os.path.dirname(f))
     if c['cv_held_out_id'] in ('-1','?'): continue
     df=pd.read_csv(f)

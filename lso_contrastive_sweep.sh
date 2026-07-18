@@ -4,18 +4,8 @@
 # Mirror of the controls sweep; trains a fresh model per (model x held-out song),
 # tests on the held-out song, aggregates MACRO at the end.
 set -uo pipefail
+source "$(dirname "$0")/sweep_common.sh"   # conda env + $PY + $PROTO
 cd "$(dirname "$0")/src"   # entrypoints main.py/checkpoint_test.py live in src/
-
-# --- env (no-op if already in eeg_attention) ---
-if [ "${CONDA_DEFAULT_ENV:-}" != "eeg_attention" ]; then
-  for c in /opt/conda/etc/profile.d/conda.sh /etc/profile.d/conda.sh \
-           "$HOME/.conda/etc/profile.d/conda.sh" "$HOME/miniconda3/etc/profile.d/conda.sh" \
-           "$HOME/anaconda3/etc/profile.d/conda.sh"; do
-    [ -f "$c" ] && . "$c" && break
-  done
-  conda activate eeg_attention 2>/dev/null || true
-fi
-PY=python
 echo "[env] $(date) python=$(command -v $PY) env=${CONDA_DEFAULT_ENV:-none} CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-unset}"
 $PY - <<'PYC'
 import torch
@@ -26,12 +16,7 @@ PYC
 BUDGET=${BUDGET:-25200}     # 7h launch cutoff
 CAP=${CAP:-90m}            # per-fold cap (contrastive is heavier, esp. clap)
 
-PROTO="--dataset preprocessing_eegmusic --test_dataset preprocessing_eegmusic_test \
---max_epochs 1000 --batch_size 8 --eeg_length 768 --loss_function clip_loss \
---eeg_normalization MetaAI --clamp_value 20 --learning_rate 0.003 --supervised 1 \
---dim_reduction 1 --split_seed 42 --detach_z_c 0 --window_size 1280 --stride 256 \
---test_window_size 768 --test_stride 256 --start_position 0 --key all \
---attention_values 4 5 --devices 1 --shifting_time 0 --seed 42 --cv_mode leave_song_out"
+PROTO="$PROTO --cv_mode leave_song_out"   # base $PROTO from sweep_common.sh
 
 # --- done-set: only true leave_song_out, contrastive (resume across sessions) ---
 $PY - <<'PYC' > /tmp/lso_done_ct.txt

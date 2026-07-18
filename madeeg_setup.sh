@@ -12,8 +12,10 @@ BASE="https://zenodo.org/records/4537751/files"
 mkdir -p "$DIR"; cd "$DIR"
 echo "[madeeg] downloading into $DIR"
 # 3.7 GB EEG+sources + 154 kB metadata. Optional extras commented out.
+# wget -c resumes a partial download and is a no-op if the file is already complete,
+# so re-running this script never re-downloads what you already have.
 for f in madeeg_preprocessed.hdf5 madeeg_preprocessed.yaml; do
-  if [ -f "$f" ]; then echo "  have $f"; else echo "  get  $f"; wget -q --show-progress "$BASE/$f?download=1" -O "$f"; fi
+  echo "  get/resume  $f"; wget -c --show-progress "$BASE/$f?download=1" -O "$f"
 done
 # optional: behavioural ratings + raw + stimuli wavs (not needed for reconstruction)
 # wget -q "$BASE/behavioural_data.xlsx?download=1" -O behavioural_data.xlsx
