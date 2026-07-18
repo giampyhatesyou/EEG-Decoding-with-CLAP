@@ -25,7 +25,7 @@ PROTO="$PROTO --cv_mode leave_song_out"   # base $PROTO from sweep_common.sh
 $PY - <<'PYC' > /tmp/lso_done.txt
 import glob, os
 def hp(d):
-    c={'objective':'contrastive','audio_repr':'?','cv_held_out_id':'?'}
+    c={'objective':'contrastive','audio_repr':'?','cv_held_out_id':'?','cv_mode':'?'}
     try:
         for l in open(os.path.join(d,'hparams.yaml')):
             s=l.strip()
@@ -37,6 +37,7 @@ seen=set()
 for f in glob.glob('../results/*/nmed-CL-*/version_*/test_records.csv'):
     c=hp(os.path.dirname(f))
     if c['cv_held_out_id'] in ('-1','?'): continue
+    if c['cv_mode']!='leave_song_out': continue   # subject-out/within share ids with songs -> don't skip a real LSO fold
     seen.add(f"{c['objective']}|{c['audio_repr']}|{c['cv_held_out_id']}")
 print('\n'.join(sorted(x for x in seen if x)))
 PYC
@@ -90,7 +91,7 @@ $PY - <<'PYC'
 import glob, os, pandas as pd
 TASK={0:'vocal',1:'drum',2:'bass',3:'others'}
 def hp(d):
-    c={'objective':'contrastive','audio_repr':'?','cv_held_out_id':'?'}
+    c={'objective':'contrastive','audio_repr':'?','cv_held_out_id':'?','cv_mode':'?'}
     try:
         for l in open(os.path.join(d,'hparams.yaml')):
             s=l.strip()
@@ -102,6 +103,7 @@ byfold={}   # dedup by (obj,repr,song) -> df
 for f in glob.glob('../results/*/nmed-CL-*/version_*/test_records.csv'):
     c=hp(os.path.dirname(f))
     if c['cv_held_out_id'] in ('-1','?'): continue
+    if c['cv_mode']!='leave_song_out': continue   # keep this table leave-song-out only (matches aggregate_lso.py)
     df=pd.read_csv(f)
     if 'correct' not in df or 'task' not in df: continue
     byfold[(c['objective'],c['audio_repr'],c['cv_held_out_id'])]=df
