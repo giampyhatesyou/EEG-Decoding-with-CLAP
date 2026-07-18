@@ -42,7 +42,7 @@ from models import SampleCNN2DEEG, CLAPEncoder, SpectraEEG  # CHANGED(baseline):
 from modules import EEGContrastiveLearning, SupervisedClassification  # CHANGED(baseline): added SupervisedClassification (#1/#2)
 from utils import yaml_config_hook, get_logger, file_writer, paths  # CHANGED(baseline): added paths
 from preprocessing import eeg_data_processing
-import pandas as pd
+# CHANGED(baseline): removed `import pandas as pd` (only fed the dead train_log/valid_log below)
 import datetime
 import random
 from pathlib import Path
@@ -131,13 +131,11 @@ if __name__ == "__main__":
     parser.add_argument('--log_dir', type=str, default="../results", help="Base directory for saving logs and checkpoints (relative to src/)")  # CHANGED(baseline): new arg
     args = parser.parse_args()
 
-    # CHANGED(baseline): start — dynamic, host-aware path/worker resolution (env > CLI > host profile > YAML).
+    # CHANGED(baseline): start — path/worker resolution (EEG_* env override > CLI/YAML defaults).
     #                    Upstream went straight from parse_args() to seed_everything().
-    # --- Dynamic, host-aware path / worker resolution. ---
-    # YAML defaults define the "vanilla" repo layout (so other machines clone &
-    # run as-is). On known hosts (e.g. meg-server-3) we silently redirect heavy
-    # I/O paths to shared storage. An explicit CLI override always wins, and
-    # EEG_* env vars take absolute precedence.
+    # YAML defaults define the vanilla repo layout (clone & run as-is); an explicit
+    # --flag overrides the default, and EEG_* env vars override both (Colab / shared
+    # storage). workers auto-size unless an explicit value is given.
     _yaml_dataset_dir_default = config['dataset_dir']
     _log_dir_default = "../results"
     if args.dataset_dir == _yaml_dataset_dir_default:
@@ -148,7 +146,6 @@ if __name__ == "__main__":
 
     _env_info = paths.describe()
     print(f"[paths] host={_env_info['hostname']} "
-          f"host_profile_keys={_env_info['host_profile_keys']} "
           f"cpu={_env_info['cpu_count']} "
           f"cpu_effective={_env_info['cpu_effective']}")
     print(f"[paths] dataset_dir={args.dataset_dir}")
@@ -188,11 +185,7 @@ if __name__ == "__main__":
     else:
         print("no augmentation")
 
-    train_log = pd.DataFrame(
-        columns=["Loss/train", "Accuracy/train_eeg", "Accuracy/train_audio"])
-    valid_log = pd.DataFrame(
-        columns=["Loss/valid", "Accuracy/valid_eeg", "Accuracy/valid_audio"])
-
+    # CHANGED(baseline): removed unused train_log/valid_log DataFrames (created in upstream, never populated/read)
     # CHANGED(baseline): forward cv_mode / cv_held_out_id to all 3 get_dataset calls (defaults reproduce upstream)
     print(f"[cv] mode={args.cv_mode} held_out_id={args.cv_held_out_id}")
     train_dataset = get_dataset(

@@ -40,8 +40,8 @@ from datasets import get_dataset
 from models import SampleCNN2DEEG, CLAPEncoder, SpectraEEG  # CHANGED(baseline): added CLAPEncoder, SpectraEEG
 from modules import EEGContrastiveLearning, SupervisedClassification  # CHANGED(baseline): added SupervisedClassification (#1/#2)
 from utils import yaml_config_hook, get_logger, file_writer, paths  # CHANGED(baseline): added paths
-from preprocessing import eeg_data_processing, experiment_data_processing
-import pandas as pd
+# CHANGED(baseline): removed unused `from preprocessing import eeg_data_processing, experiment_data_processing`
+#                    and `import pandas as pd` (neither is used in this test driver)
 import datetime
 import random
 from pathlib import Path
@@ -67,11 +67,8 @@ if __name__ == "__main__":
     parser.add_argument('--log_dir', type=str, default="../results", help="Base directory for logs and checkpoints (relative to src/)")  # CHANGED(baseline): new arg
     args = parser.parse_args()
 
-    # CHANGED(baseline): start — dynamic, host-aware path/worker resolution (same contract as main.py)
-    # --- Dynamic, host-aware path / worker resolution. ---
-    # Same contract as main.py: YAML defaults define the vanilla repo layout;
-    # known hosts redirect to shared storage; explicit CLI overrides win;
-    # EEG_* env vars take absolute precedence.
+    # CHANGED(baseline): start — path/worker resolution (same contract as main.py):
+    #                    EEG_* env override > explicit --flag > YAML default; workers auto-size.
     _yaml_dataset_dir_default = config['dataset_dir']
     _log_dir_default = "../results"
     if args.dataset_dir == _yaml_dataset_dir_default:
@@ -82,7 +79,6 @@ if __name__ == "__main__":
 
     _env_info = paths.describe()
     print(f"[paths] host={_env_info['hostname']} "
-          f"host_profile_keys={_env_info['host_profile_keys']} "
           f"cpu={_env_info['cpu_count']} "
           f"cpu_effective={_env_info['cpu_effective']}")
     print(f"[paths] dataset_dir={args.dataset_dir}")
@@ -117,11 +113,7 @@ if __name__ == "__main__":
     else:
         print("no augmentation")
 
-    train_log = pd.DataFrame(
-        columns=["Loss/train", "Accuracy/train_eeg", "Accuracy/train_audio"])
-    valid_log = pd.DataFrame(
-        columns=["Loss/valid", "Accuracy/valid_eeg", "Accuracy/valid_audio"])
-
+    # CHANGED(baseline): removed unused train_log/valid_log DataFrames (created in upstream, never populated/read)
     # CHANGED(baseline): forward cv_mode / cv_held_out_id to all 3 get_dataset calls (defaults reproduce upstream)
     print(f"[cv] mode={args.cv_mode} held_out_id={args.cv_held_out_id}")
     train_dataset = get_dataset(

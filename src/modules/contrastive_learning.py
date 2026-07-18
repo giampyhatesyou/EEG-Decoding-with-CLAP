@@ -9,7 +9,7 @@ from pytorch_lightning import LightningModule
 from . import CLIP_Loss  # CHANGED(baseline): was `from modules import CLIP_Loss`
 from itertools import chain
 from utils import get_logger
-import torch.nn.functional as F
+# CHANGED(baseline): removed dead `import torch.nn.functional as F` (no F. use in this module)
 import pandas as pd
 import os
 import numpy as np
@@ -29,33 +29,20 @@ class EEGContrastiveLearning(LightningModule):
         self.encoder_others = encoder_others
         self.criterion = self.configure_criterion()
         self.attention_values = args.attention_values
-        self.test_data_length=256
         self.audio_sample_rate=args.audio_sample_rate
         self.eeg_sample_rate=args.eeg_sample_rate
 
         self.key=key
 
-        self.last_epoch_train_embeddings = []
-        self.last_epoch_train_labels = []
-        self.last_epoch_valid_embeddings = []
-        self.last_epoch_valid_labels = []
-
-        self.train_log_df = pd.DataFrame(
-            columns=["Loss/train", "Accuracy/train_eeg", "Accuracy/train_audio"])
-        self.valid_log_df = pd.DataFrame(
-            columns=["Loss/valid", "Accuracy/valid_eeg", "Accuracy/valid_audio"])
-
-        self.validation_end_values = []
         self.preprocess_dataset = preprocess_dataset
+        # Reset per-epoch in on_validation_epoch_start; initialised here for the test path.
         self.matrix_list_all = []
         self.matrix_list_attention = []
 
-        self.test_result = []
-        self.label_accuracy_count = {
-            label: {'correct': 0, 'total': 0} for label in range(10)}
-        self.subject_accuracy_count = {
-            subject: {'correct': 0, 'total': 0} for subject in range(24)}
-
+        # CHANGED(baseline): removed 11 dead __init__ fields inherited from upstream (last_epoch_*
+        #                    embeddings/labels, train_log_df, valid_log_df, validation_end_values,
+        #                    test_result, label_accuracy_count, subject_accuracy_count, test_data_length):
+        #                    written but never read anywhere in the repo.
         # CHANGED(baseline): added the two fields below (test_records, _shuffle_test_mode); upstream __init__
         #                    ended at subject_accuracy_count.
         # Per-window test records populated in test_step / consumed in on_test_end.
@@ -134,10 +121,7 @@ class EEGContrastiveLearning(LightningModule):
 
         self.log("Loss/train", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)  # CHANGED(baseline): upstream logged only via debug_logger, never self.log
 
-        if self.current_epoch == self.trainer.max_epochs - 1:
-            self.last_epoch_train_embeddings.append(
-                z_eeg.cpu().detach().numpy())
-
+        # CHANGED(baseline): removed last-epoch collection into last_epoch_train_embeddings (dead field, see __init__)
         return loss
 
     # CHANGED(baseline): new method — not in upstream. Prints the per-epoch train observability summary.
@@ -439,11 +423,9 @@ class EEGContrastiveLearning(LightningModule):
                         "high_attention": int(int(att_t[i]) in attention_values),
                     })
         # CHANGED(baseline): end — per-window record collection
-
-        # NOTE(baseline): these two calls are inherited from upstream test_step; their results are
-        #                 discarded here (the real evaluation runs in on_test_end). Left as-is.
-        evaluation_all = self.compute_evaluation_matrix(self.matrix_list_all)
-        evaluation_attention = self.compute_evaluation_matrix(self.matrix_list_attention)
+        # CHANGED(baseline): removed two compute_evaluation_matrix calls here whose results were
+        #                    discarded (the real evaluation runs once in on_test_end). They re-ran
+        #                    the full O(windows) aggregation on every test batch for nothing.
 
     # CHANGED(baseline): upstream on_test_end was effectively empty (commented bootstrap + super() call).
     #                    The whole body below — console metrics, figures, breakdown CSVs — is new. It uses
@@ -452,8 +434,6 @@ class EEGContrastiveLearning(LightningModule):
         import matplotlib
         matplotlib.use('Agg')
         import matplotlib.pyplot as plt
-        import numpy as np
-        import os
 
         eval_all = self.compute_evaluation_matrix(self.matrix_list_all)
         eval_att = self.compute_evaluation_matrix(self.matrix_list_attention)

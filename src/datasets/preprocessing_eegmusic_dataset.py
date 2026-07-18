@@ -105,9 +105,7 @@ class Preprocessing_EEGMusic_dataset(Dataset):
         self.df = self._get_file_list(
             self.base_dir, self.subset).reset_index(drop=True)
 
-    def file_path(self, n: int) -> str:
-        pass
-
+    # CHANGED(baseline): removed empty file_path() stub (body was `pass`; no callers)
     def set_transform(self, transform):
         self.transform = Compose(transform)
 
@@ -439,16 +437,6 @@ class Preprocessing_EEGMusic_Test_dataset(Preprocessing_EEGMusic_dataset):
             n)
         return eeg, audio0, audio1, audio2, audio3, task, attention_score, subject, song_id
 
-    def _normalize(self, eeg_data, normalize_type, clamp_value=None):
-        if normalize_type == "channel_mean":
-            eeg_data = self.normalize_EEG(eeg_data)
-        elif normalize_type == "all_mean":
-            eeg_data = self.normalize_EEG_2(eeg_data)
-        elif normalize_type == "constant_multiple":
-            eeg_data = self.normalize_EEG_3(eeg_data)
-        elif normalize_type == "MetaAI":
-            eeg_data = self.normalize_EEG_4(
-                eeg_data, clamp_value)
-
-        return eeg_data
+    # CHANGED(baseline): removed dead _normalize() here — no callers; it duplicated the inline
+    #                    normalization dispatch already in getitem().
 

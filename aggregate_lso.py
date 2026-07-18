@@ -58,7 +58,7 @@ for (obj, arepr, erepr, cvmode, held), df in by_fold.items():
     groups.setdefault((obj, arepr, erepr, cvmode), []).append(df)
 
 header = "{:42}{:>6}{:>8}{:>8}   {}".format(
-    "objective / audio / eeg / eval", "folds", "MACRO", "GLOBAL", "per-class [v d b o]")
+    "objective / audio / eeg / eval", "# of runs", "MACRO", "GLOBAL", "per-class [v d b o]")
 print(header)
 print("-" * len(header))
 for key in sorted(groups):

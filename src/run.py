@@ -314,6 +314,38 @@ def suggest_tag(audio_repr, eval_label, objective="contrastive", eeg_repr="raw")
     return f"{pre}{audio_repr}_{eval_label}"
 
 
+# The audio_repr / eeg_repr prompts are identical in the train and test wizards
+# (only the `back` policy differs), so they live here as step builders shared by
+# both flows. Each pins "raw" and SKIPs when the objective makes the axis moot,
+# SKIPs when the caller already fixed it, otherwise prompts.
+def _step_audio(back):
+    def s_audio(s):
+        if s["objective"] == "classify_eeg":
+            s["audio_repr"] = "raw"   # no audio encoder; pin raw (CLAP never loaded)
+            return SKIP
+        if s["audio_repr"] is not None:
+            return SKIP               # pinned by the caller (classify_audio)
+        v = pick("Model:", AUDIO_REPRS, disabled=AUDIO_REPRS_DISABLED, back=back)
+        if v is BACK:
+            return BACK
+        s["audio_repr"] = v
+    return s_audio
+
+
+def _step_eeg(back):
+    def s_eeg(s):
+        if s["objective"] == "classify_audio":
+            s["eeg_repr"] = "raw"     # audio-only: no EEG encoder, eeg_repr irrelevant
+            return SKIP
+        if s["eeg_repr"] is not None:
+            return SKIP               # pinned by the caller
+        v = pick("EEG front-end:", EEG_REPRS, back=back)
+        if v is BACK:
+            return BACK
+        s["eeg_repr"] = v
+    return s_eeg
+
+
 def ask_train_axes(*, objective="contrastive", audio_repr=None, eeg_repr=None, back=False):
     """Collect the training axes via a back-navigable wizard. Returns an axes dict
     or BACK (backed out past the first prompted step).
@@ -325,28 +357,6 @@ def ask_train_axes(*, objective="contrastive", audio_repr=None, eeg_repr=None, b
     to None so the EEG front-end is prompted in every flow (raw / spectra).
     """
     st = {"objective": objective, "audio_repr": audio_repr, "eeg_repr": eeg_repr}
-
-    def s_audio(s):
-        if s["objective"] == "classify_eeg":
-            s["audio_repr"] = "raw"   # no audio encoder; pin raw (CLAP never loaded)
-            return SKIP
-        if s["audio_repr"] is not None:
-            return SKIP               # pinned by the caller (classify_audio)
-        v = pick("Model:", AUDIO_REPRS, disabled=AUDIO_REPRS_DISABLED, back=back)
-        if v is BACK:
-            return BACK
-        s["audio_repr"] = v
-
-    def s_eeg(s):
-        if s["objective"] == "classify_audio":
-            s["eeg_repr"] = "raw"     # audio-only: no EEG encoder, eeg_repr irrelevant
-            return SKIP
-        if s["eeg_repr"] is not None:
-            return SKIP               # pinned by the caller
-        v = pick("EEG front-end:", EEG_REPRS, back=back)
-        if v is BACK:
-            return BACK
-        s["eeg_repr"] = v
 
     def s_eval(s):
         r = ask_eval_setting(back=back)
@@ -368,7 +378,7 @@ def ask_train_axes(*, objective="contrastive", audio_repr=None, eeg_repr=None, b
             return BACK
         s["training_date"] = v
 
-    if _wizard([s_audio, s_eeg, s_eval, s_seed, s_label], st) is None:
+    if _wizard([_step_audio(back), _step_eeg(back), s_eval, s_seed, s_label], st) is None:
         return BACK
     return dict(objective=st["objective"], audio_repr=st["audio_repr"], eeg_repr=st["eeg_repr"],
                 cv_mode=st["cv_mode"], cv_held_out_id=st["cv_held_out_id"],
@@ -573,28 +583,6 @@ def flow_test(axes=None, *, ask_shuffle=True, objective="contrastive", audio_rep
     # defaults to None so the EEG front-end is prompted here too.
     st = {"objective": objective, "audio_repr": audio_repr, "eeg_repr": eeg_repr}
 
-    def s_audio(s):
-        if s["objective"] == "classify_eeg":
-            s["audio_repr"] = "raw"  # no audio encoder used; pin raw (CLAP never loaded)
-            return SKIP
-        if s["audio_repr"] is not None:
-            return SKIP              # pinned by the caller (classify_audio)
-        v = pick("Model:", AUDIO_REPRS, disabled=AUDIO_REPRS_DISABLED, back=True)
-        if v is BACK:
-            return BACK
-        s["audio_repr"] = v
-
-    def s_eeg(s):
-        if s["objective"] == "classify_audio":
-            s["eeg_repr"] = "raw"    # audio-only: no EEG encoder, eeg_repr irrelevant
-            return SKIP
-        if s["eeg_repr"] is not None:
-            return SKIP              # pinned by the caller
-        v = pick("EEG front-end:", EEG_REPRS, back=True)
-        if v is BACK:
-            return BACK
-        s["eeg_repr"] = v
-
     def s_eval(s):
         r = ask_eval_setting(back=True)
         if r is BACK:
@@ -640,7 +628,7 @@ def flow_test(axes=None, *, ask_shuffle=True, objective="contrastive", audio_rep
             return BACK
         s["shuffle"] = v
 
-    if _wizard([s_audio, s_eeg, s_eval, s_ckpt, s_label, s_shuffle], st) is None:
+    if _wizard([_step_audio(True), _step_eeg(True), s_eval, s_ckpt, s_label, s_shuffle], st) is None:
         return BACK  # backed out past the first step -> phase menu
 
     # No seed prompt on the test path: with a loaded checkpoint and shuffle=False a
