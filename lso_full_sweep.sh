@@ -18,11 +18,14 @@ PYC
 
 BUDGET=${BUDGET:-23400}     # 6.5h launch cutoff (override: BUDGET=... )
 CAP=${CAP:-80m}            # per-training-fold hard cap
+NSHARD=${NSHARD:-1}        # in quante istanze parallele dividere i fold
+SHARD=${SHARD:-0}         # quale shard e questa istanza (0..NSHARD-1)
+DONE_FILE=${DONE_FILE:-/tmp/lso_done.txt}   # resume file (unico per istanza quando shardi)
 
 PROTO="$PROTO --cv_mode leave_song_out"   # base $PROTO from sweep_common.sh
 
 # --- build done-set from ALL existing runs (resume across sessions and tags) ---
-$PY - <<'PYC' > /tmp/lso_done.txt
+$PY - <<'PYC' > "$DONE_FILE"
 import glob, os
 def hp(d):
     c={'objective':'contrastive','audio_repr':'?','cv_held_out_id':'?','cv_mode':'?'}
@@ -41,8 +44,8 @@ for f in glob.glob('../results/*/nmed-CL-*/version_*/test_records.csv'):
     seen.add(f"{c['objective']}|{c['audio_repr']}|{c['cv_held_out_id']}")
 print('\n'.join(sorted(x for x in seen if x)))
 PYC
-echo "[resume] folds already done: $(wc -l < /tmp/lso_done.txt)"
-is_done(){ grep -qxF "$1|$2|$3" /tmp/lso_done.txt; }
+echo "[resume] folds already done: $(wc -l < "$DONE_FILE")"
+is_done(){ grep -qxF "$1|$2|$3" "$DONE_FILE"; }
 
 run_fold(){   # $1 objective  $2 repr  $3 song  $4 tag
   local obj="$1" repr="$2" song="$3" tag="$4" key
@@ -57,7 +60,7 @@ run_fold(){   # $1 objective  $2 repr  $3 song  $4 tag
     echo "  TEST"
     $PY -u checkpoint_test.py $PROTO --audio_repr "$repr" $objflag \
         --cv_held_out_id "$song" --training_date "$tag" --test_breakdown 1
-    echo "$key" >> /tmp/lso_done.txt
+    echo "$key" >> "$DONE_FILE"
   else echo "  no checkpoint (timeout/fail) -> skip test"; fi
 }
 
@@ -70,11 +73,13 @@ CLASSES="vocal drum bass others"
 MODELS="contrastive:raw:ct_raw contrastive:clap:ct_clap classify_audio:raw:clf_audio_raw classify_eeg:raw:clf_eeg"
 NROUND=5
 
+declare -A MC=()   # contatore fold per-modello, per il bilanciamento shard
 for ((r=0;r<NROUND;r++)); do
   for cls in $CLASSES; do
     arr=(${SONGS[$cls]}); s=${arr[$r]:-}; [ -z "$s" ] && continue
     for m in $MODELS; do
       [ $SECONDS -ge $BUDGET ] && { echo "[budget] $((SECONDS/60))m reached -> stop launching"; break 3; }
+      _mi=${MC[$m]:-0}; MC[$m]=$((_mi+1)); (( _mi % NSHARD != SHARD )) && continue   # solo questo shard
       obj="${m%%:*}"; rest="${m#*:}"; repr="${rest%%:*}"
       case "$obj" in
         classify_eeg)   tag="clf_eeg_lso_song$s" ;;
