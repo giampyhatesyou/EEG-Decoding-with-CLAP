@@ -31,6 +31,9 @@ env/
 /.claude/
 
 # ── Generated training artifacts (re-runnable) ────────────────
+# Sweep/run logs are provenance, not source: they are archived outside the repo
+# (Tesi/_baldo_archive_*/root_logs/) and re-derivable from results/.
+*.log
 /logs/
 /lightning_logs/
 /archive_tmp/
