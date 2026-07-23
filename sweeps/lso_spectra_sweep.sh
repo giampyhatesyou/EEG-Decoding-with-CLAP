@@ -8,7 +8,7 @@
 # 2 GPUs: launch twice with SHARD=0 and SHARD=1 (NSHARD=2) -> even/odd songs, no overlap.
 set -uo pipefail
 source "$(dirname "$0")/sweep_common.sh"   # conda env + $PY + $PROTO
-cd "$(dirname "$0")/src"   # main.py / checkpoint_test.py live in src/
+cd "$(dirname "$0")/../src"   # main.py / checkpoint_test.py live in src/
 NSHARD=${NSHARD:-1}; SHARD=${SHARD:-0}     # GPU sharding (default: single GPU does all)
 BUDGET=${BUDGET:-25200}                    # 7h launch cutoff
 CAP=${CAP:-80m}                            # per-training-fold cap

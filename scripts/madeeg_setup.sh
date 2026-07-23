@@ -5,9 +5,9 @@
 #   We only need the preprocessed EEG+sources HDF5 and its YAML; the isolated sources
 #   ('soli') are inside the HDF5, so stimuli.zip is NOT required for reconstruction.
 #
-# Usage:  MADEEG_DIR=/path/to/madeeg bash madeeg_setup.sh
+# Usage:  MADEEG_DIR=/path/to/madeeg bash scripts/madeeg_setup.sh
 set -euo pipefail
-DIR=${MADEEG_DIR:-"$(cd "$(dirname "$0")" && pwd)/madeeg"}
+DIR=${MADEEG_DIR:-"$(cd "$(dirname "$0")/.." && pwd)/madeeg"}
 BASE="https://zenodo.org/records/4537751/files"
 mkdir -p "$DIR"; cd "$DIR"
 echo "[madeeg] downloading into $DIR"

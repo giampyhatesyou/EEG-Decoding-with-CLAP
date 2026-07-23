@@ -61,7 +61,17 @@ PDF: [`docs/paper.pdf`](docs/paper.pdf). Original code:
 │   ├── test_sanity.sh               Negative-control sweep (none|labels|audio_pair)
 │   ├── train_cv.sh                  One CV fold: train then test
 │   ├── extract_checkpoints.sh       Unpack paper checkpoints from archive/
+│   ├── madeeg_setup.sh              Fetch the MAD-EEG dataset (Zenodo)
 │   └── reproduce_akama.sh           Reproduce Akama Table 1+2 from checkpoints
+├── sweeps/                          Multi-fold experiment drivers (resumable)
+│   ├── sweep_common.sh              Shared conda env + fixed protocol flags
+│   ├── lso_full_sweep.sh            Leave-song-out, 4 models x 20 songs
+│   ├── lso_contrastive_sweep.sh     Leave-song-out, contrastive only
+│   ├── lso_controls_sweep.sh        Leave-song-out, audio-only / EEG-only controls
+│   ├── lso_spectra_sweep.sh         Leave-song-out, spectral EEG variant (parked)
+│   ├── converged_contrastive.sh     A few folds trained to convergence (no 80m cap)
+│   ├── recon_lso_sweep.sh           Leave-song-out for the reconstruction decoder
+│   └── aggregate_lso.py             Per-model MACRO / per-class summary of results/
 ├── checkpoints/                     Paper weights (.ckpt gitignored; extract them)
 ├── results/                         Committed run outputs (TensorBoard, breakdowns)
 ├── archive/                         Compressed paper checkpoints (.7z)

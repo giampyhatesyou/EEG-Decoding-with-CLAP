@@ -6,12 +6,12 @@
 #   a test_records.csv compatible with aggregate_lso.py under tag recon_lso_song<ID>.
 #
 # Usage (run from repo root, env active):
-#   bash recon_lso_sweep.sh                 # default representative set (one per class)
-#   SONGS="2 7 44 8" bash recon_lso_sweep.sh
-#   SONGS="$(all songs)" bash recon_lso_sweep.sh   # full LSO
+#   bash sweeps/recon_lso_sweep.sh                 # default representative set (one per class)
+#   SONGS="2 7 44 8" bash sweeps/recon_lso_sweep.sh
+#   SONGS="$(all songs)" bash sweeps/recon_lso_sweep.sh   # full LSO
 # Env knobs: PY, DATASET_DIR, LOG_DIR, COMPRESSION, ENV_CUTOFF, LAGS_MS.
 set -uo pipefail
-cd "$(dirname "$0")/src"
+cd "$(dirname "$0")/../src"
 
 PY=${PY:-python}
 MODEL=${MODEL:-ridge}                 # ridge (CPU, linear anchor) | cnn (GPU, non-linear)
@@ -40,4 +40,4 @@ for sid in $SONGS; do
       --recon_compression "$COMPRESSION" --recon_env_cutoff_hz "$ENV_CUTOFF" --recon_lags_ms "$LAGS_MS" \
     || echo "  FOLD FAILED: $tag"
 done
-echo "[recon-sweep] done. Aggregate with:  python aggregate_lso.py   (reads ${PREFIX}_* too)"
+echo "[recon-sweep] done. Aggregate with:  python sweeps/aggregate_lso.py   (reads ${PREFIX}_* too)"

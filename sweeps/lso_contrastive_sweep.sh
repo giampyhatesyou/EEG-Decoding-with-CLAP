@@ -5,7 +5,7 @@
 # tests on the held-out song, aggregates MACRO at the end.
 set -uo pipefail
 source "$(dirname "$0")/sweep_common.sh"   # conda env + $PY + $PROTO
-cd "$(dirname "$0")/src"   # entrypoints main.py/checkpoint_test.py live in src/
+cd "$(dirname "$0")/../src"   # entrypoints main.py/checkpoint_test.py live in src/
 echo "[env] $(date) python=$(command -v $PY) env=${CONDA_DEFAULT_ENV:-none} CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-unset}"
 $PY - <<'PYC'
 import torch

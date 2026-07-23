@@ -5,7 +5,7 @@
 # 2 GPUs: launch twice with SHARD=0 and SHARD=1 (NSHARD=2). Resumable.
 set -uo pipefail
 source "$(dirname "$0")/sweep_common.sh"   # conda env + $PY + $PROTO
-cd "$(dirname "$0")/src"
+cd "$(dirname "$0")/../src"
 NSHARD=${NSHARD:-1}; SHARD=${SHARD:-0}
 CAP=${CAP:-360m}                 # 6h cap: room for >=50 epochs (the protocol min) to converge
 BUDGET=${BUDGET:-86400}          # keep launching folds back-to-back until the allocation ends.

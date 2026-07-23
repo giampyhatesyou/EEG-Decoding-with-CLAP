@@ -8,7 +8,7 @@
 # Budget  : stops LAUNCHING new folds after BUDGET seconds; each train capped by CAP.
 set -uo pipefail
 source "$(dirname "$0")/sweep_common.sh"   # conda env + $PY + $PROTO
-cd "$(dirname "$0")/src"   # entrypoints main.py/checkpoint_test.py live in src/
+cd "$(dirname "$0")/../src"   # entrypoints main.py/checkpoint_test.py live in src/
 echo "[env] $(date) python=$(command -v $PY) env=${CONDA_DEFAULT_ENV:-none}"
 $PY - <<'PYC'
 import torch

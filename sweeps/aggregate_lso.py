@@ -3,9 +3,10 @@
 #                    leave-song-out / within results into a per-model MACRO table.
 """Per-model accuracy summary over results/.
 
-Run from the repo root inside the eeg_attention env:
+Run inside the eeg_attention env (from anywhere -- results/ is resolved from the
+repo root, not from the current directory):
 
-    python aggregate_lso.py
+    python sweeps/aggregate_lso.py
 
 Prints MACRO (mean over the held-out classes; the honest metric), GLOBAL and the
 per-class accuracy for every (objective, audio_repr, eeg_repr, cv_mode) found. Old
@@ -22,7 +23,7 @@ except ImportError:
     sys.exit("needs pandas -- run inside the eeg_attention env")
 
 TASK = {0: "vocal", 1: "drum", 2: "bass", 3: "others"}
-RESULTS = "results"
+RESULTS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "results")
 
 
 def hparams(version_dir):
