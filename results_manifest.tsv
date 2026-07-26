@@ -13,6 +13,14 @@
 #   run as lso1_/lso_baseline_leave_song_out_36.
 #   conv_ct_raw_lso_song44 — the capped twin is pinned instead, to keep the row
 #   protocol-consistent; conv_ct_raw_lso_song16 IS pinned because no capped twin exists.
+# NOT REPRODUCIBLE BIT-FOR-BIT: the two `control` rows. checkpoint_test forces
+#   shuffle=True for shuffle_test_mode != none (otherwise each batch carries a single task
+#   and the in-batch permutation degenerates), and --workers auto-sizes to the machine, so
+#   the permutation differs run to run. Re-running on 2026-07-26 gave labels 0.2500 and
+#   audio_pair 0.3525 against the pinned 0.2250 / 0.3825 — and the pre-refactor code gave
+#   the same 0.2500, so this is the control's own variance, not a code change. Cite them as
+#   "at chance" and "far below the 0.865 headline", never as exact figures. The `within`
+#   row (shuffle_test_mode=none) IS deterministic and reproduces 0.8650 exactly.
 #   raw_loso_sub7 (0.408) — conflicts with repro_loso_sub7 (0.875) for the same fold;
 #   the latter is what the committed scripts/replicate.sh produces.
 #   results/baseline_sanity_* — the May run of the same three controls. The 18/07 re-run
