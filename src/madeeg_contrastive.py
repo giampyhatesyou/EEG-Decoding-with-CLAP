@@ -94,6 +94,12 @@ def decide_per_trial(dataset, test_trials, encoder_eeg, encoder_audio, device, b
     loader = DataLoader(Subset(dataset, idx), batch_size=batch_size, shuffle=False)
     cos = torch.nn.CosineSimilarity(dim=1)
 
+    # Keyed by (subject, stim), NOT by stim. A stimulus id is not unique: 36 distinct ids
+    # cover the 154 duo trials, because several subjects heard the same excerpt with the
+    # same target. Keying by stim alone merged those subjects' windows into one list and
+    # handed every trial that shared an id the identical margin -- which silently destroys
+    # the per-trial independence the whole binomial test rests on, and averages one
+    # subject's EEG with another's. Found by checking the records for duplicate margins.
     margins = {}
     for batch in loader:
         eeg = batch["eeg"].to(device)
@@ -105,7 +111,14 @@ def decide_per_trial(dataset, test_trials, encoder_eeg, encoder_audio, device, b
         for i in range(eeg.size(0)):
             attended = sims[i, target[i]]
             competitor = torch.cat([sims[i, :target[i]], sims[i, target[i] + 1:]]).max()
-            margins.setdefault(batch["stim"][i], []).append(float(attended - competitor))
+            key = (batch["subject"][i], batch["stim"][i])
+            margins.setdefault(key, []).append(float(attended - competitor))
+
+    # One list per test trial, no merging. This assertion is the check that would have
+    # caught the bug above at once instead of after a full GPU run.
+    assert len(margins) == len(test_trials), (
+        f"{len(margins)} margin groups for {len(test_trials)} test trials -- "
+        "decisions are being merged, so they are not independent")
     return margins
 
 
@@ -189,7 +202,7 @@ def run_kfold(ds, args, device):
                                    device, args.batch_size)
         for t in test_trials:
             subj, stim = ds.trials[t]
-            m = float(np.mean(margins[stim]))
+            m = float(np.mean(margins[(subj, stim)]))
             records.append({"fold": f, "subject": subj, "stim": stim,
                             "ensemble": ds.meta[subj][stim]["ensemble"],
                             "n_present": len(ds.meta[subj][stim]["instruments"]),
