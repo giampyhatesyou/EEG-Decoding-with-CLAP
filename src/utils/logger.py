@@ -2,9 +2,12 @@ import logging
 import os  # CHANGED(baseline): added for the project-root log dir below
 from logging import FileHandler, StreamHandler
 
-# CHANGED(baseline): compute log directory relative to the project root (one level up from src/),
-# so the logger works regardless of cwd (was the cwd-relative './log/').
-_LOG_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'logs')
+# CHANGED(baseline): compute log directory relative to the project root (one level up from
+# src/), so the logger works regardless of cwd (was the cwd-relative './log/'). It sits under
+# runs/ with every other run artifact -- note this runs at import time, so a wrong path here
+# re-creates a stray directory at the repo root just by importing the module.
+_LOG_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'runs', 'logs')
 os.makedirs(_LOG_DIR, exist_ok=True)
 
 
