@@ -15,6 +15,10 @@
 #   protocol-consistent; conv_ct_raw_lso_song16 IS pinned because no capped twin exists.
 #   raw_loso_sub7 (0.408) — conflicts with repro_loso_sub7 (0.875) for the same fold;
 #   the latter is what the committed scripts/replicate.sh produces.
+#   results/baseline_sanity_* — the May run of the same three controls. The 18/07 re-run
+#   (sanity_*) is pinned instead: identical numbers (0.8650 / 0.2250 / 0.3825) from the
+#   same model-all0.ckpt, but current code AND the exact tags scripts/replicate.sh writes,
+#   so re-running replicate refreshes these pins in place.
 
 table	model	eval	held_out	run_tag	vintage
 song_out	contrastive_raw	leave_song_out	2	ct_raw_lso_song2	2026-07
@@ -106,7 +110,7 @@ subject_out	contrastive_clap	leave_subject_out	2	cv_sweep_leave_subject_out_2	20
 subject_out	contrastive_clap	leave_subject_out	3	cv_sweep_leave_subject_out_3	2026-05
 subject_out	contrastive_clap	leave_subject_out	4	cv_sweep_leave_subject_out_4	2026-05
 subject_out	contrastive_clap	leave_subject_out	5	cv_sweep_leave_subject_out_5	2026-05
-within	contrastive_raw	within	-1	baseline_sanity_none	2026-05
+within	contrastive_raw	within	-1	sanity_none	2026-07
 within	audio_only_raw	within	-1	clf_audio_raw_within	2026-07
 within	audio_only_clap	within	-1	clf_audio_clap_within	2026-07
 within	eeg_only	within	-1	clf_eeg_within	2026-07
@@ -118,5 +122,5 @@ within	contrastive_clap	within	-1	clapseed_within_5	2026-07
 within	contrastive_clap	within	-1	clapseed_within_6	2026-07
 within	contrastive_clap	within	-1	clapseed_within_8	2026-07
 within	contrastive_clap	within	-1	clapseed_within_42	2026-07
-control	contrastive_raw/labels	within	-1	baseline_sanity_labels	2026-05
-control	contrastive_raw/audio_pair	within	-1	baseline_sanity_audio_pair	2026-05
+control	contrastive_raw/labels	within	-1	sanity_labels	2026-07
+control	contrastive_raw/audio_pair	within	-1	sanity_audio_pair	2026-07

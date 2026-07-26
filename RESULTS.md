@@ -32,12 +32,12 @@ A row mixing vintages is reported as such rather than silently averaged away.
 | audio_only_clap | 1 | **0.996** | 0.993 | 0.98 1.00 1.00 1.00 | 2026-07 |
 | audio_only_raw | 1 | **0.967** | 0.963 | 0.94 0.99 0.95 0.98 | 2026-07 |
 | contrastive_clap | 8 | **0.946** | 0.935 | 0.92 0.95 0.99 0.93 | 2026-07 |
-| contrastive_raw | 1 | **0.875** | 0.865 | 0.84 0.99 0.86 0.81 | 2026-05 |
+| contrastive_raw | 1 | **0.875** | 0.865 | 0.84 0.99 0.86 0.81 | 2026-07 |
 | eeg_only | 1 | **0.250** | 0.471 | 1.00 0.00 0.00 0.00 | 2026-07 |
 
 ## control
 
 | model | folds | MACRO | GLOBAL | per-class [v d b o] | vintage |
 |---|---:|---:|---:|---|---|
-| contrastive_raw/audio_pair | 1 | **0.339** | 0.383 | 0.47 0.29 0.24 0.34 | 2026-05 |
-| contrastive_raw/labels | 1 | **0.227** | 0.225 | 0.39 0.19 0.11 0.22 | 2026-05 |
+| contrastive_raw/audio_pair | 1 | **0.339** | 0.383 | 0.47 0.29 0.24 0.34 | 2026-07 |
+| contrastive_raw/labels | 1 | **0.227** | 0.225 | 0.39 0.19 0.11 0.22 | 2026-07 |
