@@ -54,7 +54,7 @@ class MadeegContrastiveDataset(Dataset):
 
     def __init__(self, madeeg_dir, ensemble="duo", subjects=None,
                  eeg_length=768, stride=256,
-                 eeg_normalization="MetaAI", clamp_value=20):
+                 eeg_normalization="MetaAI", clamp_value=20, preload=False):
         self.h5_path = os.path.join(madeeg_dir, "madeeg_preprocessed.hdf5")
         meta_path = os.path.join(madeeg_dir, "madeeg_preprocessed.yaml")
         for p in (self.h5_path, meta_path):
@@ -68,6 +68,7 @@ class MadeegContrastiveDataset(Dataset):
         self.clamp_value = clamp_value
         self._h5 = None                     # opened lazily: HDF5 handles do not fork
         self._cache = {}                    # (subj, stim) -> whole-trial arrays; see _trial_arrays
+        self._evict = True                  # flipped off by preload
 
         keep = {"duo", "trio"} if ensemble == "both" else {ensemble}
         subjects = subjects or list(self.meta)
@@ -88,6 +89,17 @@ class MadeegContrastiveDataset(Dataset):
 
         self.instruments = sorted({i for s, k in self.trials
                                    for i in self.meta[s][k]["instruments"]})
+
+        # `preload` exists so the loader can SHUFFLE. Without it the two-trial cache forces
+        # sequential access, and with batch_size 8 against ~26 windows per trial almost every
+        # batch would be drawn from a single trial -- which quietly breaks InfoNCE, because
+        # the "other samples" that serve as batch negatives would then be the SAME audio as
+        # the positive. Held as float32 and trimmed to the sources actually present, the whole
+        # duo set is ~1.6 GB, so it simply lives in RAM.
+        if preload:
+            for subj, stim in self.trials:
+                self._load(subj, stim)
+            self._evict = False
 
     # --- torch Dataset ---------------------------------------------------------
     def __len__(self):
@@ -116,9 +128,10 @@ class MadeegContrastiveDataset(Dataset):
         soli = soli_full[:, a0:a1]
 
         instruments = list(m["instruments"])
-        n_present = len(instruments)                # `soli` always has 3 rows; row 3 is
-        stems = soli[:n_present]                    # empty for a duo, so slice it off
-        stems = torch.from_numpy(stems.astype(np.float32)).unsqueeze(1)  # (n, 1, samples)
+        n_present = len(instruments)
+        stems = torch.from_numpy(soli).unsqueeze(1)   # (n_present, 1, samples); the empty
+                                                      # third `soli` row of a duo is dropped
+                                                      # at load time, not here
 
         return {
             "eeg": eeg,
@@ -131,26 +144,31 @@ class MadeegContrastiveDataset(Dataset):
             "ensemble": m["ensemble"],
         }
 
-    def _trial_arrays(self, subj, stim):
-        """Whole-trial `response` and `soli`, cached across the windows that share a trial.
+    def _load(self, subj, stim):
+        """Read one trial into the cache, as float32 and trimmed to the present sources.
 
-        `read_f64` reads a whole HDF5 dataset -- it selects H5S_ALL, which is the price of
-        the type conversion MAD-EEG's float layout needs. `soli` is (3, 1.2 M) float64 =
-        ~30 MB, so re-reading it per window would mean ~175 GB of I/O per epoch. Indexing
-        is trial-major, so a two-entry cache turns that back into one read per trial.
-        CEILING: with a shuffling DataLoader consecutive items are no longer in the same
-        trial and this degrades to one read per item. If that shows up as a bottleneck,
-        the fix is a hyperslab read (h5py selection instead of H5S_ALL) so only the
-        window's samples cross the wire -- not a bigger cache.
+        `read_f64` reads a whole HDF5 dataset -- it selects H5S_ALL, the price of the type
+        conversion MAD-EEG's float layout needs -- so re-reading per window would mean
+        ~175 GB of I/O per epoch. Storing float32 and dropping the empty third `soli` row
+        of a duo halves it again: ~10 MB per trial, ~1.6 GB for all 154.
         """
+        if self._h5 is None:
+            self._h5 = h5py.File(self.h5_path, "r")
+        grp = self._h5[subj][stim]
+        n_present = len(self.meta[subj][stim]["instruments"])
+        self._cache[(subj, stim)] = (
+            read_f64(grp["response"]).astype(np.float32),
+            read_f64(grp["soli"])[:n_present].astype(np.float32),
+        )
+
+    def _trial_arrays(self, subj, stim):
+        """Whole-trial arrays, cached. With preload=False only two trials are kept, which
+        requires sequential access; see the note in __init__ on why training needs preload."""
         key = (subj, stim)
         if key not in self._cache:
-            if self._h5 is None:
-                self._h5 = h5py.File(self.h5_path, "r")
-            grp = self._h5[subj][stim]
-            if len(self._cache) >= 2:
+            if self._evict and len(self._cache) >= 2:
                 self._cache.pop(next(iter(self._cache)))
-            self._cache[key] = (read_f64(grp["response"]), read_f64(grp["soli"]))
+            self._load(subj, stim)
         return self._cache[key]
 
     def _normalize(self, eeg):
