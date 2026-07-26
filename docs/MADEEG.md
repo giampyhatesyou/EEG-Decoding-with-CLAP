@@ -29,12 +29,27 @@ records the ridge run actually produced (`madeeg_records.csv`; the trial selecti
 | unique duo mixtures | **18**, each presented with **2 different attended targets** (36 `stim` ids) |
 | instruments attended in duos | 9 — pop `Vx Gt Bs Dr`, classical `Co Fl Ob Fh Bo` (`Ob`/`Bo`, not `Ba`) |
 | genre split (duo trials) | 94 classical / 60 pop |
-| solo and trio counts | **not measured** — only `--ensemble duo` has ever been run. Get them with `--ensemble both --inspect 1`, which prints `n_trials` before doing any work |
+| trio trials | **92** (`--ensemble both` reports 246 total, minus the 154 duos) — ~11–12 per subject |
+| solo trials | still not measured; `--ensemble` only accepts duo/trio/both |
+| trial length | **28.0 s** — `response=(20, 7172)@256 Hz`, `soli=(3, 1235312)@44100 Hz`. `soli` always has 3 rows; the third is empty for a duo |
 
 The `stim` id encodes everything: `classique_morceau1_duo_CoFl_theme1_stereo_Co` = classical
 piece 1, duo of Co+Fl, attended **Co**. The `_Fl` twin exists too — **all 18 mixtures appear
 with two different targets**. That is the identifiability property this whole arm rests on,
 and it is visible in the data rather than only asserted here.
+
+**Training budget**, under the Akama protocol's sliding window (5 s window, 1 s stride) =
+24 windows per 28 s trial:
+
+| | trials | windows | EEG |
+|---|---:|---:|---:|
+| duos only | 154 | ~3.7 k | 72 min |
+| duos + trios | 246 | ~5.9 k | 115 min |
+| per subject (duos + trios) | ~31 | ~720 | ~14 min |
+
+Small. With the CLAP backbone frozen only the projection head and the EEG encoder train,
+which is what makes this arguable at all — but it is also why the linear anchor may well
+win, and that has to be reported as such rather than explained away.
 - Files needed: `madeeg_preprocessed.hdf5` (3.7 GB) + `madeeg_preprocessed.yaml` (154 kB).
   The isolated sources (`soli`) are inside the HDF5, so `stimuli.zip` is NOT required.
 
