@@ -40,6 +40,11 @@ env/
 /runs/
 /lightning_logs/
 *.log
+# SLURM job stdout: same status as *.log. (A trailing `# comment` on a pattern
+# line is NOT a comment in .gitignore -- it becomes part of the pattern.)
+*.out
+# Pre-2026-07-26 layout, superseded by runs/logs/; a pull leaves it behind.
+/logs/
 
 # Never commit re-derivable binaries. Paper checkpoints ship as
 # archive/*.7z and are unpacked locally by scripts/setup_checkpoints.sh.
