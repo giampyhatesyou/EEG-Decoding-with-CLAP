@@ -47,21 +47,28 @@ one spatial condition. Anything below refers to the preprocessed 246 unless stat
 | instruments attended in duos | 9 — pop `Vx Gt Bs Dr`, classical `Co Fl Ob Fh Bo` (`Ob`/`Bo`, not `Ba`) |
 | genre split (duo trials) | 94 classical / 60 pop |
 | trio trials | **92** — ~11–12 per subject |
-| trial length | **28.0 s** — `response=(20, 7172)@256 Hz`, `soli=(3, 1235312)@44100 Hz`. `soli` always has 3 rows; the third is empty for a duo |
+| trial length | **not uniform** — 19.7 s ×49, 20.0 s ×25, 24.0 s ×130, 28.0 s ×42. (`--inspect 1` shows one trial, which is where the earlier "28 s" came from.) `soli` always has 3 rows; the third is empty for a duo. EEG and audio durations agree on all 246 trials |
 
 The `stim` id encodes everything: `classique_morceau1_duo_CoFl_theme1_stereo_Co` = classical
-piece 1, duo of Co+Fl, attended **Co**. The `_Fl` twin exists too — **all 18 mixtures appear
-with two different targets**. That is the identifiability property this whole arm rests on,
-and it is visible in the data rather than only asserted here.
+piece 1, duo of Co+Fl, attended **Co**. The `_Fl` twin exists too — **all 18 duo mixtures
+appear with two different targets, 18 of 18**. That is the identifiability property this
+whole arm rests on, and it is visible in the data rather than only asserted here.
 
-**Training budget**, under the Akama protocol's sliding window (5 s window, 1 s stride) =
-24 windows per 28 s trial:
+The trios are *not* as clean: of the 10 trio mixtures, 8 appear with all three targets, one
+with two, and one — `pop_mixtape_trio_BsDrVx_theme1_stereo`, 2 trials — with a **single**
+target. For those 2 trials stimulus identity predicts the answer, i.e. the Akama confound in
+miniature. Two trials out of 246 will not move a number, but they should be excluded or
+declared rather than discovered later. The duo design has no such case.
+
+**Training budget** — counted by `src/datasets/madeeg_contrastive_dataset.py`, tiling each
+trial with 3 s windows at 1 s stride (1 to 26 windows per trial, since trials differ in
+length):
 
 | | trials | windows | EEG |
 |---|---:|---:|---:|
-| duos only | 154 | ~3.7 k | 72 min |
-| duos + trios | 246 | ~5.9 k | 115 min |
-| per subject (duos + trios) | ~31 | ~720 | ~14 min |
+| duos only | 154 | **3276** | 60.1 min |
+| duos + trios | 246 | **5235** | 96.1 min |
+| per subject (duos + trios) | ~31 | ~650 | ~12 min |
 
 Small. With the CLAP backbone frozen only the projection head and the EEG encoder train,
 which is what makes this arguable at all — but it is also why the linear anchor may well
