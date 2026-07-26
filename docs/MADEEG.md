@@ -15,8 +15,26 @@ instruments across trials, so attention is **identifiable** and the within-trial
 - 20-channel research EEG @256 Hz (ch `F3..O2`, incl. occipital `O1/Oz/O2` and parietal —
   so the SpectraEEG band-power idea finally gets a fair montage), 8 subjects
   (`0001..0009` minus `0006`).
-- 78 stimuli/subject: 14 solo, 40 **duo**, 24 trio; ~6 s excerpts ×4 reps (~24 s/trial).
-- Instruments: pop (Vx/Gt/Bass/Dr) + classical (Co/Fl/FH/Ba). Genres pop + classique.
+- ~6 s excerpts ×4 reps (~24 s/trial).
+
+**Trial counts — measured, 2026-07-26.** An earlier version of this file claimed "78
+stimuli/subject: 14 solo, 40 duo, 24 trio". That is wrong for the **duo** count, and the
+correction matters because it halves the training budget. Counted from the per-trial
+records the ridge run actually produced (`madeeg_records.csv`; the trial selection at
+`madeeg_reconstruction.py:305` filters on nothing but `ensemble`, so this IS the full set):
+
+| | measured |
+|---|---|
+| duo trials | **154 total** — 20 per subject, except subject 0007 with 14 |
+| unique duo mixtures | **18**, each presented with **2 different attended targets** (36 `stim` ids) |
+| instruments attended in duos | 9 — pop `Vx Gt Bs Dr`, classical `Co Fl Ob Fh Bo` (`Ob`/`Bo`, not `Ba`) |
+| genre split (duo trials) | 94 classical / 60 pop |
+| solo and trio counts | **not measured** — only `--ensemble duo` has ever been run. Get them with `--ensemble both --inspect 1`, which prints `n_trials` before doing any work |
+
+The `stim` id encodes everything: `classique_morceau1_duo_CoFl_theme1_stereo_Co` = classical
+piece 1, duo of Co+Fl, attended **Co**. The `_Fl` twin exists too — **all 18 mixtures appear
+with two different targets**. That is the identifiability property this whole arm rests on,
+and it is visible in the data rather than only asserted here.
 - Files needed: `madeeg_preprocessed.hdf5` (3.7 GB) + `madeeg_preprocessed.yaml` (154 kB).
   The isolated sources (`soli`) are inside the HDF5, so `stimuli.zip` is NOT required.
 
