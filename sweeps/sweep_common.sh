@@ -23,7 +23,15 @@ if [ "${CONDA_DEFAULT_ENV:-}" != "eeg_attention" ]; then
   done
   conda activate eeg_attention 2>/dev/null || true
 fi
-PY=${PY:-python}
+# `conda activate` is a shell function: in a non-interactive shell (nohup, sbatch, cron)
+# the block above is a no-op, and a bare `python` then resolves to a system interpreter
+# with no torch -- which surfaces as ModuleNotFoundError several minutes into a run, not
+# at launch. Prefer the env's interpreter by path: it needs no activation. An explicit
+# PY=... in the environment still wins.
+if [ -z "${PY:-}" ]; then
+  _env_py="$HOME/.conda/envs/eeg_attention/bin/python"
+  [ -x "$_env_py" ] && PY="$_env_py" || PY=python
+fi
 
 PROTO="--dataset preprocessing_eegmusic --test_dataset preprocessing_eegmusic_test \
 --max_epochs 1000 --batch_size 8 --eeg_length 768 --loss_function clip_loss \

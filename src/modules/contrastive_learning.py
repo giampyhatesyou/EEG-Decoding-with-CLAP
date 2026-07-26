@@ -388,13 +388,18 @@ class EEGContrastiveLearning(LightningModule):
         #                    Upstream test_step instead had discarded _get_tensor_value()/positive-average
         #                    bookkeeping here; that has been removed.
         # --- Per-window record collection (used by on_test_end for breakdowns).
-        # matrix_all[k] is the ordered list of [sim_v, sim_d, sim_b, sim_o]
-        # rows for samples in this batch whose task == k, in the same order as
-        # `task == k` boolean indexing of (subject, song, attention_score). We
-        # zip them back together so each window keeps its metadata.
+        # matrix_all[k] is the ordered list of per-slot similarity rows for samples in
+        # this batch whose task == k, in the same order as `task == k` boolean indexing of
+        # (subject, song, attention_score). We zip them back together so each window keeps
+        # its metadata.
+        # CHANGED(baseline): the slot count comes from matrix_all rather than being fixed
+        # at four. Akama mixtures always hold four stems; a MAD-EEG duo holds two, and the
+        # decision is then between two sources, not four -- so chance is 1/n_slots and the
+        # unused sim_* columns stay empty instead of raising IndexError.
         if getattr(self.hparams, "test_breakdown", 0):
             attention_values = set(self.attention_values)
-            for task_idx in range(4):
+            n_slots = len(matrix_all)
+            for task_idx in range(n_slots):
                 task_mask = (task == task_idx)
                 if task_mask.sum() == 0:
                     continue
@@ -407,15 +412,17 @@ class EEGContrastiveLearning(LightningModule):
                     pos = sims[task_idx]
                     neg = [s for j, s in enumerate(sims) if j != task_idx]
                     max_neg = max(neg)
+                    padded = sims + [None] * (4 - len(sims))
                     self.test_records.append({
                         "subject": int(sub_t[i]),
                         "song": int(song_t[i]),
                         "task": int(task_idx),
                         "attention": int(att_t[i]),
-                        "sim_vocal": sims[0],
-                        "sim_drum": sims[1],
-                        "sim_bass": sims[2],
-                        "sim_others": sims[3],
+                        "sim_vocal": padded[0],
+                        "sim_drum": padded[1],
+                        "sim_bass": padded[2],
+                        "sim_others": padded[3],
+                        "n_slots": len(sims),
                         "pos_sim": pos,
                         "max_neg_sim": max_neg,
                         "margin": pos - max_neg,
