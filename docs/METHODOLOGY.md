@@ -191,9 +191,9 @@ the two variants, to show convergence speed.*
 [READY] All code, configuration, and seeds required to reproduce the
 experiments are available at
 `https://github.com/giampyhatesyou/EEG-Decoding-with-CLAP`.
-The baseline run is launched with `bash scripts/train.sh` and the CLAP
-variant with `bash scripts/train_clap.sh`. Each script writes its
-checkpoints and TensorBoard logs into a separate `results/<training_date>`
+The baseline run is launched with `MODEL=baseline bash scripts/train.sh` and
+the CLAP variant with `MODEL=clap bash scripts/train.sh`. Each writes its
+checkpoints and TensorBoard logs into a separate `runs/results/<training_date>`
 subdirectory so the two runs cannot overwrite each other.
 
 [READY] Dependencies are pinned in `requirements.txt`; the only versions

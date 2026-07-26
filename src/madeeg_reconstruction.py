@@ -257,7 +257,7 @@ def synth_attended_eeg(att, lags_op, W_op, rng, snr):
 def main():
     ap = argparse.ArgumentParser(description="MAD-EEG stimulus-reconstruction AAD")
     ap.add_argument("--madeeg_dir", required=True, help="dir with madeeg_preprocessed.hdf5 + .yaml")
-    ap.add_argument("--log_dir", default="../results")
+    ap.add_argument("--log_dir", default="", help="run-output dir; default <repo>/runs/results")
     ap.add_argument("--training_date", default="madeeg_recon")
     ap.add_argument("--inspect", type=int, default=0, help="print schema for first N trials and exit")
     ap.add_argument("--self_test", action="store_true",
@@ -283,6 +283,9 @@ def main():
     ap.add_argument("--test_eeg", default="preprocessed", choices=["preprocessed", "raw"],
                     help="raw_solos only: 'raw' rebuilds the test-duo EEG from raw too (no preprocessing mismatch)")
     args = ap.parse_args()
+    if not args.log_dir:  # same run-output dir as main.py / checkpoint_test.py
+        from utils import paths
+        args.log_dir = paths.resolve_log_dir()
 
     data = h5py.File(os.path.join(args.madeeg_dir, "madeeg_preprocessed.hdf5"), "r")
     meta = yaml.load(open(os.path.join(args.madeeg_dir, "madeeg_preprocessed.yaml")), Loader=yaml.FullLoader)

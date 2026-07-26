@@ -30,23 +30,18 @@ env/
 /GEMINI.md
 /.claude/
 
-# ── Generated training artifacts (re-runnable) ────────────────
-# Sweep/run logs are provenance, not source: they are archived outside the repo
-# (Tesi/_baldo_archive_*/root_logs/) and re-derivable from results/.
-*.log
-/logs/
+# ── Run artifacts: everything a run emits lives under runs/ ───
+# runs/results/  per-run CSVs, hparams, checkpoints, tfevents
+# runs/logs/     stdout of the launcher scripts
+# None of it is source: it is provenance, mirrored read-only into
+# Tesi/_baldo_archive_*/ and re-derivable by re-running the sweeps.
+# The numbers that go in the thesis are pinned in results_manifest.tsv
+# and rendered into RESULTS.md — those two ARE tracked.
+/runs/
 /lightning_logs/
-/archive_tmp/
+*.log
 
-# results/: ignore live run directories, but keep the committed
-# reproduction baselines under results/baseline_*/ ...
-/results/**
-!/results/baseline_*/
-!/results/baseline_*/**
-
-# ... yet never commit re-derivable binaries, even inside a kept
-# baseline dir: model checkpoints and TensorBoard event files.
-# Paper checkpoints ship as archive/*.7z and are unpacked locally
-# by scripts/extract_checkpoints.sh.
+# Never commit re-derivable binaries. Paper checkpoints ship as
+# archive/*.7z and are unpacked locally by scripts/setup_checkpoints.sh.
 *.ckpt
 events.out.tfevents.*

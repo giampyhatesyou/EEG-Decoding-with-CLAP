@@ -20,9 +20,26 @@ def resolve_dataset_dir(fallback: str) -> str:
     return os.environ.get("EEG_DATASET_DIR") or fallback
 
 
-def resolve_log_dir(fallback: str) -> str:
-    """Log/checkpoint base dir: ``EEG_LOG_DIR`` if set, else the caller's value."""
-    return os.environ.get("EEG_LOG_DIR") or fallback
+def resolve_log_dir(fallback: str = "") -> str:
+    """Run-output base dir: ``EEG_LOG_DIR`` > ``<repo>/runs/results``.
+
+    Every run artifact lives under ``runs/`` so the repo root stays readable.
+    ``fallback`` (the caller's sentinel default) is no longer used as a path.
+
+    A checkout still on the pre-2026-07 layout (``results/`` at the root, no
+    ``runs/``) keeps using it and says so: on the cluster that directory holds
+    ~150 finished folds, and silently pointing a resumable sweep at an empty new
+    path would make it re-run all of them from scratch.
+    """
+    env = os.environ.get("EEG_LOG_DIR")
+    if env:
+        return env
+    new, old = _REPO_ROOT / "runs" / "results", _REPO_ROOT / "results"
+    if not new.exists() and old.exists():
+        print(f"[paths] legacy layout: using {old}. Migrate with: "
+              f"mkdir -p {_REPO_ROOT / 'runs'} && mv {old} {new}")
+        return str(old)
+    return str(new)
 
 
 def _effective_cpu_count() -> int:

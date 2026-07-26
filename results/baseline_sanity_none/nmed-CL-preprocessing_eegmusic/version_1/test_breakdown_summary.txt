@@ -1,7 +1,0 @@
-== Test breakdown (shuffle_test_mode=none) ==
-n_windows total: 800
-n_windows high-attention: 650
-global accuracy (records, all): 0.8650
-global accuracy (records, attn): 0.8523
-global margin mean (all): +1.5061
-global margin mean (attn): +1.4790

@@ -8,7 +8,7 @@ each edit relative to upstream is marked `# CHANGED(baseline)`.
 ## Layout
 
 - `codes_attention/attention/` → `src/`
-- `config/` → `configs/`, `runs/` → `results/`
+- `config/` → `configs/`, `runs/` → `results/` (2026-07-26: → `runs/results/`)
 - new top-level directories: `scripts/`, `docs/`, `checkpoints/`, `archive/`
 
 ## Files added (absent upstream)
@@ -27,6 +27,8 @@ each edit relative to upstream is marked `# CHANGED(baseline)`.
 - `src/run.py` — interactive launcher; subprocess wrapper over `main.py` / `checkpoint_test.py`.
 - `scripts/`: `train.sh`, `train_clap.sh`, `train_supervised.sh`, `test.sh`,
   `test_sanity.sh`, `train_cv.sh`, `extract_checkpoints.sh`, `reproduce_akama.sh`.
+  (2026-07-26: consolidated into `replicate.sh` + `train.sh`; the sweeps into
+  `sweep_song_out.sh` + `sweep_subject_out.sh`. `git show 8dd416b:scripts/` for the old ones.)
 
 ## Files removed (present upstream)
 

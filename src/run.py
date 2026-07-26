@@ -18,9 +18,17 @@ checkpoint_test.py / the loss / the dataset. The science is identical because th
 emitted command line is identical to the canonical scripts.
 
 Usage:
-    cd src && python run.py            # interactive
+    python run.py                      # interactive launcher
+    python run.py replicate            # reproduce every reported number (released ckpts, no GPU)
+    python run.py train --model clap   # retrain the baseline / CLAP model
+    python run.py sweep --cv song      # resumable leave-one-song-out sweep
+    python run.py sweep --cv subject   # resumable leave-one-subject-out sweep
+    python run.py report               # render RESULTS.md from results_manifest.tsv
     python run.py --dry-run            # print the commands it would build, no prompts
-    python run.py --selftest           # assert the assembled command matches train.sh/test.sh
+    python run.py --selftest           # assert PROTOCOL still matches sweeps/sweep_common.sh
+
+Those five commands are the whole surface: anything else is a one-off that belongs in
+a scratch shell, not in the repo.
 """
 import argparse
 import glob
@@ -167,7 +175,15 @@ def format_cmdline(cmd):
 
 
 def run_subprocess(cmd, *, env=None):
-    """Echo the equivalent command line, then run it from src/."""
+    """Echo the equivalent command line, then run it from src/.
+
+    `env` ADDS to the current environment. Passing it straight to subprocess.run
+    would replace it wholesale and strip PATH and the conda variables the scripts
+    need to find their interpreter.
+    """
+    if env:
+        print("  " + " ".join(f"{k}={v}" for k, v in sorted(env.items())), flush=True)
+        env = {**os.environ, **env}
     print("\n$ (cd src && " + format_cmdline(cmd) + ")\n", flush=True)
     return subprocess.run(cmd, cwd=str(SRC_DIR), env=env).returncode
 
@@ -755,35 +771,38 @@ def cmd_dry_run():
 
 
 def cmd_selftest():
-    """Assert build_command reproduces scripts/train.sh and test.sh flag values."""
-    # Flag:value pairs that scripts/train.sh passes (audio_repr / cv_* are left to
-    # the YAML defaults in the script: raw / within / -1).
-    expected_train = {
-        "dataset": "preprocessing_eegmusic", "test_dataset": "preprocessing_eegmusic_test",
-        "devices": "1", "max_epochs": "1000", "batch_size": "8", "eeg_length": "768",
-        "loss_function": "clip_loss", "eeg_normalization": "MetaAI", "clamp_value": "20",
-        "learning_rate": "0.003", "supervised": "1", "dim_reduction": "1",
-        "shifting_time": "0", "split_seed": "42", "detach_z_c": "0", "window_size": "1280",
-        "stride": "256", "test_window_size": "768", "test_stride": "256", "seed": "42",
-        "start_position": "0", "key": "all", "training_date": "test",
-    }
+    """Assert PROTOCOL still matches $PROTO in sweeps/sweep_common.sh.
+
+    The protocol exists in exactly two places -- this dict, for the interactive
+    launcher, and $PROTO, for the shell scripts and sweeps. Two copies is one more
+    than ideal but they live in different languages; what matters is that they
+    cannot drift silently, so this check is the seam. It used to compare against
+    scripts/train.sh, which is one of the four near-identical scripts that
+    scripts/train.sh now replaces.
+    """
+    proto_path = PROJECT_ROOT / "sweeps" / "sweep_common.sh"
+    text = proto_path.read_text()
+    start = text.index('PROTO="')
+    body = text[start + len('PROTO="'):]
+    body = body[:body.index('"')].replace("\\\n", " ")
+    expected = _flags_to_dict(["", "", ""] + shlex.split(body))
+
     cmd = build_command("main.py", audio_repr="raw", cv_mode="within",
                         cv_held_out_id=-1, training_date="test")
     got = _flags_to_dict(cmd)
+
     ok = True
-    for flag, value in expected_train.items():
+    for flag, value in sorted(expected.items()):
         if got.get(flag) != value:
             ok = False
-            print(f"  MISMATCH --{flag}: train.sh={value!r} build_command={got.get(flag)!r}")
-    if got.get("attention_values") != "4 5":
-        ok = False
-        print(f"  MISMATCH --attention_values: train.sh='4 5' build_command={got.get('attention_values')!r}")
-    # The CLI additionally passes the script's YAML defaults explicitly:
+            print(f"  MISMATCH --{flag}: sweep_common.sh={value!r} run.py={got.get(flag)!r}")
+    # Axes the sweeps pass per fold rather than in $PROTO; the CLI always emits them.
     for flag, value in (("audio_repr", "raw"), ("cv_mode", "within"), ("cv_held_out_id", "-1")):
         if got.get(flag) != value:
             ok = False
             print(f"  MISMATCH --{flag}: expected {value!r} got {got.get(flag)!r}")
-    print("selftest:", "PASS" if ok else "FAIL")
+    print(f"selftest ({len(expected)} protocol flags vs {proto_path.name}):",
+          "PASS" if ok else "FAIL")
     return 0 if ok else 1
 
 
@@ -820,19 +839,83 @@ def interactive():
         return
 
 
+# --- The four things you can ask this project to do ----------------------------
+# Named shortcuts to the scripts, so nobody has to remember which env var each one
+# takes. Bare `python run.py` still drops into the interactive launcher.
+def cmd_replicate(args):
+    return run_subprocess(["bash", str(PROJECT_ROOT / "scripts" / "replicate.sh")],
+                          env={"PHASES": args.phases} if args.phases else None)
+
+
+def cmd_train(args):
+    env = {"MODEL": args.model, "CV": args.cv, "TEST": "1" if args.test else "0"}
+    if args.held is not None:
+        env["HELD"] = str(args.held)
+    if args.tag:
+        env["TAG"] = args.tag
+    return run_subprocess(["bash", str(PROJECT_ROOT / "scripts" / "train.sh")], env=env)
+
+
+def cmd_sweep(args):
+    script = f"sweep_{'song' if args.cv == 'song' else 'subject'}_out.sh"
+    env = {}
+    if args.cap:
+        env["CAP"] = args.cap
+    if args.budget:
+        env["BUDGET"] = str(args.budget)
+    return run_subprocess(["bash", str(PROJECT_ROOT / "sweeps" / script)], env=env or None)
+
+
+def cmd_report(args):
+    cmd = [sys.executable, str(PROJECT_ROOT / "sweeps" / "report.py")]
+    if args.results_dir:
+        cmd += ["--results-dir", args.results_dir]
+    if args.check:
+        cmd += ["--check"]
+    return run_subprocess(cmd)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--dry-run", action="store_true",
                         help="print the commands the CLI would build, then exit")
     parser.add_argument("--selftest", action="store_true",
-                        help="assert the assembled command matches train.sh/test.sh")
+                        help="assert PROTOCOL still matches $PROTO in sweeps/sweep_common.sh")
+    sub = parser.add_subparsers(dest="command", metavar="COMMAND",
+                                description="omit to get the interactive launcher")
+
+    p = sub.add_parser("replicate", help="reproduce every reported number from the released checkpoints (no GPU)")
+    p.add_argument("--phases", default="", help="subset of 'within loso sanity report'")
+    p.set_defaults(func=cmd_replicate)
+
+    p = sub.add_parser("train", help="train one model on one split")
+    p.add_argument("--model", default="baseline", choices=["baseline", "clap", "audio_only", "eeg_only"])
+    p.add_argument("--cv", default="within", choices=["within", "song", "subject"])
+    p.add_argument("--held", type=int, help="held-out song or subject id")
+    p.add_argument("--tag", default="", help="results subdirectory")
+    p.add_argument("--test", action="store_true", help="evaluate the checkpoint afterwards")
+    p.set_defaults(func=cmd_train)
+
+    p = sub.add_parser("sweep", help="resumable cross-validation sweep over all folds")
+    p.add_argument("--cv", required=True, choices=["song", "subject"])
+    p.add_argument("--cap", default="", help="per-fold training cap, e.g. 80m")
+    p.add_argument("--budget", type=int, help="seconds after which to stop launching folds")
+    p.set_defaults(func=cmd_sweep)
+
+    p = sub.add_parser("report", help="render RESULTS.md from results_manifest.tsv")
+    p.add_argument("--results-dir", default="", help="e.g. an offline archive mirror")
+    p.add_argument("--check", action="store_true", help="verify the pins, write nothing")
+    p.set_defaults(func=cmd_report)
+
     args = parser.parse_args()
     if args.dry_run:
         cmd_dry_run()
         return 0
     if args.selftest:
         return cmd_selftest()
+    if args.command:
+        return args.func(args)
     interactive()
     return 0
 

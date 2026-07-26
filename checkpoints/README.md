@@ -14,7 +14,7 @@ These files are **not tracked by git** (~28 MB total). Extract them from the sou
 archive with:
 
 ```bash
-bash scripts/extract_checkpoints.sh
+bash scripts/setup_checkpoints.sh
 ```
 
 Source archive: `archive/proposed_model_checkpoints.7z` (kept tracked, ~25 MB compressed).

@@ -55,25 +55,18 @@ PDF: [`docs/paper.pdf`](docs/paper.pdf). Original code:
 │   ├── preprocessing/               EEG / audio transforms
 │   └── utils/                       Config loader, paths, logging, helpers
 ├── scripts/
-│   ├── train.sh                     Baseline training (audio_repr=raw)
-│   ├── train_clap.sh                CLAP-extension training (audio_repr=clap)
-│   ├── test.sh                      Evaluate a checkpoint (within-subject)
-│   ├── test_sanity.sh               Negative-control sweep (none|labels|audio_pair)
-│   ├── train_cv.sh                  One CV fold: train then test
-│   ├── extract_checkpoints.sh       Unpack paper checkpoints from archive/
-│   ├── madeeg_setup.sh              Fetch the MAD-EEG dataset (Zenodo)
-│   └── reproduce_akama.sh           Reproduce Akama Table 1+2 from checkpoints
-├── sweeps/                          Multi-fold experiment drivers (resumable)
-│   ├── sweep_common.sh              Shared conda env + fixed protocol flags
-│   ├── lso_full_sweep.sh            Leave-song-out, 4 models x 20 songs
-│   ├── lso_contrastive_sweep.sh     Leave-song-out, contrastive only
-│   ├── lso_controls_sweep.sh        Leave-song-out, audio-only / EEG-only controls
-│   ├── lso_spectra_sweep.sh         Leave-song-out, spectral EEG variant (parked)
-│   ├── converged_contrastive.sh     A few folds trained to convergence (no 80m cap)
-│   ├── recon_lso_sweep.sh           Leave-song-out for the reconstruction decoder
-│   └── aggregate_lso.py             Per-model MACRO / per-class summary of results/
-├── checkpoints/                     Paper weights (.ckpt gitignored; extract them)
-├── results/                         Committed run outputs (TensorBoard, breakdowns)
+│   ├── replicate.sh                 Reproduce every reported number (released ckpts, no GPU)
+│   ├── train.sh                     Train one model on one split (MODEL/CV/HELD)
+│   ├── setup_checkpoints.sh         Unpack paper checkpoints from archive/
+│   └── madeeg_setup.sh              Fetch the MAD-EEG dataset (Zenodo)
+├── sweeps/
+│   ├── sweep_common.sh              Conda env, the fixed protocol, resume logic
+│   ├── sweep_song_out.sh            Leave-one-song-out, 4 models x 20 songs (resumable)
+│   ├── sweep_subject_out.sh         Leave-one-subject-out, 4 models x 8 subjects (resumable)
+│   └── report.py                    Renders RESULTS.md from results_manifest.tsv
+├── results_manifest.tsv             THE pinned list of folds behind every reported number
+├── RESULTS.md                       Generated: the one results table
+├── checkpoints/                     Paper weights (.ckpt gitignored; unpack them)
 ├── archive/                         Compressed paper checkpoints (.7z)
 ├── docs/
 │   ├── paper.pdf                    Reference paper
@@ -81,8 +74,10 @@ PDF: [`docs/paper.pdf`](docs/paper.pdf). Original code:
 │   ├── METHODOLOGY.md               Thesis methodology draft
 │   ├── LEGACY.md                    Original upstream README
 │   └── model_architecture.png       Model diagram
-├── dataset/                         EEG + per-stem audio (gitignored, ~1 GB; not in repo)
-└── logs/                            Runtime logs (gitignored)
+├── dataset/                         EEG + per-stem audio
+└── runs/                            Everything a run emits (gitignored)
+    ├── results/                     Per-run CSVs, hparams, checkpoints, TensorBoard
+    └── logs/                        stdout of the launcher scripts
 ```
 
 ## Quick start
@@ -91,32 +86,53 @@ PDF: [`docs/paper.pdf`](docs/paper.pdf). Original code:
 # 1. Install deps in a Python 3.9 environment
 pip install -r requirements.txt
 
-# 2. Extract the paper checkpoints (one-time)
-bash scripts/extract_checkpoints.sh
+# 2. Unpack the paper checkpoints (one-time)
+bash scripts/setup_checkpoints.sh
 
-# 3. Interactive launcher (prompts only for the axes that vary)
-cd src && python run.py
+# 3. Reproduce every number this project reports (~45 min, CPU, no training)
+python src/run.py replicate
 ```
 
-The launcher wraps the two entry points; the equivalent non-interactive commands
-are the scripts:
+## The five commands
+
+That is the whole surface. Anything else is a one-off and belongs in a scratch
+shell, not in the repo.
 
 ```bash
-bash scripts/test.sh                              # evaluate a checkpoint (within-subject)
-bash scripts/train.sh                             # train the baseline (raw) from scratch
-bash scripts/train_clap.sh                        # train the CLAP extension
-bash scripts/test_sanity.sh                       # negative-control sweep on a checkpoint
-bash scripts/train_cv.sh leave_song_out 36 lso1   # one cross-song fold
-bash scripts/train_cv.sh leave_subject_out 0 cv1  # one cross-subject fold
+python src/run.py                      # interactive launcher (prompts only for what varies)
+python src/run.py replicate            # reproduce every reported number from released ckpts
+python src/run.py train --model clap   # retrain: --model baseline|clap|audio_only|eeg_only
+python src/run.py sweep --cv song      # resumable leave-one-song-out sweep (all 4 models)
+python src/run.py sweep --cv subject   # resumable leave-one-subject-out sweep
+python src/run.py report               # re-render RESULTS.md from the manifest
 ```
+
+Each maps to a script you can also call directly, e.g.
+`MODEL=clap CV=song HELD=44 bash scripts/train.sh` or
+`CUDA_VISIBLE_DEVICES=0 CAP=80m bash sweeps/sweep_song_out.sh`.
+
+## One result, pinned
+
+`results_manifest.tsv` lists every fold that contributes to a reported number —
+model, evaluation, held-out id, run directory, and the code vintage that produced
+it. `sweeps/report.py` reads **only** that file and renders `RESULTS.md`.
+
+Nothing is discovered by scanning the disk, so a number cannot change because a
+new run directory appeared: to include a fold, pin it. `report.py` also checks
+each pin against the run's own `hparams.yaml` and refuses to write the table if
+one disagrees. (This replaced an aggregator that globbed and de-duplicated by a
+partial key — two runs of the same fold collided and whichever the filesystem
+returned last silently won, which moved a reported number from 0.142 to 0.154
+with no new evidence behind it.)
 
 > **Where the real hyperparameters live.** `configs/baseline.yaml` ships loose
 > template defaults (LR 3e-4, batch_size 1, max_epochs 200, normalization
-> `none`). These are **not** what is actually run. The run command —
+> `none`). These are **not** what is actually run. The real protocol —
 > `learning_rate 0.003`, `batch_size 8`, `max_epochs 1000`,
 > `eeg_normalization MetaAI`, `attention_values 4 5`, `key all`, window
-> 1280 / stride 256 — is encoded in `scripts/train.sh` / `scripts/test.sh` and in
-> the `PROTOCOL` constant of `src/run.py`.
+> 1280 / stride 256 — lives in `$PROTO` (`sweeps/sweep_common.sh`) for the shell
+> side and in `PROTOCOL` (`src/run.py`) for the launcher.
+> `python src/run.py --selftest` asserts the two still agree, flag by flag.
 
 ## Hardware notes
 

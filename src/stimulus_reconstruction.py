@@ -5,7 +5,7 @@
 #   baseline reproduction path is untouched. It DOES reuse the dataset class
 #   (`Preprocessing_EEGMusic_dataset`) only to obtain the *identical* cross-validation
 #   splits (same cv_mode / cv_held_out_id gate), so its leave-song-out folds line up
-#   one-to-one with the contrastive experiments and `aggregate_lso.py` can read its
+#   one-to-one with the contrastive experiments and `sweeps/report.py` can read its
 #   output unchanged.
 #
 # WHY THIS METHOD (scientific rationale)
@@ -364,7 +364,7 @@ def main():
     rec = pd.DataFrame(records)
     trials = pd.DataFrame(trial_rows)
 
-    # write outputs in the contrastive layout so aggregate_lso.py + diagnostics work
+    # write outputs in the contrastive layout so sweeps/report.py + diagnostics work
     out_dir = Path(args.log_dir) / args.training_date / f"nmed-CL-{args.dataset}" / "version_0"
     out_dir.mkdir(parents=True, exist_ok=True)
     rec.to_csv(out_dir / "test_records.csv", index=False)

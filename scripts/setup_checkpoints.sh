@@ -1,6 +1,6 @@
 #!/bin/bash
 # Extract paper checkpoints from archive/proposed_model_checkpoints.7z into checkpoints/.
-# Required before running scripts/test.sh on a fresh clone.
+# Required before running scripts/replicate.sh on a fresh clone.
 
 set -e
 cd "$(dirname "$0")/.."
