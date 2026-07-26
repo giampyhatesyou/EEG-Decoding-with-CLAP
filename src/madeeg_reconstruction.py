@@ -284,8 +284,15 @@ def main():
                     help="raw_solos only: 'raw' rebuilds the test-duo EEG from raw too (no preprocessing mismatch)")
     args = ap.parse_args()
     if not args.log_dir:  # same run-output dir as main.py / checkpoint_test.py
-        from utils import paths
-        args.log_dir = paths.resolve_log_dir()
+        # Load paths.py by file rather than as `utils.paths`: the package __init__ pulls in
+        # the training deps, and this script is sklearn/scipy only -- it must stay runnable
+        # from the repo root, not just from src/.
+        import importlib.util
+        _p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "utils", "paths.py")
+        _spec = importlib.util.spec_from_file_location("_paths", _p)
+        _mod = importlib.util.module_from_spec(_spec)
+        _spec.loader.exec_module(_mod)
+        args.log_dir = _mod.resolve_log_dir()
 
     data = h5py.File(os.path.join(args.madeeg_dir, "madeeg_preprocessed.hdf5"), "r")
     meta = yaml.load(open(os.path.join(args.madeeg_dir, "madeeg_preprocessed.yaml")), Loader=yaml.FullLoader)
