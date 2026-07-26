@@ -15,22 +15,38 @@ instruments across trials, so attention is **identifiable** and the within-trial
 - 20-channel research EEG @256 Hz (ch `F3..O2`, incl. occipital `O1/Oz/O2` and parietal —
   so the SpectraEEG band-power idea finally gets a fair montage), 8 subjects
   (`0001..0009` minus `0006`).
-- ~6 s excerpts ×4 reps (~24 s/trial).
+- ~6 s excerpts ×4 reps (~28 s/trial, measured).
+- Files needed: `madeeg_preprocessed.hdf5` (3.7 GB) + `madeeg_preprocessed.yaml` (154 kB).
+  The isolated sources (`soli`) are inside the HDF5, so `stimuli.zip` is NOT required.
 
-**Trial counts — measured, 2026-07-26.** An earlier version of this file claimed "78
-stimuli/subject: 14 solo, 40 duo, 24 trio". That is wrong for the **duo** count, and the
-correction matters because it halves the training budget. Counted from the per-trial
-records the ridge run actually produced (`madeeg_records.csv`; the trial selection at
-`madeeg_reconstruction.py:305` filters on nothing but `ensemble`, so this IS the full set):
+**Trial counts — measured 2026-07-26 by counting both metadata files.** The two numbers
+that circulate for this dataset are *both right*; they describe **different files**, and
+confusing them costs you half the data or invents data you do not have.
 
-| | measured |
+| | `madeeg_sequences_raw.yaml` (what was **recorded**) | `madeeg_preprocessed.yaml` (what we **use**) |
+|---|---|---|
+| per subject | **78** — 14 solo, 40 duo, 24 trio (subject 0007: 53) | **32** — 0 solo, 20 duo, 12 trio (0007: 22) |
+| total | **599** | **246** — 154 duo + 92 trio |
+| spatial conditions | `stereo_lcr` **and** `mono` | `stereo_lcr` only, relabelled `spatial: stereo` |
+
+The preprocessed release is **exactly the `stereo_lcr` half**: all 246 of its keys map onto a
+raw `stereo_lcr` key by substituting `_stereo_` → `_stereo_lcr_`, 246/246, no exceptions. The
+`mono` half (155 duo + 93 trio) and all 105 solos exist **only** in `madeeg_raw.hdf5`, which
+`madeeg_setup.sh` does not fetch — the authors' preprocessing was never applied to them, so
+using them means reproducing that preprocessing ourselves. `build_solo_trials()` already does
+this for the solos (it reads the raw HDF5 + sequences + `stimuli/`), which is the precedent
+if we ever want the `mono` half too.
+
+So the dataset is **complete as downloaded**; it is the *published preprocessing* that covers
+one spatial condition. Anything below refers to the preprocessed 246 unless stated.
+
+| | measured (preprocessed) |
 |---|---|
-| duo trials | **154 total** — 20 per subject, except subject 0007 with 14 |
+| duo trials | **154** — 20 per subject, except 0007 with 14 |
 | unique duo mixtures | **18**, each presented with **2 different attended targets** (36 `stim` ids) |
 | instruments attended in duos | 9 — pop `Vx Gt Bs Dr`, classical `Co Fl Ob Fh Bo` (`Ob`/`Bo`, not `Ba`) |
 | genre split (duo trials) | 94 classical / 60 pop |
-| trio trials | **92** (`--ensemble both` reports 246 total, minus the 154 duos) — ~11–12 per subject |
-| solo trials | still not measured; `--ensemble` only accepts duo/trio/both |
+| trio trials | **92** — ~11–12 per subject |
 | trial length | **28.0 s** — `response=(20, 7172)@256 Hz`, `soli=(3, 1235312)@44100 Hz`. `soli` always has 3 rows; the third is empty for a duo |
 
 The `stim` id encodes everything: `classique_morceau1_duo_CoFl_theme1_stereo_Co` = classical
@@ -50,8 +66,11 @@ and it is visible in the data rather than only asserted here.
 Small. With the CLAP backbone frozen only the projection head and the EEG encoder train,
 which is what makes this arguable at all — but it is also why the linear anchor may well
 win, and that has to be reported as such rather than explained away.
-- Files needed: `madeeg_preprocessed.hdf5` (3.7 GB) + `madeeg_preprocessed.yaml` (154 kB).
-  The isolated sources (`soli`) are inside the HDF5, so `stimuli.zip` is NOT required.
+
+Roughly doubling this is *possible* but not free: the `mono` half (155 duo + 93 trio) sits
+unprocessed in `madeeg_raw.hdf5`. Pooling two spatial conditions is a methodological choice,
+not a free data top-up — spatial separation is itself known to help auditory attention, so
+the condition would have to be modelled or reported, never silently merged.
 
 ### Verified HDF5/metadata schema (from `tutorial-MAD-EEG.ipynb`)
 
