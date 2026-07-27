@@ -71,6 +71,20 @@ def majority(rows, r, key="mixture"):
     return None if ca == cb else (a if ca > cb else b)
 
 
+def base_rate(rows, key="mixture"):
+    """P(prior == target): how often following the prior would be right anyway.
+
+    This, NOT 0.5, is the null for "does the model follow the prior". A model that reads the
+    EEG and answers with the target agrees with the prior exactly this often -- so testing
+    agreement against 0.5 would call a perfectly good decoder a prior-follower whenever the
+    prior happens to be right more than half the time. It is a property of the data alone,
+    no model involved. The synthetic-EEG control run lands on it at every grain, which is
+    what confirms the statistic is measuring the model and not the design.
+    """
+    decidable = [r for r in rows if majority(rows, r, key) is not None]
+    return sum(majority(rows, r, key) == r["target"] for r in decidable) / len(decidable)
+
+
 def report(rows):
     k, n = sum(r["correct"] for r in rows), len(rows)
     print(f"  {k}/{n} = {k / n:.4f} correct, chance 0.500\n")
@@ -97,12 +111,14 @@ def report(rows):
         mj = majority(rows, r)
         if mj is not None:
             agree, decidable = agree + (r["chosen"] == mj), decidable + 1
-    p = stats.binomtest(agree, decidable, 0.5, alternative="greater").pvalue
+    null = base_rate(rows)
+    p = stats.binomtest(agree, decidable, null, alternative="greater").pvalue
     print(f"\n  the model chose the training majority in {agree}/{decidable} = "
-          f"{agree / decidable:.4f} of the decidable trials (one-sided binomial p={p:.1e})")
-    right = sum(majority(rows, r) == r["target"] for r in rows if majority(rows, r))
-    print(f"  and that majority is itself the correct answer only {right}/{decidable} = "
-          f"{right / decidable:.4f} of the time -> following it LOSES")
+          f"{agree / decidable:.4f} of the decidable trials")
+    print(f"  null is NOT 0.5 but {null:.4f} = P(prior == target): a model that simply reads")
+    print(f"  the EEG agrees with the prior that often by coincidence   ->  p={p:.1e}")
+    print(f"  and because that null is below 0.5, following the prior LOSES: the k-fold takes")
+    print(f"  the test trial out of the count, tipping a balanced mixture the other way")
 
     # 3. Dose-response. A confound should get stronger as the prior gets more lopsided;
     #    an artefact of the arithmetic would not.
@@ -113,70 +129,87 @@ def report(rows):
         buckets[min(gap, 3)][1] += 1
         if gap:
             buckets[min(gap, 3)][0] += (r["chosen"] == majority(rows, r))
-    print("\n  and it follows the prior harder the more lopsided the training count is:")
+    # The null per bucket too: P(majority == target) is not flat across gaps, so the trend
+    # has to be read against it and not against a straight line.
+    nulls = collections.defaultdict(lambda: [0, 0])
+    for r in rows:
+        ca, cb = training_counts(rows, r)
+        gap = abs(ca - cb)
+        nulls[min(gap, 3)][1] += 1
+        if gap:
+            nulls[min(gap, 3)][0] += (majority(rows, r) == r["target"])
+    print("\n  by how lopsided the training count is (compare each row with its own null):")
     for gap in sorted(buckets):
         hit, total = buckets[gap]
+        nh, nt = nulls[gap]
         label = f"gap {gap}" + ("+" if gap == 3 else "")
-        note = "   (no majority to follow)" if gap == 0 else ""
+        note = "   (no majority to follow)" if gap == 0 else f"   null {nh / nt:.3f}"
         print(f"    {label:<7} n={total:<4} follows it {hit}/{total} = {hit / total:.3f}{note}")
 
     # 4. At which grain is stimulus identity being read?
     print("\n  grain of the prior the model is reading:")
-    # `global` is the control that matters: if the model merely preferred the instruments
-    # that are attended most often overall, it would show up there and not at mixture level.
+    # Each grain gets its OWN null, and they differ a lot -- against a flat 0.5 the coarse
+    # grains look innocent and they are not.
     for key, label in [("mixture", "mixture (piece+pair+theme)"),
                        ("pair", "instrument pair, themes pooled"),
                        ("subject", "subject"),
-                       ("global", "whole training set (control)")]:
+                       ("global", "whole training set")]:
         hit = total = 0
         for r in rows:
             mj = majority(rows, r, key)
             if mj is not None:
                 hit, total = hit + (r["chosen"] == mj), total + 1
-        p = stats.binomtest(hit, total, 0.5, alternative="greater").pvalue
-        print(f"    {label:<32} {hit}/{total} = {hit / total:.3f}   p={p:.1e}")
-
-    # 5. Does the mixture prior survive the subject prior? The two are correlated, because a
-    #    subject heard a given mixture at most twice.
-    hit = total = 0
-    for r in rows:
-        mm, ms = majority(rows, r), majority(rows, r, "subject")
-        if mm is not None and ms is not None and mm != ms:
-            hit, total = hit + (r["chosen"] == mm), total + 1
-    p = stats.binomtest(hit, total, 0.5, alternative="greater").pvalue
-    print(f"\n  where the mixture prior and the subject prior DISAGREE, the model follows")
-    print(f"  the mixture in {hit}/{total} = {hit / total:.3f} (p={p:.3f})")
+        null = base_rate(rows, key)
+        p = stats.binomtest(hit, total, null, alternative="greater").pvalue
+        print(f"    {label:<32} {hit}/{total} = {hit / total:.3f}   "
+              f"null {null:.3f}   p={p:.1e}")
+    print("  ⚠ these grains are nested and correlated -- a prior at one grain lifts all the")
+    print("  others, so this table says THAT the model follows a training prior, not WHICH")
+    print("  grain it reads. Separating them needs a design that decorrelates them.")
 
 
 def _demo():
-    """Self-check on synthetic records: a perfect prior-follower must be detected as one,
-    and a model that ignores the prior must not be. Run: python src/madeeg_diagnose.py --demo"""
-    # A mixture balanced over its two targets -- which is what MAD-EEG's design guarantees --
-    # under folds fine enough that removing the test trial tips the remaining count to the
-    # other instrument. This is the whole mechanism in eight rows.
-    rows = []
-    for mix in range(6):
-        for i, target in enumerate(["Aa"] * 4 + ["Bb"] * 4):
-            rows.append({"instruments": ["Aa", "Bb"], "target": target,
-                         "mixture": f"mix{mix}", "pair": "AaBb", "subject": f"s{i % 3}",
-                         "fold": i})
-    for r in rows:
-        r["chosen"] = majority(rows, r) or "Aa"          # a pure prior-follower
-        r["correct"] = int(r["chosen"] == r["target"])
-    k = sum(r["correct"] for r in rows)
-    assert k == 0, f"on a balanced mixture the prior is always the wrong answer, got {k}"
-    agree = sum(r["chosen"] == majority(rows, r) for r in rows if majority(rows, r))
-    decidable = sum(majority(rows, r) is not None for r in rows)
-    assert agree == decidable, "the follower must be detected as following on every trial"
+    """Self-check on synthetic records. Run: python src/madeeg_diagnose.py --demo
 
-    for i, r in enumerate(rows):                          # now a model that ignores the prior
-        r["chosen"] = r["instruments"][i % 2]
+    Pins the two facts the whole analysis rests on, one of which cost a wrong conclusion
+    before it was checked against the synthetic-EEG control run:
+      * a pure PRIOR-follower agrees with the prior always, and scores `base_rate`;
+      * a pure TARGET-follower scores 1.0, and still agrees with the prior `base_rate` of
+        the time -- so `base_rate`, not 0.5, is the null for "follows the prior".
+
+    Three balanced mixtures (4+4, where leave-one-out always tips the count the other way,
+    which is MAD-EEG's design) and three lopsided ones (6+2), so base_rate is strictly
+    between 0 and 1 and neither assertion can pass by degeneracy.
+    """
+    rows = []
+    for mix in range(3):
+        for targets in (["Aa"] * 4 + ["Bb"] * 4, ["Aa"] * 6 + ["Bb"] * 2):
+            tag = f"mix{mix}_{len(rows)}"
+            for i, target in enumerate(targets):
+                rows.append({"instruments": ["Aa", "Bb"], "target": target, "mixture": tag,
+                             "pair": "AaBb", "subject": f"s{i % 3}", "global": "all",
+                             "fold": i})
+    decidable = [r for r in rows if majority(rows, r) is not None]
+    null = base_rate(rows)
+    assert 0.0 < null < 1.0, f"degenerate demo: base_rate is {null}"
+
+    for r in rows:                                        # a pure prior-follower
+        r["chosen"] = majority(rows, r) or "Aa"
         r["correct"] = int(r["chosen"] == r["target"])
-    agree = sum(r["chosen"] == majority(rows, r) for r in rows if majority(rows, r))
-    assert agree / decidable < 0.7, f"a prior-blind model must not look like a follower ({agree}/{decidable})"
-    print(f"[demo] PASS  prior-follower scores {k}/{len(rows)} = {k / len(rows):.3f} (below "
-          f"chance by construction) and is detected on {decidable}/{decidable} trials; "
-          f"a prior-blind model is not")
+    agree = sum(r["chosen"] == majority(rows, r) for r in decidable)
+    acc = sum(r["correct"] for r in decidable) / len(decidable)
+    assert agree == len(decidable), "the follower must be detected on every decidable trial"
+    assert abs(acc - null) < 1e-9, f"a prior-follower scores base_rate: {acc} vs {null}"
+
+    for r in rows:                                        # a pure target-follower
+        r["chosen"], r["correct"] = r["target"], 1
+    agree = sum(r["chosen"] == majority(rows, r) for r in decidable)
+    assert abs(agree / len(decidable) - null) < 1e-9, (
+        f"a perfect decoder still agrees with the prior base_rate={null:.3f} of the time, "
+        f"got {agree}/{len(decidable)} -- this is why the null is not 0.5")
+    print(f"[demo] PASS  null (base_rate) = {null:.3f}; prior-follower agrees 100% and "
+          f"scores {null:.3f}; target-follower scores 1.000 and still agrees {null:.3f} "
+          f"-- so agreement must be tested against {null:.3f}, not 0.5")
 
 
 def main():
