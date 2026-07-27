@@ -47,6 +47,7 @@ def load(records_csv, madeeg_dir):
         # `..._duo_CoFl_theme1_stereo_Co` -> the mixture, without the attended instrument
         r["mixture"] = r["stim"].rsplit("_", 1)[0]
         r["pair"] = "".join(r["instruments"])
+        r["global"] = "all"                              # constant: the whole training set
         r["fold"], r["correct"] = int(r["fold"]), int(r["correct"])
         # What the model actually picked: the target when it was right, the competitor when
         # it was not. For a duo the two are exhaustive, so this inverts losslessly.
@@ -121,9 +122,12 @@ def report(rows):
 
     # 4. At which grain is stimulus identity being read?
     print("\n  grain of the prior the model is reading:")
+    # `global` is the control that matters: if the model merely preferred the instruments
+    # that are attended most often overall, it would show up there and not at mixture level.
     for key, label in [("mixture", "mixture (piece+pair+theme)"),
                        ("pair", "instrument pair, themes pooled"),
-                       ("subject", "subject")]:
+                       ("subject", "subject"),
+                       ("global", "whole training set (control)")]:
         hit = total = 0
         for r in rows:
             mj = majority(rows, r, key)
