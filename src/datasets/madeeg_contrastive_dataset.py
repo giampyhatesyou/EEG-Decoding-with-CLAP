@@ -54,7 +54,8 @@ class MadeegContrastiveDataset(Dataset):
 
     def __init__(self, madeeg_dir, ensemble="duo", subjects=None,
                  eeg_length=768, stride=256,
-                 eeg_normalization="MetaAI", clamp_value=20, preload=False):
+                 eeg_normalization="MetaAI", clamp_value=20, preload=False,
+                 synthetic_eeg=False, synth_snr=4.0, seed=42):
         self.h5_path = os.path.join(madeeg_dir, "madeeg_preprocessed.hdf5")
         meta_path = os.path.join(madeeg_dir, "madeeg_preprocessed.yaml")
         for p in (self.h5_path, meta_path):
@@ -69,6 +70,13 @@ class MadeegContrastiveDataset(Dataset):
         self._h5 = None                     # opened lazily: HDF5 handles do not fork
         self._cache = {}                    # (subj, stim) -> whole-trial arrays; see _trial_arrays
         self._evict = True                  # flipped off by preload
+
+        # Positive control. With synthetic_eeg the recorded EEG is replaced by a signal that
+        # tracks the ATTENDED source (see _synth_eeg); everything downstream is untouched.
+        self.synthetic_eeg = synthetic_eeg
+        self.synth_snr = synth_snr
+        self._synth_seed = seed
+        self._synth_op = None               # one forward operator, shared by every trial
 
         keep = {"duo", "trio"} if ensemble == "both" else {ensemble}
         subjects = subjects or list(self.meta)
@@ -155,11 +163,50 @@ class MadeegContrastiveDataset(Dataset):
         if self._h5 is None:
             self._h5 = h5py.File(self.h5_path, "r")
         grp = self._h5[subj][stim]
-        n_present = len(self.meta[subj][stim]["instruments"])
-        self._cache[(subj, stim)] = (
-            read_f64(grp["response"]).astype(np.float32),
-            read_f64(grp["soli"])[:n_present].astype(np.float32),
-        )
+        m = self.meta[subj][stim]
+        n_present = len(m["instruments"])
+        response = read_f64(grp["response"]).astype(np.float32)
+        soli = read_f64(grp["soli"])[:n_present].astype(np.float32)
+        if self.synthetic_eeg:
+            target_row = list(m["instruments"]).index(m["target"])
+            response = self._synth_eeg(soli[target_row], response.shape,
+                                       self.trials.index((subj, stim)))
+        self._cache[(subj, stim)] = (response, soli)
+
+    def _synth_eeg(self, src, shape, trial_no):
+        """EEG that tracks the ATTENDED source: the positive control, as in the ridge arm.
+
+        One fixed linear forward operator -- a per-channel weight and a causal lag of 0-100 ms
+        -- applied to the attended source's envelope, plus per-trial noise. The operator is
+        the same for every trial, so nothing about *which* source is attended is encoded in
+        the operator itself; the only route from EEG to the answer is the audio content.
+
+        It answers one question: if the EEG did follow the attended stem, would this loss,
+        this decision rule and this k-fold recover it? A PASS says the wiring is sound and
+        says nothing at all about real EEG -- an envelope at snr 4 is incomparably easier.
+        """
+        n_ch, n_eeg = shape
+        # Envelope of the source, binned straight down to the EEG sample rate. Bin edges are
+        # spread over the whole source, so envelope sample j covers the same span of time as
+        # EEG sample j -- the same seconds-based alignment __getitem__ uses for the windows.
+        edges = np.linspace(0, src.shape[0], n_eeg + 1).astype(np.int64)
+        cumulative = np.concatenate([[0.0], np.cumsum(np.abs(src).astype(np.float64))])
+        env = ((cumulative[edges[1:]] - cumulative[edges[:-1]])
+               / np.maximum(edges[1:] - edges[:-1], 1))
+        env = (env - env.mean()) / (env.std() + 1e-8)
+
+        if self._synth_op is None:
+            op = np.random.RandomState(self._synth_seed)
+            self._synth_op = (op.standard_normal(n_ch), op.randint(0, 26, n_ch))
+        weights, lags = self._synth_op
+        noise = np.random.RandomState(self._synth_seed + 1 + trial_no)
+        out = np.empty((n_ch, n_eeg), dtype=np.float32)
+        for ch in range(n_ch):
+            lag = int(lags[ch])
+            shifted = np.roll(env, lag)
+            shifted[:lag] = 0.0                       # causal: the EEG lags the stimulus
+            out[ch] = weights[ch] * shifted + noise.standard_normal(n_eeg) / self.synth_snr
+        return out
 
     def _trial_arrays(self, subj, stim):
         """Whole-trial arrays, cached. With preload=False only two trials are kept, which
@@ -235,6 +282,51 @@ def smoke(madeeg_dir, ensemble="both", n_items=3):
     return ds
 
 
+def _check_soli_row_order(ds):
+    """Row i of `soli` must be instrument i of `instruments` -- checked on the audio itself.
+
+    Within one piece and theme the three duo mixtures are mixed from the same three rendered
+    solo tracks (CoFl, CoOb, FlOb out of Co, Fl, Ob). So the track two of those mixtures
+    share has to sit in the row `instruments` names, in BOTH of them -- a specific
+    permutation, not merely "some rows are equal".
+
+    Worth its own check because a transposition here is invisible everywhere else: training
+    and evaluation index `stems` the same way, so a swapped pair would keep scoring exactly
+    as it does now while the model was in fact being trained on the UNATTENDED source.
+    """
+    import itertools
+
+    representative = {}
+    for subj, stim in ds.trials:
+        representative.setdefault(stim.rsplit("_", 1)[0], (subj, stim))
+    groups = {}
+    for mix in representative:
+        piece, rest = mix.split("_duo_")
+        groups.setdefault((piece, rest.split("_")[1]), []).append(mix)
+
+    def corr(u, v):
+        du, dv = u - u.mean(), v - v.mean()
+        den = float(np.sqrt((du * du).sum() * (dv * dv).sum()))
+        return float((du * dv).sum() / den) if den > 1e-12 else 0.0
+
+    checked = 0
+    for mixes in groups.values():
+        loaded = {m: (list(ds.meta[representative[m][0]][representative[m][1]]["instruments"]),
+                      ds._trial_arrays(*representative[m])[1]) for m in mixes}
+        for m1, m2 in itertools.combinations(sorted(mixes), 2):
+            instr1, soli1 = loaded[m1]
+            instr2, soli2 = loaded[m2]
+            n = min(soli1.shape[1], soli2.shape[1])
+            for inst in sorted(set(instr1) & set(instr2)):
+                r1, r2 = instr1.index(inst), instr2.index(inst)
+                r = corr(soli1[r1, :n], soli2[r2, :n])
+                assert r > 0.99, (
+                    f"{inst}: {m1} row {r1} vs {m2} row {r2} r={r:.4f} -- the rows of `soli` "
+                    "do not follow `instruments`, so target_idx points at the wrong stem")
+                checked += 1
+    return checked
+
+
 def _self_check(madeeg_dir):
     """One runnable check of the part that can silently be wrong: EEG/audio alignment."""
     ds = MadeegContrastiveDataset(madeeg_dir, ensemble="duo")
@@ -247,8 +339,16 @@ def _self_check(madeeg_dir):
     assert not torch.equal(it0["stems"], it1["stems"]), "consecutive audio spans are identical"
     assert it0["stems"].shape[0] == it0["n_present"] == 2, "duo must yield exactly 2 stems"
     assert ds[0]["target_idx"] < ds[0]["n_present"], "target index out of range"
+    # EEG and audio must also cover the same span at the TRIAL level, or every window past
+    # the first is offset by a growing amount.
+    resp, soli = ds._trial_arrays(*ds.trials[0])
+    assert abs(resp.shape[1] / EEG_FS - soli.shape[1] / AUDIO_FS) < 0.05, (
+        f"trial durations differ: eeg {resp.shape[1] / EEG_FS:.3f}s vs "
+        f"audio {soli.shape[1] / AUDIO_FS:.3f}s")
+    n_rows = _check_soli_row_order(ds)
     print(f"[self-check] PASS  window = {eeg_dur:.3f} s on both sides, "
-          f"stride advances both, duo yields 2 stems")
+          f"stride advances both, duo yields 2 stems, "
+          f"{n_rows} shared-instrument `soli` rows in the order `instruments` declares")
 
 
 if __name__ == "__main__":

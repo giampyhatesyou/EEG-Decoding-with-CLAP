@@ -21,6 +21,11 @@ anchor, come after.
 
     python src/madeeg_contrastive.py --madeeg_dir ~/madeeg --smoke     # CPU, ~2 min
     python src/madeeg_contrastive.py --madeeg_dir ~/madeeg --epochs 10
+    python src/madeeg_contrastive.py --madeeg_dir ~/madeeg --kfold 5            # step C
+    python src/madeeg_contrastive.py --madeeg_dir ~/madeeg --self_test          # control
+
+The post-mortem of a finished k-fold run lives in `madeeg_diagnose.py`, which needs neither
+torch nor the HDF5 so that any number can be re-checked offline.
 """
 import argparse
 import os
@@ -221,6 +226,8 @@ def run_kfold(ds, args, device):
     print(f"\n{'=' * 62}")
     if args.max_batches:
         print(f"!! --max_batches={args.max_batches}: UNDERTRAINED, this accuracy is NOT a result\n")
+    if getattr(args, "self_test", False):
+        print("!! --self_test: the EEG is SYNTHETIC. This accuracy is a control, NOT a result\n")
     print(f"[step C] {k}/{n} = {k / n:.4f}   chance 0.50")
     print(f"  one-sided binomial p = {test.pvalue:.4f}   95% CI [{lo:.3f}, {hi:.3f}]")
     print(f"  pre-registered threshold: {threshold}/{n} = {threshold / n:.4f}")
@@ -229,6 +236,18 @@ def run_kfold(ds, args, device):
     print(f"  --> {verdict}")
     print(f"  (linear anchor, same 154 trials: 0.5584, p=0.085 -- itself not significant,")
     print(f"   so beating it is not the criterion)")
+
+    if getattr(args, "self_test", False):
+        # Threshold declared here, in the code, before the control was ever run, and not
+        # guessed: applying THIS decision rule (mean margin over a trial's windows) directly
+        # to the envelopes decides 154/154 of the duo trials correctly, so the signal is
+        # fully separable in principle and only the wiring is on trial.
+        passed = k / n >= 0.90
+        print(f"\n[self-test] {'PASS' if passed else 'FAIL'} -- synthetic EEG tracking the "
+              f"attended source, {k}/{n} = {k / n:.4f} against a threshold of 0.90")
+        print("  PASS: this loss, this decision rule and this k-fold do recover a")
+        print("        source-tracking signal. It says nothing about real EEG.")
+        print("  FAIL: the defect is in the wiring, not in the data.")
 
     print("\n  per subject (descriptive only -- one subject needs 0.737 to be significant):")
     for subj in sorted({r["subject"] for r in records}):
@@ -289,20 +308,34 @@ def main():
     ap.add_argument("--max_batches", type=int, default=0,
                     help="cap batches per epoch -- for checking the pipeline end to end "
                          "cheaply. A capped run is undertrained: its accuracy is not a result")
+    ap.add_argument("--self_test", action="store_true",
+                    help="POSITIVE CONTROL: swap every trial's EEG for a synthetic signal "
+                         "that tracks ITS attended source, then run the k-fold unchanged. "
+                         "Its accuracy is a control, never a result")
+    ap.add_argument("--self_test_snr", type=float, default=4.0,
+                    help="--self_test only: signal/noise std ratio of the synthetic EEG")
     args = ap.parse_args()
 
     torch.manual_seed(args.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    # A control must never overwrite the records of the real run.
+    if args.self_test:
+        args.kfold = args.kfold or 5
+        if args.training_date == "madeeg_clap_kfold":
+            args.training_date = "madeeg_clap_selftest"
 
     # preload=True for the k-fold run: it is what makes shuffling affordable, and without
     # shuffling almost every batch comes from one trial -- so the InfoNCE batch negatives
     # would be the same audio as the positive. The smoke keeps the light path.
     ds = MadeegContrastiveDataset(args.madeeg_dir, ensemble=args.ensemble,
                                   eeg_length=args.eeg_length, stride=args.stride,
-                                  preload=bool(args.kfold))
+                                  preload=bool(args.kfold), synthetic_eeg=args.self_test,
+                                  synth_snr=args.self_test_snr, seed=args.seed)
     if args.kfold:
         print(f"[madeeg-contrastive] device={device} ensemble={args.ensemble} "
-              f"trials={len(ds.trials)} windows={len(ds)}")
+              f"trials={len(ds.trials)} windows={len(ds)}"
+              + (f" SYNTHETIC EEG (snr={args.self_test_snr})" if args.self_test else ""))
         run_kfold(ds, args, device)
         return
     train_ds, valid_ds, n_valid = split_by_trial(ds, seed=args.seed)
