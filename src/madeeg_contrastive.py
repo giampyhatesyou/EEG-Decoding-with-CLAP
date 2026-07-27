@@ -262,7 +262,20 @@ def run_kfold(ds, args, device):
         w = csv.DictWriter(fh, fieldnames=list(records[0]))
         w.writeheader()
         w.writerows(records)
+    # The banner has to live in the FILE, not only on stdout: the summary outlives the
+    # terminal, and a file that reads "step C ... ABOVE CHANCE" with no mention of the
+    # synthetic EEG is a number waiting to be quoted as a result by mistake.
+    caveat = ""
+    if getattr(args, "self_test", False):
+        caveat = (f"!! POSITIVE CONTROL -- the EEG is SYNTHETIC (a fixed linear operator on\n"
+                  f"!! the attended source's envelope, snr={args.self_test_snr}). This accuracy is a\n"
+                  f"!! control on the wiring, NOT a result, and NOT a statement about real EEG.\n"
+                  f"!! The 'ABOVE CHANCE' verdict below is the control's, not step C's.\n\n")
+    if args.max_batches:
+        caveat += (f"!! --max_batches={args.max_batches}: UNDERTRAINED by construction.\n"
+                   f"!! This accuracy is not a result.\n\n")
     with open(os.path.join(out_dir, "madeeg_contrastive_summary.txt"), "w") as fh:
+        fh.write(caveat)
         fh.write(f"== MAD-EEG contrastive CLAP<->EEG, step C ==\n"
                  f"ensemble={args.ensemble} folds={args.kfold} epochs={args.epochs} "
                  f"lr={args.learning_rate} batch={args.batch_size} seed={args.seed}\n"
