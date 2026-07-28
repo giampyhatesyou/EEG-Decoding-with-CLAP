@@ -23,6 +23,8 @@ anchor, come after.
     python src/madeeg_contrastive.py --madeeg_dir ~/madeeg --epochs 10
     python src/madeeg_contrastive.py --madeeg_dir ~/madeeg --kfold 5            # step C
     python src/madeeg_contrastive.py --madeeg_dir ~/madeeg --self_test          # control
+    python src/madeeg_contrastive.py --madeeg_dir ~/madeeg --kfold 5 \
+        --loss within_mixture                                                   # step D
 
 The post-mortem of a finished k-fold run lives in `madeeg_diagnose.py`, which needs neither
 torch nor the HDF5 so that any number can be re-checked offline.
@@ -38,6 +40,7 @@ from torch.utils.data import DataLoader, Subset
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from datasets.madeeg_contrastive_dataset import MadeegContrastiveDataset  # noqa: E402
+from madeeg_diagnose import trial_decision  # noqa: E402
 from models import CLAPEncoder, SampleCNN2DEEG  # noqa: E402
 from modules.clip_loss import CLIP_Loss  # noqa: E402
 
@@ -85,13 +88,20 @@ def stratified_folds(dataset, n_folds, seed):
 
 @torch.no_grad()
 def decide_per_trial(dataset, test_trials, encoder_eeg, encoder_audio, device, batch_size):
-    """One decision per trial: is the attended source the closer one, on average?
+    """Per trial, the mean similarity of EVERY present stem over that trial's windows.
 
-    Per window we take the margin sim(EEG, attended) - sim(EEG, competitor); the trial is
-    correct when the mean margin over its windows is positive. Averaging the margin rather
-    than voting per window keeps a trial where every window leans slightly the right way
-    from being decided by a couple of noisy ones -- and it is the trial, not the window,
-    that is the independent unit.
+    The decision itself is `trial_decision`: the argmax of those means, correct when it is
+    the attended stem. Averaging over windows rather than voting per window keeps a trial
+    where every window leans slightly the right way from being decided by a couple of noisy
+    ones -- and it is the trial, not the window, that is the independent unit.
+
+    CHANGED(baseline): this used to accumulate the per-window margin
+    sim(attended) - max sim(competitor) directly. On a duo the two are the same number,
+    because the mean of a difference is the difference of the means -- verified against
+    step C's archived records by `madeeg_diagnose.py --check_rule`, which must return
+    58/154. Stated as per-stem means it also holds when three stems are present, where
+    "average then take the best competitor" and "take the best competitor then average"
+    part company.
     """
     encoder_eeg.eval()
     encoder_audio.eval()
@@ -105,26 +115,23 @@ def decide_per_trial(dataset, test_trials, encoder_eeg, encoder_audio, device, b
     # handed every trial that shared an id the identical margin -- which silently destroys
     # the per-trial independence the whole binomial test rests on, and averages one
     # subject's EEG with another's. Found by checking the records for duplicate margins.
-    margins = {}
+    per_window = {}
     for batch in loader:
         eeg = batch["eeg"].to(device)
         stems = batch["stems"].to(device)
-        target = batch["target_idx"]
         z_eeg = encoder_eeg(eeg)
         sims = torch.stack([cos(z_eeg, encoder_audio(stems[:, s]))
                             for s in range(stems.shape[1])], dim=1)      # (B, n_present)
         for i in range(eeg.size(0)):
-            attended = sims[i, target[i]]
-            competitor = torch.cat([sims[i, :target[i]], sims[i, target[i] + 1:]]).max()
             key = (batch["subject"][i], batch["stim"][i])
-            margins.setdefault(key, []).append(float(attended - competitor))
+            per_window.setdefault(key, []).append([float(x) for x in sims[i]])
 
     # One list per test trial, no merging. This assertion is the check that would have
     # caught the bug above at once instead of after a full GPU run.
-    assert len(margins) == len(test_trials), (
-        f"{len(margins)} margin groups for {len(test_trials)} test trials -- "
+    assert len(per_window) == len(test_trials), (
+        f"{len(per_window)} similarity groups for {len(test_trials)} test trials -- "
         "decisions are being merged, so they are not independent")
-    return margins
+    return {k: [sum(col) / len(col) for col in zip(*v)] for k, v in per_window.items()}
 
 
 def build_model(device, clap_hidden=256, clap_pretrained=""):
@@ -174,12 +181,18 @@ def run_epoch(loader, encoder_eeg, encoder_audio, criterion, optimizer, device, 
 
 
 def run_kfold(ds, args, device):
-    """Step C: one prediction per trial, k folds, pooled model. Reports against 0.50.
+    """One prediction per trial, k folds, pooled model. Reports against 0.50.
 
     The criterion was fixed in the vault BEFORE this function produced a number:
     >= 88/154 = 0.5714, one-sided binomial p < 0.05. Anything below is reported as not
     distinguishable from chance -- including anything that merely beats the linear anchor,
     whose own 0.5584 is itself not significant (p = 0.085).
+
+    `--loss within_mixture` makes this step D. Everything else is frozen at step C's
+    values -- epochs, lr, batch, temperature, seed, folds, decision unit -- so any
+    difference is attributable to the one factor that changed. Step D is a SECOND LOOK at
+    the same trials, chosen after step C's number was known: the same 0.5714 is printed,
+    but as a descriptor, and the summary says so in the file itself.
     """
     from scipy import stats
 
@@ -196,25 +209,34 @@ def run_kfold(ds, args, device):
         encoder_eeg, encoder_audio = build_model(device)
         trainable = [p for p in list(encoder_eeg.parameters()) + list(encoder_audio.parameters())
                      if p.requires_grad]
-        criterion = CLIP_Loss(args.batch_size, args.temperature, world_size=1)
+        criterion = CLIP_Loss(args.batch_size, args.temperature, world_size=1,
+                              negatives=args.loss)
         optimizer = torch.optim.Adam(trainable, lr=args.learning_rate)
 
         t0 = time.time()
+        losses = []
         for ep in range(args.epochs):
             tr = run_epoch(loader, encoder_eeg, encoder_audio, criterion, optimizer,
                            device, args.max_batches or None)
-        margins = decide_per_trial(ds, test_trials, encoder_eeg, encoder_audio,
-                                   device, args.batch_size)
+            losses.append(tr)
+        mean_sims = decide_per_trial(ds, test_trials, encoder_eeg, encoder_audio,
+                                     device, args.batch_size)
         for t in test_trials:
             subj, stim = ds.trials[t]
-            m = float(np.mean(margins[(subj, stim)]))
+            meta = ds.meta[subj][stim]
+            instruments = list(meta["instruments"])
+            m = trial_decision(mean_sims[(subj, stim)], instruments.index(meta["target"]))
             records.append({"fold": f, "subject": subj, "stim": stim,
-                            "ensemble": ds.meta[subj][stim]["ensemble"],
-                            "n_present": len(ds.meta[subj][stim]["instruments"]),
+                            "ensemble": meta["ensemble"],
+                            "n_present": len(instruments),
                             "mean_margin": m, "correct": int(m > 0)})
         acc = np.mean([r["correct"] for r in records if r["fold"] == f])
-        print(f"  fold {f}: train_loss={tr:.4f}  test trials={len(test_trials)}  "
-              f"acc={acc:.3f}  ({time.time() - t0:.0f}s)")
+        # The first epoch's loss is printed too, because its SCALE is a wiring check: with
+        # within-mixture negatives a duo has 2 logits, so an untrained model sits at
+        # log 2 = 0.693. Batch negatives put it near 3. A first epoch far from the expected
+        # value means the mode is not the one that was asked for.
+        print(f"  fold {f}: train_loss={losses[0]:.4f}->{tr:.4f}  "
+              f"test trials={len(test_trials)}  acc={acc:.3f}  ({time.time() - t0:.0f}s)")
 
     n = len(records)
     k = sum(r["correct"] for r in records)
@@ -223,17 +245,23 @@ def run_kfold(ds, args, device):
     threshold = next(x for x in range(n + 1)
                      if stats.binomtest(x, n, 0.5, alternative="greater").pvalue < 0.05)
 
+    step = "D" if args.loss == "within_mixture" else "C"
     print(f"\n{'=' * 62}")
     if args.max_batches:
         print(f"!! --max_batches={args.max_batches}: UNDERTRAINED, this accuracy is NOT a result\n")
     if getattr(args, "self_test", False):
         print("!! --self_test: the EEG is SYNTHETIC. This accuracy is a control, NOT a result\n")
-    print(f"[step C] {k}/{n} = {k / n:.4f}   chance 0.50")
+    if step == "D":
+        print("!! step D is a SECOND LOOK at the same 154 trials, decided after seeing step\n"
+              "!! C's number. It is EXPLORATORY BY CONSTRUCTION -- no threshold reached here\n"
+              "!! makes it confirmatory, whatever it says. Step C's 58/154 verdict stands.\n")
+    print(f"[step {step}] {k}/{n} = {k / n:.4f}   chance 0.50   (loss negatives: {args.loss})")
     print(f"  one-sided binomial p = {test.pvalue:.4f}   95% CI [{lo:.3f}, {hi:.3f}]")
     print(f"  pre-registered threshold: {threshold}/{n} = {threshold / n:.4f}")
     verdict = ("ABOVE CHANCE" if k >= threshold else
                "NOT DISTINGUISHABLE FROM CHANCE")
-    print(f"  --> {verdict}")
+    print(f"  --> {verdict}" + ("   (descriptive: step D cannot be confirmatory)"
+                                if step == "D" else ""))
     print(f"  (linear anchor, same 154 trials: 0.5584, p=0.085 -- itself not significant,")
     print(f"   so beating it is not the criterion)")
 
@@ -274,11 +302,17 @@ def run_kfold(ds, args, device):
     if args.max_batches:
         caveat += (f"!! --max_batches={args.max_batches}: UNDERTRAINED by construction.\n"
                    f"!! This accuracy is not a result.\n\n")
+    if step == "D":
+        caveat += ("!! STEP D -- within-mixture negatives. A SECOND LOOK at the same 154\n"
+                   "!! trials, decided after step C's number was known, therefore\n"
+                   "!! EXPLORATORY BY CONSTRUCTION. The threshold below is a descriptor,\n"
+                   "!! not a confirmatory verdict; step C's 58/154 = 0.3766 stands.\n\n")
     with open(os.path.join(out_dir, "madeeg_contrastive_summary.txt"), "w") as fh:
         fh.write(caveat)
-        fh.write(f"== MAD-EEG contrastive CLAP<->EEG, step C ==\n"
+        fh.write(f"== MAD-EEG contrastive CLAP<->EEG, step {step} ==\n"
                  f"ensemble={args.ensemble} folds={args.kfold} epochs={args.epochs} "
-                 f"lr={args.learning_rate} batch={args.batch_size} seed={args.seed}\n"
+                 f"lr={args.learning_rate} batch={args.batch_size} seed={args.seed} "
+                 f"loss={args.loss}\n"
                  f"n_trials={n} chance=0.500\n"
                  f"accuracy: {k}/{n} = {k / n:.4f}\n"
                  f"one-sided binomial p={test.pvalue:.4f}  95% CI=[{lo:.3f}, {hi:.3f}]\n"
@@ -327,16 +361,24 @@ def main():
                          "Its accuracy is a control, never a result")
     ap.add_argument("--self_test_snr", type=float, default=4.0,
                     help="--self_test only: signal/noise std ratio of the synthetic EEG")
+    ap.add_argument("--loss", default="batch", choices=["batch", "within_mixture"],
+                    help="which columns are negatives. 'batch' is step C and stays the "
+                         "default so no reported number moves. 'within_mixture' is step D: "
+                         "the only negatives are the competing stems of the SAME trial")
     args = ap.parse_args()
 
     torch.manual_seed(args.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # A control must never overwrite the records of the real run.
+    # A control must never overwrite the records of the real run -- and neither must a
+    # different objective. Step D writes beside step C, not over it.
     if args.self_test:
         args.kfold = args.kfold or 5
-        if args.training_date == "madeeg_clap_kfold":
+    if args.training_date == "madeeg_clap_kfold":
+        if args.self_test:
             args.training_date = "madeeg_clap_selftest"
+        if args.loss == "within_mixture":
+            args.training_date += "_within"
 
     # preload=True for the k-fold run: it is what makes shuffling affordable, and without
     # shuffling almost every batch comes from one trial -- so the InfoNCE batch negatives
@@ -372,7 +414,8 @@ def main():
     print(f"  trainable params: {sum(p.numel() for p in trainable):,}  "
           f"(frozen CLAP backbone: {frozen:,})")
 
-    criterion = CLIP_Loss(args.batch_size, args.temperature, world_size=1)
+    criterion = CLIP_Loss(args.batch_size, args.temperature, world_size=1,
+                          negatives=args.loss)
     optimizer = torch.optim.Adam(trainable, lr=args.learning_rate)
 
     epochs, max_batches = (2, 5) if args.smoke else (args.epochs, None)

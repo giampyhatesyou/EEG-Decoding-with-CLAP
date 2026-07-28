@@ -35,6 +35,29 @@ import yaml
 from scipy import stats
 
 
+def trial_decision(mean_sims, target_idx):
+    """The decision rule, in the form that also holds when three stems are present.
+
+    `mean_sims[s]` is stem s's similarity to the EEG, averaged over the trial's windows.
+    The rule is: take the argmax; the trial is correct when the argmax is the attended
+    stem. It is returned as a signed margin -- attended minus the best competitor -- so the
+    records keep a magnitude and not just a bit. `margin > 0` IS `argmax == target_idx`,
+    with an exact tie counted as wrong, which is the conservative reading and has measure
+    zero on floats.
+
+    On duos this is identically step C's rule: the mean over windows of
+    (sim_attended - sim_competitor) is the same number as
+    mean(sim_attended) - mean(sim_competitor). `--check_rule` verifies that against step C's
+    archived records rather than taking it on faith.
+
+    It lives in this file, not in `madeeg_contrastive.py`, so that the rule can be re-run
+    offline on any machine: this module needs no torch and no HDF5. The training entrypoint
+    imports it from here, so there is exactly one implementation.
+    """
+    competitor = max(v for s, v in enumerate(mean_sims) if s != target_idx)
+    return mean_sims[target_idx] - competitor
+
+
 def load(records_csv, madeeg_dir):
     """Records joined with the metadata that says which instruments a mixture holds."""
     meta = yaml.load(open(os.path.join(madeeg_dir, "madeeg_preprocessed.yaml")),
@@ -212,15 +235,64 @@ def _demo():
           f"-- so agreement must be tested against {null:.3f}, not 0.5")
 
 
+def _check_rule(records_csv):
+    """Gate [1c]: the argmax rule must reproduce step C's 58/154 on its ARCHIVED records.
+
+    Two separate things are checked, because neither alone is enough.
+
+    1. Against the archive. The stored `correct` column must come back out of
+       `trial_decision`, on all 154 rows, totalling 58. The archive keeps the per-trial
+       margin and not the two per-stem means, so the means are reconstructed as
+       [margin, 0] -- faithful, because an argmax does not move when both means shift by
+       the same constant. This pins that the file is the one that produced 58/154 and that
+       the rule agrees with it trial by trial. It does NOT show that averaging each stem
+       and subtracting is the same operation as averaging the margin: that is (2).
+
+    2. Against the step-C rule itself, on random windows. mean_i(a_i - b_i) and
+       mean_i(a_i) - mean_i(b_i) are the same number, so on duos the two rules can never
+       disagree. Checked rather than asserted, on trials of 1 to 40 windows.
+    """
+    import random
+
+    rows = list(csv.DictReader(open(records_csv)))
+    k = 0
+    for r in rows:
+        got = int(trial_decision([float(r["mean_margin"]), 0.0], 0) > 0)
+        assert got == int(r["correct"]), (
+            f"{r['subject']}/{r['stim']}: argmax rule says {got}, record says {r['correct']}")
+        k += got
+    assert (k, len(rows)) == (58, 154), (
+        f"expected step C's 58/154, got {k}/{len(rows)} -- either the rule is not equivalent "
+        "or these are not the step C records")
+    print(f"[check_rule] {k}/{len(rows)} = {k / len(rows):.4f} -- the argmax rule reproduces "
+          f"step C exactly, and every one of the {len(rows)} stored decisions")
+
+    rng = random.Random(0)
+    for _ in range(2000):
+        w = [(rng.gauss(0, 1), rng.gauss(0, 1)) for _ in range(rng.randint(1, 40))]
+        step_c = sum(a - b for a, b in w) / len(w) > 0
+        step_d = trial_decision([sum(a for a, _ in w) / len(w),
+                                 sum(b for _, b in w) / len(w)], 0) > 0
+        assert step_c == step_d, f"the two rules disagree on {w}"
+    print("[check_rule] and on 2000 random duo trials the step-C rule (mean of the margins) "
+          "and the step-D rule (argmax of the per-stem means) never disagree")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--records", help="madeeg_contrastive_records.csv from a k-fold run")
     ap.add_argument("--madeeg_dir", help="dir with madeeg_preprocessed.yaml")
     ap.add_argument("--demo", action="store_true", help="self-check on synthetic records, then exit")
+    ap.add_argument("--check_rule", metavar="RECORDS_CSV",
+                    help="regression gate: the step-D argmax decision rule must return step "
+                         "C's 58/154 on step C's archived records. Needs no madeeg_dir")
     args = ap.parse_args()
     if args.demo:
         _demo()
+        return
+    if args.check_rule:
+        _check_rule(args.check_rule)
         return
     if not args.records or not args.madeeg_dir:
         ap.error("--records and --madeeg_dir are both required (or use --demo)")
