@@ -8,11 +8,18 @@ import torch.distributed as dist
 import numpy as np
 
 class CLIP_Loss(nn.Module):
-    def __init__(self, batch_size, temperature, world_size):
+    def __init__(self, batch_size, temperature, world_size, negatives="batch"):
         super(CLIP_Loss, self).__init__()
         self.batch_size = batch_size
         self.temperature = temperature
         self.world_size = world_size
+        # CHANGED(baseline): `negatives` selects which columns count as negatives (see
+        # compute_task_loss). "batch" is the upstream InfoNCE and is the DEFAULT, so every
+        # number already reported -- Chapter 1 and MAD-EEG step C -- is bit-identical.
+        # "within_mixture" is step D. Asserted rather than silently defaulted: a typo in the
+        # mode would quietly re-run step C and get written up as step D.
+        assert negatives in ("batch", "within_mixture"), f"unknown negatives mode {negatives!r}"
+        self.negatives = negatives
         self.criterion = nn.CrossEntropyLoss(reduction="mean")
         self.similarity_f = nn.CosineSimilarity(dim=2)
 
@@ -121,6 +128,10 @@ class CLIP_Loss(nn.Module):
             competing sources of the SAME mixture. That within-mixture contrast is the
             part that matters scientifically: it cannot be won by recognising the
             stimulus, because the competing source is in the same stimulus.
+
+        With `negatives="within_mixture"` only that last contrast is kept: the negatives
+        are the other blocks' DIAGONALS and nothing else, so the loss of a window depends
+        on that window's own trial alone and not on which other trials shared its batch.
         """
         n_slots = len(stems)
         losses, positive_list, negative_list = [], [], []
@@ -144,10 +155,24 @@ class CLIP_Loss(nn.Module):
             for i in range(filtered_size):
                 matrix_list[t].append([d[i].item() for d in diagonals])
 
-            mask = self.mask_correlated_samples(filtered_size)
-            parts = [blocks[t][mask].reshape(filtered_size, filtered_size - 1)]
-            parts += [blocks[s] for s in range(n_slots) if s != t]
-            negative_samples = torch.cat(parts, dim=1).reshape(filtered_size, -1)
+            if self.negatives == "within_mixture":
+                # CHANGED(baseline): step D. The only negatives are the competing stems of
+                # the SAME trial -- the diagonals of the other blocks, nothing off-diagonal.
+                # Measured reason, not a hunch: with batch 8 on the real duo windows the
+                # expected filtered_size is 3.98, so the within-mixture competitor took only
+                # ~19% of the negative gradient and ~81% pushed the EEG away from OTHER
+                # trials' audio, which is separable from stimulus identity alone.
+                # For a duo this reduces in closed form to
+                #     softplus(-(sim(attended) - sim(competitor)) / T)
+                # i.e. a logistic on the very margin the decision rule averages over a
+                # trial's windows: training and evaluation optimise the same function.
+                negative_samples = torch.stack(
+                    [diagonals[s] for s in range(n_slots) if s != t], dim=1)
+            else:
+                mask = self.mask_correlated_samples(filtered_size)
+                parts = [blocks[t][mask].reshape(filtered_size, filtered_size - 1)]
+                parts += [blocks[s] for s in range(n_slots) if s != t]
+                negative_samples = torch.cat(parts, dim=1).reshape(filtered_size, -1)
 
             logits = torch.cat((positive_samples, negative_samples), dim=1)
             labels = torch.zeros(filtered_size).to(positive_samples.device).long()
@@ -196,3 +221,46 @@ if __name__ == "__main__":
 
     print(f"[clip_loss self-check] PASS  duo InfoNCE matches hand computation "
           f"({got:.6f}); aligned {aligned:.4f} < anti-aligned {anti:.4f}")
+
+    # CHANGED(baseline): new -- step D, negatives="within_mixture". Three windows, all
+    # attending slot 0, so filtered_size = 3 and the two modes CANNOT coincide: the batch
+    # mode has 5 negatives per row, the within-mixture mode exactly 1.
+    eeg3 = torch.randn(3, D)
+    a3, b3 = torch.randn(3, D), torch.randn(3, D)
+    task3 = torch.zeros(3).long()
+    args3 = (task3, torch.full((3,), 4), [4, 5])
+
+    # Hand computation, per window: L_i = log(1 + exp((cos(e_i,b_i) - cos(e_i,a_i)) / T)),
+    # the loss averaged over the three windows.
+    margins = [float(cos(eeg3[i:i + 1], a3[i:i + 1])) - float(cos(eeg3[i:i + 1], b3[i:i + 1]))
+               for i in range(3)]
+    expected_w = sum(math.log(1 + math.exp(-m / TEMP)) for m in margins) / 3
+    got_w = float(CLIP_Loss(3, TEMP, 1, negatives="within_mixture")(
+        eeg3, a3, b3, None, None, *args3)["all"]["loss"])
+    assert abs(got_w - expected_w) < 1e-5, f"within-mixture: got {got_w}, by hand {expected_w}"
+
+    # The flag must actually change the objective, or a mistyped mode would rerun step C.
+    got_b = float(CLIP_Loss(3, TEMP, 1)(eeg3, a3, b3, None, None, *args3)["all"]["loss"])
+    assert abs(got_b - got_w) > 1e-3, f"the two modes returned the same loss ({got_w})"
+
+    # The property the whole step rests on: no cross-trial negative survives, so the batch
+    # loss is exactly the mean of the per-window losses computed one at a time. Under the
+    # batch mode this is false, and that difference is the whole point of step D.
+    def alone(i, mode):
+        return float(CLIP_Loss(1, TEMP, 1, negatives=mode)(
+            eeg3[i:i + 1], a3[i:i + 1], b3[i:i + 1], None, None,
+            torch.tensor([0]), torch.tensor([4]), [4, 5])["all"]["loss"])
+    assert abs(got_w - sum(alone(i, "within_mixture") for i in range(3)) / 3) < 1e-5, \
+        "a window's loss depends on its batch-mates -- a cross-trial negative survived"
+    assert abs(got_b - sum(alone(i, "batch") for i in range(3)) / 3) > 1e-3, \
+        "the batch mode should NOT be batch-independent; the control is not discriminating"
+
+    try:
+        CLIP_Loss(1, TEMP, 1, negatives="within-mixture")
+        raise SystemExit("a misspelled negatives mode was accepted")
+    except AssertionError:
+        pass
+
+    print(f"[clip_loss self-check] PASS  within-mixture duo matches hand computation "
+          f"({got_w:.6f} vs batch mode {got_b:.6f}); a window's loss is independent of "
+          f"its batch-mates")
