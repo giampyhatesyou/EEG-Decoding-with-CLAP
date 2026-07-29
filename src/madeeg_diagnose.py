@@ -31,6 +31,7 @@ import collections
 import csv
 import os
 
+import numpy as np
 import yaml
 from scipy import stats
 
@@ -79,22 +80,37 @@ def load(records_csv, madeeg_dir):
     return rows
 
 
-def training_counts(rows, r, key="mixture"):
+def in_training_set(q, r, per_subject):
+    """Was trial q in the training set of the model that decided trial r?
+
+    Step C/D train ONE pooled model on a global k-fold, so every trial of another fold is
+    in training. The ridge backward model fits a SEPARATE model per subject, so a trial of
+    another subject was never seen -- counting it would dilute the prior with data the
+    model provably could not use, and understate the effect. Same statistic, different
+    training set; the difference is a property of the run, not of the analysis, so it is a
+    flag with the pooled behaviour as the default.
+    """
+    if per_subject and q["subject"] != r["subject"]:
+        return False
+    return q["fold"] != r["fold"]
+
+
+def training_counts(rows, r, key="mixture", per_subject=False):
     """How often each of this trial's two instruments is the target in its TRAINING folds."""
     counts = collections.Counter(q["target"] for q in rows
-                                 if q[key] == r[key] and q["fold"] != r["fold"])
+                                 if q[key] == r[key] and in_training_set(q, r, per_subject))
     a, b = r["instruments"]
     return counts[a], counts[b]
 
 
-def majority(rows, r, key="mixture"):
+def majority(rows, r, key="mixture", per_subject=False):
     """The instrument the training folds attend more often, or None when they tie."""
-    ca, cb = training_counts(rows, r, key)
+    ca, cb = training_counts(rows, r, key, per_subject)
     a, b = r["instruments"]
     return None if ca == cb else (a if ca > cb else b)
 
 
-def base_rate(rows, key="mixture"):
+def base_rate(rows, key="mixture", per_subject=False):
     """P(prior == target): how often following the prior would be right anyway.
 
     This, NOT 0.5, is the null for "does the model follow the prior". A model that reads the
@@ -104,37 +120,71 @@ def base_rate(rows, key="mixture"):
     no model involved. The synthetic-EEG control run lands on it at every grain, which is
     what confirms the statistic is measuring the model and not the design.
     """
-    decidable = [r for r in rows if majority(rows, r, key) is not None]
-    return sum(majority(rows, r, key) == r["target"] for r in decidable) / len(decidable)
+    decidable = [r for r in rows if majority(rows, r, key, per_subject) is not None]
+    return sum(majority(rows, r, key, per_subject) == r["target"] for r in decidable) / len(decidable)
 
 
-def report(rows):
+def report(rows, per_subject=False):
     k, n = sum(r["correct"] for r in rows), len(rows)
     print(f"  {k}/{n} = {k / n:.4f} correct, chance 0.500\n")
+
+    if all(r["fold"] < 0 for r in rows):
+        # The paper's split (train on solos, test on duets) puts NO duo trial in training,
+        # so there is no per-mixture target frequency to follow. That is not a limitation of
+        # this script: the shortcut that steps C and D measured is unavailable by
+        # construction under the published protocol, and saying so is the finding.
+        print("  every trial has fold = -1: this run trained on SOLOS, so no duo label was\n"
+              "  ever in the training set. Prior-following is not weakly present here, it is\n"
+              "  STRUCTURALLY UNAVAILABLE -- there is no training frequency to follow. The\n"
+              "  statistics below need a k-fold over the duos and are skipped.")
+        return
 
     # 1. The effect, stated as a 2x2 with no modelling in between.
     cell = collections.Counter()
     for r in rows:
-        mj = majority(rows, r)
+        mj = majority(rows, r, per_subject=per_subject)
         if mj is not None:
             cell[(mj == r["target"], bool(r["correct"]))] += 1
     tt, tf = cell[(True, True)], cell[(True, False)]
     ft, ff = cell[(False, True)], cell[(False, False)]
-    odds, p_fisher = stats.fisher_exact([[tt, tf], [ft, ff]])
     print("  accuracy split by whether the trial's own target was the training majority")
-    print(f"    target IS  the majority of its mixture: {tt}/{tt + tf} = {tt / (tt + tf):.3f}")
-    print(f"    target is NOT                         : {ft}/{ft + ff} = {ft / (ft + ff):.3f}")
-    print(f"    Fisher exact p = {p_fisher:.2e}   odds ratio = {odds:.2f}")
-    print("    chance is 0.500 in BOTH cells: every duo mixture is presented with both of")
-    print("    its instruments as the target, so the prior is not legitimate information")
+    mixture_grain_ok = bool(tt + tf) and bool(ft + ff)
+    if not mixture_grain_ok:
+        # Degenerate, and the degeneracy is the finding rather than a failure of the analysis.
+        # Under a PER-SUBJECT k-fold a (subject, mixture) group holds at most its two twins,
+        # so leaving one out leaves a count of 1-0 pointing at the OTHER instrument -- every
+        # single time. The prior at mixture grain is not merely a bad guide here, it is
+        # deterministically anti-correlated with the target; and for the 60 groups seen with
+        # one target only there is no other trial to count at all. Neither row can fill.
+        print(f"    one cell is empty ({tt + tf} vs {ft + ff}): with per-subject folds the")
+        print("    mixture-grain prior is DEGENERATE. A (subject, mixture) group holds at most")
+        print("    the two twins, so leave-one-out always leaves the competitor in the majority")
+        print("    -- the prior points at the wrong instrument by construction, on every trial.")
+        print("    Nothing to test at this grain; the coarser grains below still apply.")
+    else:
+        odds, p_fisher = stats.fisher_exact([[tt, tf], [ft, ff]])
+        print(f"    target IS  the majority of its mixture: {tt}/{tt + tf} = {tt / (tt + tf):.3f}")
+        print(f"    target is NOT                         : {ft}/{ft + ff} = {ft / (ft + ff):.3f}")
+        print(f"    Fisher exact p = {p_fisher:.2e}   odds ratio = {odds:.2f}")
+        print("    chance is 0.500 in BOTH cells: every duo mixture is presented with both of")
+        print("    its instruments as the target, so the prior is not legitimate information")
 
     # 2. The same effect from the model's side: does it choose the prior?
     agree = decidable = 0
     for r in rows:
-        mj = majority(rows, r)
+        mj = majority(rows, r, per_subject=per_subject)
         if mj is not None:
             agree, decidable = agree + (r["chosen"] == mj), decidable + 1
-    null = base_rate(rows)
+    null = base_rate(rows, per_subject=per_subject) if decidable else 0.0
+    if not mixture_grain_ok:
+        if decidable:
+            print(f"\n  the model chose the (always-wrong) majority in {agree}/{decidable} = "
+                  f"{agree / decidable:.4f}, against a null P(prior == target) of exactly "
+                  f"{null:.0f}.")
+            print("  A deterministic prior leaves no hypothesis to test at this grain: the")
+            print("  fraction is descriptive only. The coarser grains below are not degenerate.")
+        _grain_table(rows, per_subject)
+        return
     p = stats.binomtest(agree, decidable, null, alternative="greater").pvalue
     print(f"\n  the model chose the training majority in {agree}/{decidable} = "
           f"{agree / decidable:.4f} of the decidable trials")
@@ -147,20 +197,20 @@ def report(rows):
     #    an artefact of the arithmetic would not.
     buckets = collections.defaultdict(lambda: [0, 0])
     for r in rows:
-        ca, cb = training_counts(rows, r)
+        ca, cb = training_counts(rows, r, per_subject=per_subject)
         gap = abs(ca - cb)
         buckets[min(gap, 3)][1] += 1
         if gap:
-            buckets[min(gap, 3)][0] += (r["chosen"] == majority(rows, r))
+            buckets[min(gap, 3)][0] += (r["chosen"] == majority(rows, r, per_subject=per_subject))
     # The null per bucket too: P(majority == target) is not flat across gaps, so the trend
     # has to be read against it and not against a straight line.
     nulls = collections.defaultdict(lambda: [0, 0])
     for r in rows:
-        ca, cb = training_counts(rows, r)
+        ca, cb = training_counts(rows, r, per_subject=per_subject)
         gap = abs(ca - cb)
         nulls[min(gap, 3)][1] += 1
         if gap:
-            nulls[min(gap, 3)][0] += (majority(rows, r) == r["target"])
+            nulls[min(gap, 3)][0] += (majority(rows, r, per_subject=per_subject) == r["target"])
     print("\n  by how lopsided the training count is (compare each row with its own null):")
     for gap in sorted(buckets):
         hit, total = buckets[gap]
@@ -169,7 +219,16 @@ def report(rows):
         note = "   (no majority to follow)" if gap == 0 else f"   null {nh / nt:.3f}"
         print(f"    {label:<7} n={total:<4} follows it {hit}/{total} = {hit / total:.3f}{note}")
 
-    # 4. At which grain is stimulus identity being read?
+    _grain_table(rows, per_subject)
+
+
+def _grain_table(rows, per_subject):
+    """4. At which grain is stimulus identity being read?
+
+    Reachable from both branches of report(): when the mixture grain is degenerate the
+    coarser grains are usually still testable, and skipping them would throw away the part
+    of the diagnosis that still has a null.
+    """
     print("\n  grain of the prior the model is reading:")
     # Each grain gets its OWN null, and they differ a lot -- against a flat 0.5 the coarse
     # grains look innocent and they are not.
@@ -179,16 +238,105 @@ def report(rows):
                        ("global", "whole training set")]:
         hit = total = 0
         for r in rows:
-            mj = majority(rows, r, key)
+            mj = majority(rows, r, key, per_subject)
             if mj is not None:
                 hit, total = hit + (r["chosen"] == mj), total + 1
-        null = base_rate(rows, key)
+        if not total:
+            print(f"    {label:<32} no decidable trial at this grain")
+            continue
+        null = base_rate(rows, key, per_subject)
+        if null in (0.0, 1.0):
+            print(f"    {label:<32} {hit}/{total} = {hit / total:.3f}   "
+                  f"null {null:.3f}  <- deterministic prior, nothing to test")
+            continue
         p = stats.binomtest(hit, total, null, alternative="greater").pvalue
+        # A tiny null makes the binomial test uninformative: a model that IGNORES everything
+        # and flips a coin agrees with the prior ~0.5 of the time and would also "beat" it
+        # with an astronomical p. The three reference points are null (perfect EEG reader),
+        # 0.5 (coin flip) and 1.0 (pure prior-follower); prior-following is only demonstrated
+        # when agreement sits ABOVE the coin flip. Flag the cases where it does not.
+        flag = "" if hit / total > 0.5 else "  <- BELOW a coin flip: not prior-following"
         print(f"    {label:<32} {hit}/{total} = {hit / total:.3f}   "
-              f"null {null:.3f}   p={p:.1e}")
+              f"null {null:.3f}   p={p:.1e}{flag}")
+    print("  ⚠ a small null makes p misleading on its own: a coin-flipping model agrees with")
+    print("  the prior ~0.500 of the time and beats any null below that. Read agreement")
+    print("  against BOTH the null (a perfect decoder scores it) and 0.500 (a coin flip).")
     print("  ⚠ these grains are nested and correlated -- a prior at one grain lifts all the")
     print("  others, so this table says THAT the model follows a training prior, not WHICH")
     print("  grain it reads. Separating them needs a design that decorrelates them.")
+
+
+def paired_twins(records_csv):
+    """The (subject, mixture) pairs that appear with BOTH targets, and their paired statistic.
+
+    Why a paired test at all. The same subject heard the same mixture twice, once attending
+    each instrument; the audio is byte-identical and only the instruction differs. Whatever
+    makes one instrument easier to reconstruct than the other -- it is louder, it carries the
+    melody, it sits in a better frequency range -- is a per-pair constant, and at n=154 that
+    nuisance is a large share of the variance.
+
+    The statistic. Write d = r(A) - r(B) for a trial, with A and B in a fixed order. The
+    stored margin is r(attended) - r(competitor), so it is +d on the twin that attended A and
+    -d on the twin that attended B. Their SUM therefore cancels d entirely:
+
+        D = margin(twin attending A) + margin(twin attending B) = 2 * (attention effect)
+
+    A decoder with a fixed instrument preference and no attention information scores D = 0
+    however strong that preference is. No instrument ordering has to be chosen anywhere.
+    """
+    rows = list(csv.DictReader(open(records_csv)))
+    margin_col = "mean_margin" if "mean_margin" in rows[0] else None
+    groups = collections.defaultdict(list)
+    for r in rows:
+        m = (float(r[margin_col]) if margin_col
+             else float(r["r_attended"]) - float(r["r_best_unattended"]))
+        groups[(r["subject"], r["stim"].rsplit("_", 1)[0])].append((r["stim"], m))
+    twins = {k: v for k, v in groups.items() if len(v) == 2 and v[0][0] != v[1][0]}
+    singles = len(groups) - len(twins)
+    return twins, singles, len(groups)
+
+
+def paired_report(records_csv):
+    twins, singles, total = paired_twins(records_csv)
+    D = [a[1] + b[1] for a, b in twins.values()]
+    n = len(D)
+    print(f"\n  (subject, mixture) pairs: {total} total, {n} with BOTH targets, {singles} with one")
+    if n == 0:
+        return
+    k = sum(d > 0 for d in D)
+    p_sign = stats.binomtest(k, n, 0.5, alternative="greater").pvalue
+    p_wil = stats.wilcoxon(D, alternative="greater").pvalue
+    print(f"  paired statistic D > 0 in {k}/{n} pairs  (null 0.500)  sign test p={p_sign:.4f}"
+          f"   Wilcoxon signed-rank p={p_wil:.4f}")
+
+    # --- power, computed and not assumed -------------------------------------------------
+    # margin = delta +/- (b_pair + eps).  D = 2*delta + eps_A - eps_B  -> Var(D)   = 2 s_eps^2
+    #                                     S = margin_A - margin_B      -> Var(S)   = 4 s_b^2 + 2 s_eps^2
+    # so both variance components are identified by the twins themselves.
+    S = [a[1] - b[1] for a, b in twins.values()]
+    s_eps2 = max(np.var(D, ddof=1) / 2.0, 1e-18)
+    s_b2 = max((np.var(S, ddof=1) - 2 * s_eps2) / 4.0, 0.0)
+    print(f"  variance decomposition from the twins: per-pair instrument bias s_b={np.sqrt(s_b2):.4f}, "
+          f"trial noise s_eps={np.sqrt(s_eps2):.4f}  ->  bias is "
+          f"{100 * s_b2 / (s_b2 + s_eps2):.0f}% of the single-trial variance")
+
+    def crit(nn):                       # smallest k with a one-sided binomial p <= 0.05
+        return next(c for c in range(nn + 1)
+                    if stats.binomtest(c, nn, 0.5, alternative="greater").pvalue <= 0.05)
+    c154, c47 = crit(154), crit(n)
+    print(f"  significance thresholds: unpaired {c154}/154 = {c154 / 154:.4f} · "
+          f"paired {c47}/{n} = {c47 / n:.4f}")
+    print("  power at alpha=0.05 one-sided, as a function of the true attention effect delta")
+    print("  (delta in the same units as the margin; p_acc and p_pair follow from the two")
+    print("   variance components above, so nothing here is assumed):")
+    print(f"    {'delta':>8} {'p(acc)':>8} {'power154':>9} {'p(pair)':>8} {'power' + str(n):>9}   winner")
+    for delta in (0.005, 0.010, 0.015, 0.020, 0.030, 0.050):
+        p_acc = stats.norm.cdf(delta / np.sqrt(s_b2 + s_eps2))
+        p_pair = stats.norm.cdf(delta * np.sqrt(2.0) / np.sqrt(s_eps2))
+        pow_u = stats.binom.sf(c154 - 1, 154, p_acc)
+        pow_p = stats.binom.sf(c47 - 1, n, p_pair)
+        print(f"    {delta:8.3f} {p_acc:8.3f} {pow_u:9.3f} {p_pair:8.3f} {pow_p:9.3f}   "
+              f"{'paired' if pow_p > pow_u else 'unpaired'}")
 
 
 def _demo():
@@ -283,6 +431,15 @@ def main():
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--records", help="madeeg_contrastive_records.csv from a k-fold run")
     ap.add_argument("--madeeg_dir", help="dir with madeeg_preprocessed.yaml")
+    ap.add_argument("--folds", default="global", choices=["global", "per_subject"],
+                    help="how the run split its data. 'global' (default) = one pooled model on a "
+                         "k-fold over all trials -- steps C and D. 'per_subject' = a separate "
+                         "model per subject, as madeeg_reconstruction.py's duos_kfold does, so a "
+                         "trial of another subject was never in training and must not be counted")
+    ap.add_argument("--paired", action="store_true",
+                    help="paired test over the (subject, mixture) pairs seen with BOTH targets, "
+                         "plus the power calculation that says whether it beats the plain "
+                         "binomial on all trials. Needs no madeeg_dir")
     ap.add_argument("--demo", action="store_true", help="self-check on synthetic records, then exit")
     ap.add_argument("--check_rule", metavar="RECORDS_CSV",
                     help="regression gate: the step-D argmax decision rule must return step "
@@ -294,10 +451,16 @@ def main():
     if args.check_rule:
         _check_rule(args.check_rule)
         return
+    if args.paired:
+        if not args.records:
+            ap.error("--paired needs --records")
+        print(f"\n[paired] {args.records}")
+        paired_report(args.records)
+        return
     if not args.records or not args.madeeg_dir:
         ap.error("--records and --madeeg_dir are both required (or use --demo)")
-    print(f"\n[diagnose] {args.records}")
-    report(load(args.records, args.madeeg_dir))
+    print(f"\n[diagnose] {args.records}   folds={args.folds}")
+    report(load(args.records, args.madeeg_dir), per_subject=args.folds == "per_subject")
 
 
 if __name__ == "__main__":

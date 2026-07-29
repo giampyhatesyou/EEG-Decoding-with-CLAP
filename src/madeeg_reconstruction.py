@@ -33,8 +33,10 @@ import yaml
 import pandas as pd
 from scipy.signal import hilbert, butter, filtfilt, resample
 from sklearn.preprocessing import RobustScaler, StandardScaler
+from sklearn.metrics import f1_score
 
 EEG_FS = 256
+AUDIO_FS = 44100
 
 
 def read_f64(dset):
@@ -68,10 +70,27 @@ def band_pearson(A, B):
     return float(np.mean([pearson(A[:, b], B[:, b]) for b in range(A.shape[1])]))
 
 
-def ridge_fit(X, Y, lam):
-    """Closed-form ridge, multi-output: W = (X^T X + lam I)^-1 X^T Y. Y may be (T,) or (T,k)."""
+def ridge_fit(X, Y, lam, shrinkage=False):
+    """Closed-form ridge, multi-output: W = (X^T X + lam I)^-1 X^T Y. Y may be (T,) or (T,k).
+
+    AXIS 3 -- `shrinkage=True` swaps the penalty for the paper's normalized reverse
+    correlation (WASPAA 2019 Sec. 3.2): G(f) = C_RR^-1 C_RS with the autocorrelation
+    shrunk as C'_RR = (1-lam) C_RR + lam * nu * I, where nu is the average eigenvalue of
+    C_RR -- i.e. trace/d, so the penalty is scaled by the data instead of being absolute.
+    lam is then a smoothing parameter in [0, 1] and the paper's grid search published 0.1.
+
+    Multi-output stays faithful to "each feature f is reconstructed independently of the
+    others": C_RR does not depend on f, so solving the k right-hand sides jointly gives
+    exactly the k independent per-feature solutions. What the joint form would couple is
+    the CHOICE of lam (one band_pearson averaged over bands) -- and under shrinkage there
+    is nothing to choose, lam is fixed at the published value.
+    """
     d = X.shape[1]
-    return np.linalg.solve(X.T @ X + lam * np.eye(d), X.T @ Y)
+    C = X.T @ X
+    if shrinkage:
+        nu = np.trace(C) / d
+        return np.linalg.solve((1.0 - lam) * C + lam * nu * np.eye(d), X.T @ Y)
+    return np.linalg.solve(C + lam * np.eye(d), X.T @ Y)
 
 
 def lagged_design(eeg, n_lags):
@@ -100,14 +119,37 @@ def process_eeg(resp, target_fs, band, clamp):
     return resample(x, L, axis=1), L
 
 
-def source_repr(src, src_fs, out_len, target_fs, band, compression, n_mels):
+def n_repr_bands(kind, n_mels, target_fs, src_fs=AUDIO_FS):
+    """Rows of the representation source_repr() returns. For "mag" the STFT geometry fixes
+    it (n_fft = 2*hop -> hop+1 bins), so it cannot be chosen with --n_mels."""
+    if kind == "mag":
+        return max(1, int(round(src_fs / target_fs))) + 1
+    return 1 if (kind == "envelope" or n_mels <= 1) else n_mels
+
+
+def source_repr(src, src_fs, out_len, target_fs, band, compression, n_mels, kind="mel"):
     """Isolated source (1-D @44100) -> representation (n_bands, out_len), band-matched to EEG.
     n_mels<=1 -> broadband Hilbert envelope; else -> log-mel spectrogram (per-band temporal
-    series). Each band is band-passed to the EEG band and z-scored."""
+    series). Each band is band-passed to the EEG band and z-scored.
+
+    AXIS 4 -- kind="mag" is the paper's third descriptor, the linear magnitude spectrogram:
+    same STFT geometry the paper states (hop = fs_audio/fs_eeg, window = 2*hop) but with
+    linear frequency bins instead of a mel filterbank, so MEL-vs-MAG isolates the
+    perceptual warping alone. The log and the per-band band-pass + z-score are kept
+    identical to the mel branch, so the two are comparable inside THIS pipeline; the paper
+    does not say whether it logs its spectrograms.
+    """
     x = np.asarray(src, dtype=np.float64)
     if not np.any(x):
-        return np.zeros((max(1, n_mels), out_len))
-    if n_mels <= 1:
+        return np.zeros((n_repr_bands(kind, n_mels, target_fs, src_fs), out_len))
+    if kind == "mag":
+        import librosa
+        hop = max(1, int(round(src_fs / target_fs)))
+        S = np.abs(librosa.stft(y=x, n_fft=2 * hop, hop_length=hop))     # (hop+1, frames)
+        rep = np.log(S + 1e-6)
+        if rep.shape[1] != out_len:
+            rep = resample(rep, out_len, axis=1)
+    elif n_mels <= 1:
         env = np.abs(hilbert(x))
         if compression and compression != 1.0:
             env = np.power(np.maximum(env, 0.0), compression)
@@ -130,14 +172,14 @@ def source_repr(src, src_fs, out_len, target_fs, band, compression, n_mels):
     return out
 
 
-def build_trial(data, meta, subj, stim, target_fs, band, clamp, compression, n_mels):
+def build_trial(data, meta, subj, stim, target_fs, band, clamp, compression, n_mels, kind="mel"):
     m = meta[subj][stim]
     instruments = list(m["instruments"])
     n_present = len(instruments)
     target_idx = instruments.index(m["target"])
     eeg, L = process_eeg(read_f64(data[subj][stim]["response"]), target_fs, band, clamp)
     soli = read_f64(data[subj][stim]["soli"])
-    reps = np.stack([source_repr(soli[i], m["wav_info"]["sfreq"], L, target_fs, band, compression, n_mels)
+    reps = np.stack([source_repr(soli[i], m["wav_info"]["sfreq"], L, target_fs, band, compression, n_mels, kind)
                      for i in range(n_present)], axis=0)             # (n_present, n_bands, L)
     return eeg, reps, target_idx, n_present, m["ensemble"]
 
@@ -152,17 +194,104 @@ def _proc_eeg_segment(seg, target_fs, clamp):
     return resample(x, L, axis=1), L
 
 
-def raw_eeg_bandpassed(raw_f, raw_chs, pre_chs, subj, band):
+# FIFF channel kinds, as stored in madeeg_raw.yaml -> chs[i]['kind'].
+_FIFF_KIND = {2: "eeg", 3: "stim", 202: "eog", 302: "emg", 402: "ecg", 502: "misc"}
+
+
+def clean_continuous(x, raw_chs, chs_meta, mode, subj, seed=42, diag=None):
+    """AXIS 1 -- the EEG preprocessing the paper describes and our raw path never had.
+
+    WASPAA 2019 Sec. 2, verbatim: "the 50 Hz power-line interference was removed using a
+    notch filter and EOG/ECG artifacts were detected and removed using independent
+    component analysis (ICA)". That is how the authors' own `preprocessed` release was
+    made, so the raw path is the only place this is missing.
+
+      mode="notch"      50 Hz notch only -- separates the notch from the ICA, so a change
+                        can be attributed to one or the other
+      mode="notch_ica"  notch, then remove the ICs that track the reference EOG/ECG
+
+    TRAP, read off madeeg_raw.yaml and not guessable from the labels: the channel NAMED
+    "ECG" is typed MISC (kind 502). The actual references are AUX1 (kind 402 = ECG) and
+    AUX3 (kind 202 = EOG). Typing by name hands ICA no reference at all, and the cleaning
+    then runs, reports success and removes nothing. Types come from `kind`, never the name.
+
+    Positive control, written into `diag` and from there into the run summary: the
+    correlation between the frontal EEG channels and the EOG reference, inside the 1-8 Hz
+    analysis band, measured before and after. Ocular artefacts dominate that band, so if
+    the ICA did what it claims this number has to fall.
+    """
+    import mne
+    mne.set_log_level("ERROR")
+    types = [_FIFF_KIND.get(c["kind"], "misc") for c in chs_meta]
+    raw = mne.io.RawArray(x.copy(), mne.create_info(list(raw_chs), EEG_FS, types), verbose=False)
+    raw.notch_filter(50.0, picks=["eeg", "eog", "ecg"], verbose=False)
+    if mode == "notch":
+        if diag is not None:
+            diag[subj] = "notch only"
+        return raw.get_data()
+
+    eeg_pick = [i for i, t in enumerate(types) if t == "eeg"]
+    eog_pick = [i for i, t in enumerate(types) if t == "eog"]
+    frontal = [i for i in eeg_pick if raw_chs[i].startswith("F")]
+
+    def eog_coupling(arr):
+        """Mean |r| between the frontal EEG channels and the EOG reference, 1-8 Hz."""
+        if not eog_pick or not frontal:
+            return float("nan")
+        ref = bandpass(arr[eog_pick[0]], EEG_FS, 1.0, 8.0)
+        return float(np.mean([abs(pearson(bandpass(arr[i], EEG_FS, 1.0, 8.0), ref)) for i in frontal]))
+
+    before = eog_coupling(raw.get_data())
+    # ICA is unstable on slow drifts, so it is fitted on a 1 Hz high-passed copy and
+    # applied to the notched data -- mne's documented recipe, not a choice of ours.
+    fit_raw = raw.copy().filter(l_freq=1.0, h_freq=None, picks=["eeg", "eog", "ecg"], verbose=False)
+    ica = mne.preprocessing.ICA(n_components=0.999, method="fastica",
+                                random_state=seed, max_iter="auto", verbose=False)
+    ica.fit(fit_raw, picks="eeg", decim=3, verbose=False)
+    bad_eog, sc_eog = ica.find_bads_eog(fit_raw, verbose=False)
+    try:
+        bad_ecg, sc_ecg = ica.find_bads_ecg(fit_raw, method="correlation", verbose=False)
+    except (RuntimeError, ValueError):                      # no usable ECG reference
+        bad_ecg, sc_ecg = [], np.zeros(ica.n_components_)
+    ica.exclude = sorted(set(bad_eog) | set(bad_ecg))
+    ica.apply(raw, verbose=False)
+    after = eog_coupling(raw.get_data())
+    if diag is not None:
+        diag[subj] = (f"ICs={ica.n_components_} excluded={len(ica.exclude)} "
+                      f"(eog={sorted(bad_eog)} max|r|={np.max(np.abs(sc_eog)):.2f} · "
+                      f"ecg={sorted(bad_ecg)} max|r|={np.max(np.abs(sc_ecg)):.2f})  "
+                      f"frontal-EOG coupling 1-8 Hz: {before:.3f} -> {after:.3f}")
+    return raw.get_data()
+
+
+def raw_eeg_bandpassed(raw_f, raw_chs, pre_chs, subj, band, clean="none", raw_info=None, seed=42,
+                       diag=None):
     """Read the continuous raw EEG for a subject, reorder the 20 EEG channels to the
-    preprocessed order, band-pass once. Returns (20, N)."""
+    preprocessed order, band-pass once. Returns (20, N).
+
+    AXIS 1 -- `clean` inserts the paper's EEG preprocessing BEFORE the band-pass, on the
+    full 30-channel record (the reference EOG/ECG channels are needed and are dropped by
+    the reorder). "none" is the current behaviour and the default."""
+    x = read_f64(raw_f[subj])
+    if clean != "none":
+        x = clean_continuous(x, raw_chs, raw_info[subj]["chs"], clean, subj, seed, diag)
     idx = [raw_chs.index(c) for c in pre_chs]
-    return bandpass(read_f64(raw_f[subj])[idx], EEG_FS, band[0], band[1])
+    return bandpass(x[idx], EEG_FS, band[0], band[1])
 
 
-def build_solo_trials(eeg_full_bp, sq, stimuli_dir, subj, target_fs, band, clamp, compression, n_bands):
+def solo_instrument(key):
+    """`classique_morceau1_solo_Co_theme2_mono` -> `Co`, the instrument played in that solo.
+    Used by AXIS 2 to group the training solos into one decoder per instrument."""
+    parts = key.split("_")
+    return parts[parts.index("solo") + 1]
+
+
+def build_solo_trials(eeg_full_bp, sq, stimuli_dir, subj, target_fs, band, clamp, compression, n_bands,
+                      kind="mel"):
     """Paper protocol training pairs: each solo stimulus repetition is cut from the
     band-passed continuous raw EEG at its n_ech sample index and paired with the solo
-    source audio (from stimuli/). Returns trials [eeg(20,L), reps(1,n_bands,L), 0, 1, 'solo']."""
+    source audio (from stimuli/). Returns trials
+    [eeg(20,L), reps(1,n_bands,L), 0, 1, 'solo', instrument]."""
     import librosa
     N = eeg_full_bp.shape[1]
     trials = []
@@ -180,13 +309,13 @@ def build_solo_trials(eeg_full_bp, sq, stimuli_dir, subj, target_fs, band, clamp
             if b > N or seg_len < EEG_FS:
                 continue
             eeg_proc, L = _proc_eeg_segment(eeg_full_bp[:, a:b], target_fs, clamp)
-            rep = source_repr(audio, sr, L, target_fs, band, compression, n_bands)
-            trials.append([eeg_proc, rep[None, ...], 0, 1, "solo"])
+            rep = source_repr(audio, sr, L, target_fs, band, compression, n_bands, kind)
+            trials.append([eeg_proc, rep[None, ...], 0, 1, "solo", solo_instrument(k)])
     return trials
 
 
 def build_duo_trial_raweeg(eeg_full_bp, soli, n_ech, target_idx, n_present, src_fs,
-                           target_fs, band, clamp, compression, n_bands):
+                           target_fs, band, clamp, compression, n_bands, kind="mel"):
     """Test trial with RAW EEG (same pipeline as the solos -> no preprocessing mismatch).
     The 4 repetitions are cut from the raw EEG at their n_ech onsets (each rep length =
     soli_len/4 in EEG samples) and concatenated to match the 4-rep preprocessed 'soli'
@@ -200,7 +329,7 @@ def build_duo_trial_raweeg(eeg_full_bp, soli, n_ech, target_idx, n_present, src_
     if not segs:
         return None
     eeg_proc, L = _proc_eeg_segment(np.concatenate(segs, axis=1), target_fs, clamp)
-    reps = np.stack([source_repr(soli[i], src_fs, L, target_fs, band, compression, n_bands)
+    reps = np.stack([source_repr(soli[i], src_fs, L, target_fs, band, compression, n_bands, kind)
                      for i in range(n_present)], axis=0)
     return [eeg_proc, reps, target_idx, n_present, "duo"]
 
@@ -208,9 +337,13 @@ def build_duo_trial_raweeg(eeg_full_bp, soli, n_ech, target_idx, n_present, src_
 # --------------------------------------------------------------------------- #
 # decoder (ridge) + AAD decision
 # --------------------------------------------------------------------------- #
-def fit_ridge_pool(train_trials, n_lags, lam_grid, rng):
+def fit_ridge_pool(train_trials, n_lags, lam_grid, rng, shrinkage=False):
     """Backward model on the ATTENDED source representation, pooled over training trials.
-    Multi-output (one column per band). Returns (predict_fn, lambda, inner_val_r)."""
+    Multi-output (one column per band). Returns (predict_fn, lambda, inner_val_r).
+
+    Under AXIS 3 the caller passes the single published lambda as the whole grid, so the
+    loop stops being a search and becomes an evaluation -- inner_val_r keeps its meaning
+    (in-distribution reconstruction quality) and stays comparable across axes."""
     Xs = [lagged_design(t[0], n_lags) for t in train_trials]
     Ys = [t[1][t[2]].T for t in train_trials]                       # (T, n_bands) attended rep
     tr_idx, val_idx = _inner_split(len(train_trials), rng)
@@ -219,12 +352,12 @@ def fit_ridge_pool(train_trials, n_lags, lam_grid, rng):
     Ytr = np.concatenate([Ys[i] for i in tr_idx], 0)
     best_lam, best_r = lam_grid[0], -np.inf
     for lam in lam_grid:
-        W = ridge_fit(Xtr, Ytr, lam)
+        W = ridge_fit(Xtr, Ytr, lam, shrinkage)
         r = float(np.mean([band_pearson(sc.transform(Xs[i]) @ W, Ys[i]) for i in val_idx]))
         if r > best_r:
             best_r, best_lam = r, lam
     sc = StandardScaler().fit(np.concatenate(Xs, 0))
-    W = ridge_fit(sc.transform(np.concatenate(Xs, 0)), np.concatenate(Ys, 0), best_lam)
+    W = ridge_fit(sc.transform(np.concatenate(Xs, 0)), np.concatenate(Ys, 0), best_lam, shrinkage)
 
     def predict(eeg):
         return sc.transform(lagged_design(eeg, n_lags)) @ W         # (T, n_bands)
@@ -266,8 +399,27 @@ def main():
     ap.add_argument("--self_test_snr", type=float, default=4.0,
                     help="--self_test only: signal/noise std ratio of the synthetic EEG")
     ap.add_argument("--ensemble", default="duo", choices=["duo", "trio", "both"])
-    ap.add_argument("--target", default="mel", choices=["mel", "envelope"], help="reconstruction target")
+    ap.add_argument("--target", default="mel", choices=["mel", "envelope", "mag"],
+                    help="reconstruction target; 'mag' is AXIS 4, the paper's linear magnitude "
+                         "spectrogram (bins fixed by the STFT geometry, --n_mels ignored)")
     ap.add_argument("--n_mels", type=int, default=8)
+    # --- the four axes of the published protocol. Every default is the CURRENT behaviour,
+    #     so the three reference numbers stay reproducible bit-for-bit. -------------------
+    ap.add_argument("--estimator", default="ridge", choices=["ridge", "shrinkage"],
+                    help="AXIS 3: 'shrinkage' = the paper's normalized reverse correlation, "
+                         "C'_RR = (1-l)C_RR + l*nu*I at the published l (--shrinkage_lambda), "
+                         "instead of ridge with lambda picked on an inner split")
+    ap.add_argument("--shrinkage_lambda", type=float, default=0.1,
+                    help="AXIS 3: the paper's published smoothing parameter (grid search over "
+                         "[0.1, 1] found 0.1). Only read when --estimator shrinkage")
+    ap.add_argument("--filters", default="pooled", choices=["pooled", "per_instrument"],
+                    help="AXIS 2: 'per_instrument' learns one decoder per (subject, instrument) "
+                         "from that instrument's solos, as in the paper's Fig. 1 caption, and "
+                         "reconstructs each candidate source with ITS OWN decoder. raw_solos only")
+    ap.add_argument("--eeg_clean", default="none", choices=["none", "notch", "notch_ica"],
+                    help="AXIS 1: the paper's EEG preprocessing on the raw record -- 50 Hz notch, "
+                         "then ICA removal of the EOG/ECG components. raw_solos only (the "
+                         "preprocessed release already carries the authors' own notch+ICA)")
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--cv_folds", type=int, default=5)
     ap.add_argument("--target_fs", type=float, default=64.0)
@@ -299,12 +451,22 @@ def main():
     band = (args.band_low, args.band_high)
     rng = np.random.RandomState(args.seed)
     n_lags = int(round(args.lags_ms / 1000.0 * args.target_fs))
-    n_bands = 1 if args.target == "envelope" else args.n_mels
+    n_bands = n_repr_bands(args.target, args.n_mels, args.target_fs)
+    shrink = args.estimator == "shrinkage"
+    # AXIS 2 and AXIS 1 only exist on the raw path: `duos_kfold` has no solos to fit a
+    # per-instrument decoder on, and the preprocessed release already carries the authors'
+    # notch+ICA. Assert rather than silently ignoring -- a flag that is quietly dropped
+    # produces a run that looks like the new arm and is the old one.
+    if args.train_on != "raw_solos":
+        assert args.filters == "pooled", "--filters per_instrument needs --train_on raw_solos"
+        assert args.eeg_clean == "none", "--eeg_clean needs --train_on raw_solos (the preprocessed release is already cleaned)"
+    ica_diag = {}
 
     keep = {"duo"} if args.ensemble == "duo" else ({"trio"} if args.ensemble == "trio" else {"duo", "trio"})
     trials = [(s, k) for s in meta for k in meta[s] if meta[s][k].get("ensemble") in keep]
     print(f"[madeeg] subjects={list(meta.keys())} ensemble={args.ensemble} n_trials={len(trials)} "
-          f"target={args.target} n_bands={n_bands} target_fs={args.target_fs} lags={n_lags} band={band}")
+          f"target={args.target} n_bands={n_bands} target_fs={args.target_fs} lags={n_lags} band={band} "
+          f"estimator={args.estimator} filters={args.filters} eeg_clean={args.eeg_clean}")
 
     if args.inspect:
         for s, k in trials[:args.inspect]:
@@ -315,7 +477,9 @@ def main():
                   f"soli={data[s][k]['soli'].shape}@{m['wav_info']['sfreq']}Hz")
         return
 
-    lam_grid = [1.0, 10.0, 1e2, 1e3, 1e4, 1e5]
+    # AXIS 3: under shrinkage there is no search left -- the paper published the value, so
+    # the "grid" is that single value and inner_val_r becomes its validation score.
+    lam_grid = [args.shrinkage_lambda] if shrink else [1.0, 10.0, 1e2, 1e3, 1e4, 1e5]
 
     # raw-solo training resources (paper protocol)
     raw_f = sq = raw_info = pre_chs = stim_dir = None
@@ -329,15 +493,24 @@ def main():
         pre_chs = list(meta[s0][k0]["eeg_info"]["ch_names"])
         print(f"[madeeg] train_on=raw_solos raw_dir={raw_dir} stimuli={stim_dir} pre_chs={len(pre_chs)}")
 
-    def decide(subj, st, test_built, predict, records, inner_val_r=float("nan")):
+    def decide(subj, st, test_built, predict, records, inner_val_r=float("nan"), fold=-1):
+        """`predict` is one callable (pooled) or, under AXIS 2, a dict instrument->callable,
+        in which case every candidate source is reconstructed by ITS OWN decoder."""
         for i in range(len(test_built)):
             eeg, reps, tgt, npr, ens = test_built[i]
-            shat = predict(eeg)
-            sims = [band_pearson(shat, reps[j].T) for j in range(npr)]
+            m = meta.get(subj, {}).get(st[i])                     # absent under --self_test
+            instr = list(m["instruments"]) if m else [str(j) for j in range(npr)]
+            if callable(predict):
+                shat = predict(eeg)
+                sims = [band_pearson(shat, reps[j].T) for j in range(npr)]
+            else:
+                sims = [band_pearson(predict[instr[j]](eeg), reps[j].T) for j in range(npr)]
+            pred = int(np.argmax(sims))
             records.append(dict(subject=subj, stim=st[i], ensemble=ens, target_idx=tgt, n_present=npr,
-                                pred=int(np.argmax(sims)), correct=int(np.argmax(sims) == tgt),
+                                pred=pred, correct=int(pred == tgt),
                                 r_attended=sims[tgt], r_best_unattended=max(s for j, s in enumerate(sims) if j != tgt),
-                                inner_val_r=inner_val_r))
+                                inner_val_r=inner_val_r, fold=fold,
+                                target_instr=instr[tgt], pred_instr=instr[pred]))
 
     if args.self_test:
         # Positive control (see synth_attended_eeg): swap every trial's EEG for a synthetic
@@ -348,18 +521,18 @@ def main():
         built, stims = [], []
         for s, k in trials:
             eeg, reps, tgt, npr, ens = build_trial(data, meta, s, k, args.target_fs, band,
-                                                    args.clamp, args.compression, n_bands)
+                                                    args.clamp, args.compression, n_bands, args.target)
             if W_op is None:                       # one fixed forward operator, shared by all trials
                 n_ch = eeg.shape[0]
                 lags_op = rng.randint(0, n_lags + 1, size=n_ch)
-                W_op = rng.standard_normal((n_ch, n_bands))
+                W_op = rng.standard_normal((n_ch, reps.shape[1]))   # rows of the real repr, not the nominal count
             built.append([synth_attended_eeg(reps[tgt], lags_op, W_op, rng, args.self_test_snr),
                           reps, tgt, npr, ens])
             stims.append(k)
         st_records = []
         for fold in kfold_indices(len(built), args.cv_folds, rng):
             te = set(fold.tolist()); tr = [i for i in range(len(built)) if i not in te]
-            predict, _, val_r = fit_ridge_pool([built[i] for i in tr], n_lags, lam_grid, rng)
+            predict, _, val_r = fit_ridge_pool([built[i] for i in tr], n_lags, lam_grid, rng, shrink)
             decide("synthetic", [stims[i] for i in fold], [built[i] for i in fold], predict, st_records, val_r)
         rec = pd.DataFrame(st_records)
         acc, ra, ru = rec.correct.mean(), rec.r_attended.mean(), rec.r_best_unattended.mean()
@@ -384,12 +557,25 @@ def main():
             continue
         if args.train_on == "raw_solos":
             raw_chs = list(raw_info[subj]["ch_names"])
-            eeg_full_bp = raw_eeg_bandpassed(raw_f, raw_chs, pre_chs, subj, band)
-            train_trials = build_solo_trials(eeg_full_bp, sq, stim_dir, subj,
-                                             args.target_fs, band, args.clamp, args.compression, n_bands)
+            eeg_full_bp = raw_eeg_bandpassed(raw_f, raw_chs, pre_chs, subj, band,
+                                             args.eeg_clean, raw_info, args.seed, ica_diag)
+            train_trials = build_solo_trials(eeg_full_bp, sq, stim_dir, subj, args.target_fs, band,
+                                             args.clamp, args.compression, n_bands, args.target)
             if len(train_trials) < 3:
                 print(f"  subj {subj}: only {len(train_trials)} solo segments -> skip"); continue
-            predict, lam, val_r = fit_ridge_pool(train_trials, n_lags, lam_grid, rng)
+            if args.filters == "per_instrument":
+                # AXIS 2: one decoder per (subject, instrument), fitted on that instrument's
+                # solos only. Sorted so the rng is consumed in a fixed order.
+                groups = {}
+                for t in train_trials:
+                    groups.setdefault(t[5], []).append(t)
+                predict, vrs = {}, []
+                for instrument in sorted(groups):
+                    p, _, vr = fit_ridge_pool(groups[instrument], n_lags, lam_grid, rng, shrink)
+                    predict[instrument] = p; vrs.append(vr)
+                val_r = float(np.mean(vrs))
+            else:
+                predict, lam, val_r = fit_ridge_pool(train_trials, n_lags, lam_grid, rng, shrink)
             # build test duos: raw EEG (no mismatch) or preprocessed EEG
             if args.test_eeg == "raw":
                 rawmap = {k.replace("_lcr", ""): k for k in sq[subj]}
@@ -402,24 +588,34 @@ def main():
                     t = build_duo_trial_raweeg(eeg_full_bp, read_f64(data[subj][k]["soli"]),
                                                sq[subj][rk]["n_ech"], instr.index(m["target"]), len(instr),
                                                m["wav_info"]["sfreq"], args.target_fs, band, args.clamp,
-                                               args.compression, n_bands)
+                                               args.compression, n_bands, args.target)
                     if t is not None:
                         test_built.append(t); st_used.append(k)
             else:
                 st_used = st
-                test_built = [build_trial(data, meta, subj, k, args.target_fs, band, args.clamp, args.compression, n_bands) for k in st]
+                test_built = [build_trial(data, meta, subj, k, args.target_fs, band, args.clamp, args.compression, n_bands, args.target) for k in st]
+            if not callable(predict):
+                # AXIS 2: a trial is undecidable when one of its sources has no solo for this
+                # subject (subject 0007 recorded 7 solos, not 14). Dropped and COUNTED, never
+                # silently reconstructed with somebody else's filter.
+                keepable = [i for i, k in enumerate(st_used)
+                            if all(x in predict for x in meta[subj][k]["instruments"])]
+                dropped = len(st_used) - len(keepable)
+                if dropped:
+                    print(f"  subj {subj}: {dropped} trial(s) dropped -- no solo decoder for one of their sources")
+                test_built = [test_built[i] for i in keepable]; st_used = [st_used[i] for i in keepable]
             decide(subj, st_used, test_built, predict, records, val_r)
             print(f"  subj {subj}: solos={len(train_trials)} test={len(test_built)}/{len(st)} test_eeg={args.test_eeg} "
                   f"inner_val_r={val_r:.3f} AAD_acc={np.mean([r['correct'] for r in records if r['subject']==subj]):.3f}", flush=True)
         else:
-            test_built = [build_trial(data, meta, subj, k, args.target_fs, band, args.clamp, args.compression, n_bands) for k in st]
+            test_built = [build_trial(data, meta, subj, k, args.target_fs, band, args.clamp, args.compression, n_bands, args.target) for k in st]
             if len(st) < args.cv_folds:
                 print(f"  subj {subj}: only {len(st)} trials -> skip"); continue
             folds = kfold_indices(len(test_built), args.cv_folds, rng)
             for f in range(args.cv_folds):
                 te = set(folds[f].tolist()); tr = [i for i in range(len(test_built)) if i not in te]
-                predict, lam, val_r = fit_ridge_pool([test_built[i] for i in tr], n_lags, lam_grid, rng)
-                decide(subj, [st[i] for i in folds[f]], [test_built[i] for i in folds[f]], predict, records, val_r)
+                predict, lam, val_r = fit_ridge_pool([test_built[i] for i in tr], n_lags, lam_grid, rng, shrink)
+                decide(subj, [st[i] for i in folds[f]], [test_built[i] for i in folds[f]], predict, records, val_r, fold=f)
             print(f"  subj {subj}: trials={len(st)} AAD_acc={np.mean([r['correct'] for r in records if r['subject']==subj]):.3f}", flush=True)
 
     rec = pd.DataFrame(records)
@@ -428,14 +624,32 @@ def main():
     rec.to_csv(os.path.join(out, "madeeg_records.csv"), index=False)
     chance = float(np.mean(1.0 / rec.n_present))
     per_subj = rec.groupby("subject").correct.mean()
+    # TRAP A -- the paper reports F1, we reported accuracy, and they are not the same number.
+    # The decision is "which of the present instruments was attended", so the label space is
+    # the instrument. In single-label multiclass, MICRO-F1 is identically the accuracy; MACRO
+    # averages over the 9 instruments and so weights a rare instrument as much as a common
+    # one. The paper does NOT say which averaging it used, so all three are printed and the
+    # ambiguity is stated instead of being resolved by assumption.
+    f1s = {a: f1_score(rec.target_instr, rec.pred_instr, average=a, zero_division=0)
+           for a in ("micro", "macro", "weighted")}
     lines = ["== MAD-EEG stimulus-reconstruction AAD ==",
              f"train_on={args.train_on} ensemble={args.ensemble} target={args.target} n_bands={n_bands} "
-             f"target_fs={args.target_fs} lags={n_lags} band={band} folds={args.cv_folds}",
+             f"target_fs={args.target_fs} lags={n_lags} band={band} folds={args.cv_folds} "
+             f"estimator={args.estimator}{'(lambda=%g)' % args.shrinkage_lambda if shrink else ''} "
+             f"filters={args.filters} eeg_clean={args.eeg_clean} test_eeg={args.test_eeg}",
              f"n_trials={len(rec)}  chance={chance:.3f}",
              f"OVERALL AAD accuracy: {rec.correct.mean():.4f}",
              "per-subject: " + " ".join(f"{s}={v:.2f}" for s, v in per_subj.items()),
+             f"F1 over the attended-instrument label: micro={f1s['micro']:.4f} (= accuracy) "
+             f"macro={f1s['macro']:.4f} weighted={f1s['weighted']:.4f}",
+             "  ^ the paper (WASPAA 2019 Table 1) reports F1 without naming the averaging;"
+             " its duets column is AE 58 / MAG 74 / MEL 79",
              f"mean r(attended)={rec.r_attended.mean():.4f}  mean r(best unattended)={rec.r_best_unattended.mean():.4f}",
              f"mean inner_val_r (in-distribution reconstruction)={rec.inner_val_r.mean():.4f}"]
+    if ica_diag:
+        lines.append("EEG cleaning (AXIS 1) per subject -- positive control is the drop in "
+                     "frontal-EOG coupling:")
+        lines += [f"  {s}: {v}" for s, v in sorted(ica_diag.items())]
     txt = "\n".join(lines)
     open(os.path.join(out, "madeeg_summary.txt"), "w").write(txt + "\n")
     print("\n" + txt + f"\n[madeeg] wrote -> {out}")
