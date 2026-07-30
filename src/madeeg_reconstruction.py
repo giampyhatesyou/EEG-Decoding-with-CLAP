@@ -26,6 +26,7 @@
 #   differ spectrally — the broadband envelope discards exactly that.
 
 import os
+import collections
 import argparse
 import numpy as np
 import h5py
@@ -286,6 +287,84 @@ def solo_instrument(key):
     return parts[parts.index("solo") + 1]
 
 
+def mixture_id(key):
+    """`classique_morceau1_duo_CoFl_theme2_mono_Co` -> ('classique','morceau1','CoFl','theme2').
+
+    The MIXTURE: genre, song, instrument pair, theme -- everything except the spatial
+    render and the attended instrument. Two trials sharing a mixture id were rendered from
+    the same stems, which is what makes the mono half of the duo recoverable at all
+    (see duo_test_recipes)."""
+    p = key.split("_")
+    return (p[0], p[1], p[3], p[4])
+
+
+def key_spatial(key):
+    """'..._theme1_stereo_lcr_Co' -> 'stereo'; '..._theme2_mono_Co' -> 'mono'."""
+    return "stereo" if "_stereo" in key else "mono"
+
+
+def soli_donors(meta, keep):
+    """mixture id -> the (subject, stim) of the preprocessed trial whose `soli` stands for
+    that mixture. Sorted, so the donor of a mixture is the same on every machine and every
+    run. Only mixtures of the requested ensembles are indexed."""
+    donors = {}
+    for s in sorted(meta):
+        for k in sorted(meta[s]):
+            if meta[s][k].get("ensemble") in keep:
+                donors.setdefault(mixture_id(k), (s, k))
+    return donors
+
+
+def duo_test_recipes(meta, sq, subj, keep, spatial, donors):
+    """Which duo trials to test on, and where each one's isolated sources come from.
+    Returns ([(record_key, raw_key, (donor_subj, donor_stim), instruments, target)], dropped).
+
+    spatial="stereo" is the CURRENT behaviour and the default: the 154 `stereo_lcr` duo of
+    the preprocessed release, each trial carrying its own `soli`.
+
+    spatial="mono" is the other half of the duo -- 155 trials that exist ONLY in the raw
+    release. The preprocessed HDF5 contains no mono trial at all, so there is no `soli` to
+    read for them; the isolated sources are borrowed from the preprocessed twin of the SAME
+    mixture. That is well defined because `soli` is a property of the MIXTURE, not of the
+    subject and not of the attend condition: all 18 duo mixtures have a twin (18/18 ->
+    155/155 trials covered) and `wav_info` (gains, panning) is recorded per mixture, the
+    same in every twin.
+
+    Mono and stereo differ in the spatial RENDER -- how the same stems were distributed over
+    the LCR speaker array. The release ships one audio channel per condition, so the render
+    difference is not inspectable as "channels of the mixture"; what matters is that the AAD
+    decision reads per-band z-scored correlations, so any per-source gain difference between
+    the two renders cancels and the stem waveform -- all the decision sees -- is the same
+    object. --check_alignment measures the borrowing instead of assuming it: on the stereo
+    half, where the true `soli` exists, the borrowed stems must reproduce it.
+    """
+    recipes, dropped = [], []
+    if spatial in ("stereo", "both"):
+        rawmap = {k.replace("_lcr", ""): k for k in sq[subj]}
+        for k in meta[subj]:                                  # yaml order: record order
+            if meta[subj][k].get("ensemble") not in keep:
+                continue
+            rk = rawmap.get(k)
+            if rk is None:
+                dropped.append((k, "no raw sequence")); continue
+            m = meta[subj][k]
+            recipes.append((k, rk, (subj, k), list(m["instruments"]), m["target"]))
+    if spatial in ("mono", "both"):
+        for k in sorted(sq[subj]):
+            p = k.split("_")
+            if p[2] not in keep or key_spatial(k) != "mono":
+                continue
+            donor = donors.get(mixture_id(k))
+            if donor is None:
+                dropped.append((k, "no preprocessed twin for this mixture")); continue
+            instr = list(meta[donor[0]][donor[1]]["instruments"])
+            target = p[-1]
+            if target not in instr:
+                dropped.append((k, f"target {target} not in {instr}")); continue
+            recipes.append((k, k, donor, instr, target))
+    return recipes, dropped
+
+
 def build_solo_trials(eeg_full_bp, sq, stimuli_dir, subj, target_fs, band, clamp, compression, n_bands,
                       kind="mel"):
     """Paper protocol training pairs: each solo stimulus repetition is cut from the
@@ -312,6 +391,184 @@ def build_solo_trials(eeg_full_bp, sq, stimuli_dir, subj, target_fs, band, clamp
             rep = source_repr(audio, sr, L, target_fs, band, compression, n_bands, kind)
             trials.append([eeg_proc, rep[None, ...], 0, 1, "solo", solo_instrument(k)])
     return trials
+
+
+# Recovery-gate thresholds, declared here and not at the prompt. Both are the tolerances
+# this project already uses for the same two questions on the 246 preprocessed trials
+# (src/datasets/madeeg_contrastive_dataset.py::_self_check and _check_soli_row_order), so
+# they are inherited rather than eyeballed for the occasion.
+ALIGN_TOL_S = 0.05        # EEG span vs audio span, per trial
+SOLI_MATCH_R = 0.99       # two twins of one mixture must carry the same stem
+
+
+def check_alignment(meta, sq, data, raw_f, keep, spatial, donors, stim_dir):
+    """Recovery gate for the raw-EEG duo test set. Answers, with a count for every claim:
+    how many trials get built, whether EEG and audio cover the same span, whether the four
+    repetitions fall at the declared onsets, and whether the borrowed-`soli` mechanism the
+    mono half depends on actually returns that mixture's stems.
+
+    Every question here has its answer known by construction, so it is a positive control
+    and it costs no look at the attention decision: durations, onsets, stem waveforms and
+    wav headers only -- no decoder is fitted and no trial is decided.
+    """
+    import soundfile as sf                                   # ships with librosa
+    ok = True
+    built = {}
+    for subj in sorted(sq):
+        recipes, dropped = duo_test_recipes(meta, sq, subj, keep, spatial, donors)
+        built[subj] = (recipes, dropped)
+
+    # --- (a) the count, before anything else ------------------------------------------- #
+    print(f"\n== RECOVERY GATE -- raw duo test set, spatial={spatial} ==")
+    solo_instr = {s: {solo_instrument(k) for k in sq[s] if "solo" in k} for s in sq}
+    n_tot = n_dec = 0
+    for subj in sorted(built):
+        recipes, dropped = built[subj]
+        dec = [r for r in recipes if all(i in solo_instr[subj] for i in r[3])]
+        n_tot += len(recipes); n_dec += len(dec)
+        print(f"  {subj}: built={len(recipes):3d}  not built={len(dropped)}  "
+              f"decidable with a per-instrument decoder={len(dec):3d}  "
+              f"(solos for {sorted(solo_instr[subj])})")
+    print(f"  TOTAL built={n_tot}   with --filters per_instrument={n_dec} "
+          f"({n_tot - n_dec} lack a solo decoder for one of their two sources)")
+
+    # --- (b) alignment: spans and the four declared onsets ------------------------------ #
+    # The unit that has to line up is the REPETITION: build_duo_trial_raweeg cuts one EEG
+    # segment of `soli`/4 at each declared onset and pairs it with one quarter of `soli`. So
+    # the governing quantity is |played wav_i - soli/4| per repetition, and ALIGN_TOL_S is
+    # applied to it. The 4-repetition SUM is printed alongside because it accumulates a
+    # per-file truncation of a few ms into something that crosses the tolerance on its own
+    # and would read as a fault where there is none.
+    bad_reps = bad_fit = bad_overlap = bad_span = bad_rep_dur = bad_sum_dur = 0
+    worst_span = worst_rep = 0.0
+    offenders = collections.Counter()
+    for subj in sorted(built):
+        N = raw_f[subj].shape[1]
+        for rec_key, raw_key, (ds_, dk_), instr, target in built[subj][0]:
+            n_ech = [int(o) for o in sq[subj][raw_key]["n_ech"]]
+            src_fs = meta[ds_][dk_]["wav_info"]["sfreq"]
+            soli_len = data[ds_][dk_]["soli"].shape[1]
+            if len(n_ech) != 4:
+                bad_reps += 1; continue
+            rep_len = int(round((soli_len / len(n_ech)) / src_fs * EEG_FS))
+            if any(o + rep_len > N for o in n_ech):
+                bad_fit += 1                   # a dropped repetition squeezes the audio
+            if rep_len > min(np.diff(n_ech)):
+                bad_overlap += 1               # a segment would run into the next repetition
+            span = abs(len(n_ech) * rep_len / EEG_FS - soli_len / src_fs)
+            worst_span = max(worst_span, span)
+            if span >= ALIGN_TOL_S:
+                bad_span += 1
+            durs = [sf.info(os.path.join(stim_dir, w)).duration
+                    for w in sq[subj][raw_key]["wav_files"]]
+            quarter = soli_len / len(n_ech) / src_fs
+            err = max(abs(x - quarter) for x in durs)
+            worst_rep = max(worst_rep, err)
+            if err >= ALIGN_TOL_S:
+                bad_rep_dur += 1; offenders["_".join(mixture_id(rec_key)) + f" [{key_spatial(rec_key)}]"] += 1
+            if abs(sum(durs) - soli_len / src_fs) >= ALIGN_TOL_S:
+                bad_sum_dur += 1
+    print(f"  alignment over {n_tot} trials (tolerance {ALIGN_TOL_S} s, the one this project "
+          f"already uses for the 246 preprocessed):")
+    print(f"    repetitions != 4: {bad_reps}   onset+len past the end of the record: {bad_fit}   "
+          f"segment overlapping the next onset: {bad_overlap}")
+    print(f"    EEG span vs `soli` span out of tolerance: {bad_span} (worst {worst_span * 1000:.1f} ms)")
+    print(f"    played wav_i vs `soli`/4 PER REPETITION out of tolerance: {bad_rep_dur} "
+          f"(worst {worst_rep * 1000:.1f} ms)   [4-rep sum, context only: {bad_sum_dur}]")
+    for mix, n in offenders.most_common():
+        print(f"      ^ {n} trial(s) on {mix}: the released last repetition is truncated, so its "
+              f"EEG segment runs past the audio it is paired with")
+    ok &= (bad_reps == 0 and bad_fit == 0 and bad_overlap == 0 and bad_span == 0 and bad_rep_dur == 0)
+
+    # --- (c1) the borrowing mechanism, checked where the truth exists ------------------- #
+    # Positive control: on the stereo half every trial carries its OWN `soli`, so the stems
+    # fetched through mixture_id from another twin can be compared against them. If mixture_id
+    # or the instrument row order were wrong, this is where it shows.
+    twins = {}
+    for s in sorted(meta):
+        for k in sorted(meta[s]):
+            if meta[s][k].get("ensemble") in keep:
+                twins.setdefault(mixture_id(k), []).append((s, k))
+    n_cmp, worst_r, mism = 0, 1.0, 0
+    for mix, lst in sorted(twins.items()):
+        ds_, dk_ = donors[mix]
+        ref = read_f64(data[ds_][dk_]["soli"]); ref_i = list(meta[ds_][dk_]["instruments"])
+        for (s, k) in lst:
+            if (s, k) == (ds_, dk_):
+                continue
+            other = read_f64(data[s][k]["soli"]); other_i = list(meta[s][k]["instruments"])
+            n = min(ref.shape[1], other.shape[1])
+            for inst in sorted(set(ref_i) & set(other_i)):
+                r = pearson(ref[ref_i.index(inst), :n], other[other_i.index(inst), :n])
+                n_cmp += 1; worst_r = min(worst_r, r)
+                if r <= SOLI_MATCH_R:
+                    mism += 1
+    print(f"  borrowed stems vs the twin's own `soli`: {n_cmp} row comparisons over "
+          f"{len(twins)} mixtures, worst r={worst_r:.4f}, below {SOLI_MATCH_R}: {mism}")
+    ok &= (mism == 0 and n_cmp > 0)
+
+    # --- (c2) the mono trials are mono, and are matched to their own mixture ------------ #
+    name_ok = name_bad = 0
+    mono_pairs, chan = [], set()
+    for subj in sorted(built):
+        for rec_key, raw_key, (ds_, dk_), instr, target in built[subj][0]:
+            w0 = sq[subj][raw_key]["wav_files"][0]
+            chan.add(sf.info(os.path.join(stim_dir, w0)).channels)
+            # the mixture the subject actually heard, read off the played file name
+            if mixture_id(w0) == mixture_id(dk_) and key_spatial(w0) == key_spatial(rec_key):
+                name_ok += 1
+            else:
+                name_bad += 1
+            if key_spatial(w0) == "mono":
+                mono_pairs.append(w0)
+    print(f"  played wav vs borrowed mixture: {name_ok} match, {name_bad} mismatch; "
+          f"channel counts in the release: {sorted(chan)}")
+    ok &= (name_bad == 0)
+
+    if mono_pairs:
+        # "mono and stereo differ only in the panning" -- the release ships ONE channel per
+        # condition, so this is not inspectable as channels of the mixture. What is
+        # inspectable: the two renders of the same mixture are the same length (same stems,
+        # same excerpt) and different content (the LCR spread is baked into the render).
+        same_len = diff_content = n_pair = 0
+        rs = []
+        for w in sorted(set(mono_pairs)):
+            st = w.replace("_mono_", "_stereo_lcr_")
+            p1, p2 = os.path.join(stim_dir, w), os.path.join(stim_dir, st)
+            if not os.path.exists(p2):
+                continue
+            a, _ = sf.read(p1); b, _ = sf.read(p2); n_pair += 1
+            if a.shape == b.shape:
+                same_len += 1
+            n = min(len(a), len(b))
+            r = pearson(a[:n], b[:n]); rs.append(r)
+            if r < 0.999:
+                diff_content += 1
+        print(f"  mono vs stereo_lcr render of the same mixture: {n_pair} pairs, "
+              f"same length {same_len}, different content {diff_content}, "
+              f"median r={np.median(rs):.3f} -- same stems, different spatial render")
+        ok &= (n_pair > 0 and same_len == n_pair and diff_content == n_pair)
+
+        # And the mono trials are genuinely other EEG: their onsets are elsewhere in the record.
+        overlap = 0
+        for subj in sorted(built):
+            ster = {int(o) for k in sq[subj] if key_spatial(k) == "stereo"
+                    for o in sq[subj][k]["n_ech"]}
+            for rec_key, raw_key, _, _, _ in built[subj][0]:
+                if key_spatial(rec_key) != "mono":
+                    continue
+                if any(int(o) in ster for o in sq[subj][raw_key]["n_ech"]):
+                    overlap += 1
+        print(f"  mono trials whose EEG onsets coincide with a stereo trial's: {overlap} "
+              f"(must be 0 -- otherwise the 'mono' half is re-reading stereo EEG)")
+        ok &= (overlap == 0)
+
+    print(f"\n[{'PASS' if ok else 'FAIL'}] " + (
+        f"{n_tot} trials built for spatial={spatial}, spans and onsets consistent, borrowed "
+        "stems reproduce the twins' own stems -> the loading is sound. Says NOTHING about "
+        "decoding accuracy." if ok else
+        "the raw duo test set does not load consistently -- fix it before decoding anything."))
+    return ok
 
 
 def build_duo_trial_raweeg(eeg_full_bp, soli, n_ech, target_idx, n_present, src_fs,
@@ -398,6 +655,18 @@ def main():
                          "source at the model lags + noise, run the real ridge+AAD, print PASS/FAIL, exit")
     ap.add_argument("--self_test_snr", type=float, default=4.0,
                     help="--self_test only: signal/noise std ratio of the synthetic EEG")
+    ap.add_argument("--self_test_pool", type=int, default=0,
+                    help="--self_test only: cap the number of training trials pooled per fold "
+                         "(0 = all, the default and the behaviour every archived PASS was run "
+                         "with). At --target_fs 256 the full pool is a ~7.7 GB design matrix "
+                         "and does not fit in 16 GB; a cap makes the control frugal enough to "
+                         "actually cross. The count used is printed and written to the summary")
+    ap.add_argument("--check_alignment", action="store_true",
+                    help="recovery gate for the raw-EEG duo test set (honours --spatial): "
+                         "counts the trials built, checks EEG/audio durations and the declared "
+                         "onsets, and validates the borrowed-`soli` mechanism against the "
+                         "stereo half where the true `soli` exists. Prints PASS/FAIL and exits. "
+                         "Touches no accuracy: durations, onsets and audio only")
     ap.add_argument("--ensemble", default="duo", choices=["duo", "trio", "both"])
     ap.add_argument("--target", default="mel", choices=["mel", "envelope", "mag"],
                     help="reconstruction target; 'mag' is AXIS 4, the paper's linear magnitude "
@@ -434,6 +703,14 @@ def main():
     ap.add_argument("--stimuli_dir", default=None, help="dir with the unzipped solo wavs (default: madeeg_dir/stimuli)")
     ap.add_argument("--test_eeg", default="preprocessed", choices=["preprocessed", "raw"],
                     help="raw_solos only: 'raw' rebuilds the test-duo EEG from raw too (no preprocessing mismatch)")
+    ap.add_argument("--spatial", default="stereo", choices=["stereo", "mono", "both"],
+                    help="which spatial render of the duo to TEST on. 'stereo' = the 154 duo of "
+                         "the preprocessed release, the current behaviour and the default. "
+                         "'mono' = the 155 duo that exist only in the raw release, with the "
+                         "isolated sources borrowed from the same mixture's preprocessed twin "
+                         "(see duo_test_recipes). 'both' pools the two halves -- POOLING IS A "
+                         "SEPARATE DECISION and was explicitly not taken on 2026-07-30: the two "
+                         "halves are reported separately first (vault: Exp. 4 pre-registration)")
     args = ap.parse_args()
     if not args.log_dir:  # same run-output dir as main.py / checkpoint_test.py
         # Load paths.py by file rather than as `utils.paths`: the package __init__ pulls in
@@ -460,13 +737,31 @@ def main():
     if args.train_on != "raw_solos":
         assert args.filters == "pooled", "--filters per_instrument needs --train_on raw_solos"
         assert args.eeg_clean == "none", "--eeg_clean needs --train_on raw_solos (the preprocessed release is already cleaned)"
+    # The mono half lives only in the raw release: there is no preprocessed EEG for it, so it
+    # cannot be reached from the preprocessed test path. Assert instead of silently falling
+    # back to stereo -- a run that looks like the mono arm and is the stereo one would be the
+    # worst possible failure here, because the two arms differ by ONE trial in count.
+    if args.spatial != "stereo":
+        assert args.train_on == "raw_solos" and args.test_eeg == "raw", (
+            "--spatial mono/both needs --train_on raw_solos --test_eeg raw: the mono duo have "
+            "no preprocessed EEG at all")
+        assert args.ensemble == "duo", (
+            "--spatial mono/both is duo-only here: the 93 mono TRIO of the raw release are "
+            "untouched data and opening them is a separate, explicit decision")
     ica_diag = {}
+
+    if args.check_alignment:
+        assert args.train_on == "raw_solos" and args.test_eeg == "raw", (
+            "--check_alignment checks the raw-EEG duo test set: run it with "
+            "--train_on raw_solos --test_eeg raw")
 
     keep = {"duo"} if args.ensemble == "duo" else ({"trio"} if args.ensemble == "trio" else {"duo", "trio"})
     trials = [(s, k) for s in meta for k in meta[s] if meta[s][k].get("ensemble") in keep]
+    donors = soli_donors(meta, keep)
     print(f"[madeeg] subjects={list(meta.keys())} ensemble={args.ensemble} n_trials={len(trials)} "
           f"target={args.target} n_bands={n_bands} target_fs={args.target_fs} lags={n_lags} band={band} "
-          f"estimator={args.estimator} filters={args.filters} eeg_clean={args.eeg_clean}")
+          f"estimator={args.estimator} filters={args.filters} eeg_clean={args.eeg_clean} "
+          f"spatial={args.spatial}")
 
     if args.inspect:
         for s, k in trials[:args.inspect]:
@@ -493,13 +788,22 @@ def main():
         pre_chs = list(meta[s0][k0]["eeg_info"]["ch_names"])
         print(f"[madeeg] train_on=raw_solos raw_dir={raw_dir} stimuli={stim_dir} pre_chs={len(pre_chs)}")
 
-    def decide(subj, st, test_built, predict, records, inner_val_r=float("nan"), fold=-1):
+    if args.check_alignment:
+        check_alignment(meta, sq, data, raw_f, keep, args.spatial, donors, stim_dir)
+        return
+
+    def decide(subj, st, test_built, predict, records, inner_val_r=float("nan"), fold=-1,
+               instr_map=None):
         """`predict` is one callable (pooled) or, under AXIS 2, a dict instrument->callable,
-        in which case every candidate source is reconstructed by ITS OWN decoder."""
+        in which case every candidate source is reconstructed by ITS OWN decoder.
+
+        `instr_map` gives stim -> instruments explicitly; it is required for the mono half,
+        whose stim keys have no entry in the preprocessed metadata at all."""
         for i in range(len(test_built)):
             eeg, reps, tgt, npr, ens = test_built[i]
             m = meta.get(subj, {}).get(st[i])                     # absent under --self_test
-            instr = list(m["instruments"]) if m else [str(j) for j in range(npr)]
+            instr = (instr_map[st[i]] if instr_map else
+                     (list(m["instruments"]) if m else [str(j) for j in range(npr)]))
             if callable(predict):
                 shat = predict(eeg)
                 sims = [band_pearson(shat, reps[j].T) for j in range(npr)]
@@ -530,8 +834,18 @@ def main():
                           reps, tgt, npr, ens])
             stims.append(k)
         st_records = []
+        pooled = []
         for fold in kfold_indices(len(built), args.cv_folds, rng):
             te = set(fold.tolist()); tr = [i for i in range(len(built)) if i not in te]
+            # F1 -- the control has to be crossable on this machine. At target_fs=256 the full
+            # pool is ~123 trials x ~7000 samples x 1300 columns = 7.7 GB of design matrix and
+            # does not fit in 16 GB, which left AXIS 0 and AXIS 4 at 256 Hz with no positive
+            # control crossed at all. Capping the TRAINING pool (never the test fold, so all
+            # trials are still decided) makes it fit. Default 0 = no cap = the archived
+            # behaviour, so the 64 Hz PASS stays bit-identical.
+            if args.self_test_pool and len(tr) > args.self_test_pool:
+                tr = sorted(rng.permutation(tr)[:args.self_test_pool].tolist())
+            pooled.append(len(tr))
             predict, _, val_r = fit_ridge_pool([built[i] for i in tr], n_lags, lam_grid, rng, shrink)
             decide("synthetic", [stims[i] for i in fold], [built[i] for i in fold], predict, st_records, val_r)
         rec = pd.DataFrame(st_records)
@@ -540,7 +854,11 @@ def main():
         ok = acc >= 0.90 and ra > ru
         print("\n== MAD-EEG SELF-TEST (synthetic attended-signal positive control) ==")
         print(f"n_trials={len(rec)} chance={chance:.3f} snr={args.self_test_snr} "
-              f"n_ch={n_ch} n_bands={n_bands} lags={n_lags}")
+              f"n_ch={n_ch} n_bands={n_bands} lags={n_lags} target_fs={args.target_fs}")
+        print(f"training trials pooled per fold: {pooled}"
+              + (f"  (capped at --self_test_pool {args.self_test_pool}; the threshold below is "
+                 f"unchanged, a smaller pool only makes the control HARDER to pass)"
+                 if args.self_test_pool else "  (full pool)"))
         print(f"AAD accuracy={acc:.4f}  mean r(attended)={ra:.4f}  mean r(best unattended)={ru:.4f}")
         print(f"[{'PASS' if ok else 'FAIL'}] " + (
               "ridge recovers the attended source (r_att >> r_unatt, AAD>=0.90) -> pipeline is "
@@ -577,35 +895,40 @@ def main():
             else:
                 predict, lam, val_r = fit_ridge_pool(train_trials, n_lags, lam_grid, rng, shrink)
             # build test duos: raw EEG (no mismatch) or preprocessed EEG
+            test_instr = {}
             if args.test_eeg == "raw":
-                rawmap = {k.replace("_lcr", ""): k for k in sq[subj]}
+                recipes, dropped_rec = duo_test_recipes(meta, sq, subj, keep, args.spatial, donors)
+                for why in sorted({w for _, w in dropped_rec}):
+                    n_why = sum(1 for _, w in dropped_rec if w == why)
+                    print(f"  subj {subj}: {n_why} trial(s) not built -- {why}")
                 test_built, st_used = [], []
-                for k in st:
-                    rk = rawmap.get(k)
-                    if rk is None:
-                        continue
-                    m = meta[subj][k]; instr = list(m["instruments"])
-                    t = build_duo_trial_raweeg(eeg_full_bp, read_f64(data[subj][k]["soli"]),
-                                               sq[subj][rk]["n_ech"], instr.index(m["target"]), len(instr),
-                                               m["wav_info"]["sfreq"], args.target_fs, band, args.clamp,
+                for rec_key, raw_key, (ds_, dk_), instr, target in recipes:
+                    dm = meta[ds_][dk_]
+                    t = build_duo_trial_raweeg(eeg_full_bp, read_f64(data[ds_][dk_]["soli"]),
+                                               sq[subj][raw_key]["n_ech"], instr.index(target), len(instr),
+                                               dm["wav_info"]["sfreq"], args.target_fs, band, args.clamp,
                                                args.compression, n_bands, args.target)
                     if t is not None:
-                        test_built.append(t); st_used.append(k)
+                        test_built.append(t); st_used.append(rec_key); test_instr[rec_key] = instr
+                n_candidates = len(recipes) + len(dropped_rec)
             else:
                 st_used = st
                 test_built = [build_trial(data, meta, subj, k, args.target_fs, band, args.clamp, args.compression, n_bands, args.target) for k in st]
+                test_instr = {k: list(meta[subj][k]["instruments"]) for k in st}
+                n_candidates = len(st)
             if not callable(predict):
                 # AXIS 2: a trial is undecidable when one of its sources has no solo for this
                 # subject (subject 0007 recorded 7 solos, not 14). Dropped and COUNTED, never
                 # silently reconstructed with somebody else's filter.
                 keepable = [i for i, k in enumerate(st_used)
-                            if all(x in predict for x in meta[subj][k]["instruments"])]
+                            if all(x in predict for x in test_instr[k])]
                 dropped = len(st_used) - len(keepable)
                 if dropped:
                     print(f"  subj {subj}: {dropped} trial(s) dropped -- no solo decoder for one of their sources")
                 test_built = [test_built[i] for i in keepable]; st_used = [st_used[i] for i in keepable]
-            decide(subj, st_used, test_built, predict, records, val_r)
-            print(f"  subj {subj}: solos={len(train_trials)} test={len(test_built)}/{len(st)} test_eeg={args.test_eeg} "
+            decide(subj, st_used, test_built, predict, records, val_r, instr_map=test_instr)
+            print(f"  subj {subj}: solos={len(train_trials)} test={len(test_built)}/{n_candidates} "
+                  f"spatial={args.spatial} test_eeg={args.test_eeg} "
                   f"inner_val_r={val_r:.3f} AAD_acc={np.mean([r['correct'] for r in records if r['subject']==subj]):.3f}", flush=True)
         else:
             test_built = [build_trial(data, meta, subj, k, args.target_fs, band, args.clamp, args.compression, n_bands, args.target) for k in st]
@@ -636,7 +959,15 @@ def main():
              f"train_on={args.train_on} ensemble={args.ensemble} target={args.target} n_bands={n_bands} "
              f"target_fs={args.target_fs} lags={n_lags} band={band} folds={args.cv_folds} "
              f"estimator={args.estimator}{'(lambda=%g)' % args.shrinkage_lambda if shrink else ''} "
-             f"filters={args.filters} eeg_clean={args.eeg_clean} test_eeg={args.test_eeg}",
+             f"filters={args.filters} eeg_clean={args.eeg_clean} test_eeg={args.test_eeg} "
+             f"spatial={args.spatial}",
+             # F3 -- provenance of the analysis band, inside the file that carries the numbers.
+             # The WASPAA 2019 paper describes its whole EEG preprocessing (50 Hz notch, ICA on
+             # EOG/ECG) and never band-passes anywhere; the band below is OURS.
+             f"PROVENANCE: the {band[0]}-{band[1]} Hz analysis band is OUR choice, not the "
+             f"paper's -- Cantisani et al. (WASPAA 2019) do not band-pass the EEG anywhere. "
+             f"lags 0-{args.lags_ms:g} ms and shrinkage lambda are the paper's; n_mels and "
+             f"target_fs are ours unless set to the published 24 / 256.",
              f"n_trials={len(rec)}  chance={chance:.3f}",
              f"OVERALL AAD accuracy: {rec.correct.mean():.4f}",
              "per-subject: " + " ".join(f"{s}={v:.2f}" for s, v in per_subj.items()),

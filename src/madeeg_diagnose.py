@@ -30,6 +30,7 @@ import argparse
 import collections
 import csv
 import os
+import re
 
 import numpy as np
 import yaml
@@ -65,9 +66,23 @@ def load(records_csv, madeeg_dir):
                      Loader=yaml.FullLoader)
     rows = list(csv.DictReader(open(records_csv)))
     for r in rows:
-        m = meta[r["subject"]][r["stim"]]
-        r["instruments"] = list(m["instruments"])
-        r["target"] = m["target"]
+        m = meta.get(r["subject"], {}).get(r["stim"])
+        if m is not None:
+            r["instruments"] = list(m["instruments"])
+            r["target"] = m["target"]
+        else:
+            # The mono half of the duo (`--spatial mono`) exists only in the raw release, so
+            # its stim key has no entry in the preprocessed metadata at all. Everything this
+            # analysis needs is in the key: `pop_mixtape_duo_BsDr_theme2_mono_Dr` -> pair
+            # BsDr, target Dr. Every instrument code in the release is two characters.
+            r["instruments"] = re.findall("[A-Z][a-z]", r["stim"].split("_")[3])
+            r["target"] = r["stim"].rsplit("_", 1)[1]
+            assert r["target"] in r["instruments"], f"cannot parse instruments from {r['stim']}"
+            # The run also writes the label it used. If the key and the run disagree, the
+            # join is silently wrong and every count below would be too.
+            if r.get("target_instr"):
+                assert r["target_instr"] == r["target"], (
+                    f"{r['stim']}: key says target {r['target']}, records say {r['target_instr']}")
         # `..._duo_CoFl_theme1_stereo_Co` -> the mixture, without the attended instrument
         r["mixture"] = r["stim"].rsplit("_", 1)[0]
         r["pair"] = "".join(r["instruments"])
