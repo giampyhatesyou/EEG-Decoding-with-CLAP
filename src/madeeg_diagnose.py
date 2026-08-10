@@ -354,6 +354,64 @@ def paired_report(records_csv):
               f"{'paired' if pow_p > pow_u else 'unpaired'}")
 
 
+def mcnemar_report(csv_a, csv_b):
+    """Paired comparison of two estimators on the SAME own-vs-other comparisons.
+
+    Why McNemar and not two binomials. The two runs score identical segment pairs, so their
+    errors are correlated; comparing two independent binomial accuracies would throw that
+    pairing away and answer a weaker question. McNemar conditions on the DISCORDANT
+    comparisons -- the ones where exactly one of the two was right -- which is where all the
+    information about a difference lives.
+
+    The threshold is not chosen here: it is the smallest integer with a one-sided exact
+    binomial p < 0.05 at the OBSERVED number of discordants, the same rule Exp. 4 used, so it
+    has no degrees of freedom once the data are in.
+    """
+    key = ("subject", "fold", "seg", "other")
+
+    def load_ov(path):
+        rows = list(csv.DictReader(open(path)))
+        if not rows or "correct" not in rows[0]:
+            sys.exit(f"{path}: not an own-vs-other records file")
+        return {tuple(r[k] for k in key): int(r["correct"]) for r in rows}
+
+    A, B = load_ov(csv_a), load_ov(csv_b)
+    common = sorted(set(A) & set(B))
+    print(f"\n[mcnemar] A={csv_a}\n          B={csv_b}")
+    print(f"  comparisons: A={len(A)}  B={len(B)}  in common={len(common)}")
+    if len(common) != len(A) or len(common) != len(B):
+        # Not a warning to be skimmed: a paired test on a partial intersection is a different
+        # test. Both runs must have used the same seed and the same fold count.
+        print("  🔴 the two runs did NOT score the same comparisons -- the paired test below "
+              "covers only the intersection, and that is not the pre-registered test. Re-run "
+              "both with the same --seed and --cv_folds.")
+    if not common:
+        return
+    a_only = sum(1 for k in common if A[k] and not B[k])
+    b_only = sum(1 for k in common if B[k] and not A[k])
+    both = sum(1 for k in common if A[k] and B[k])
+    neither = len(common) - a_only - b_only - both
+    n_disc = a_only + b_only
+    print(f"  A correct {sum(A[k] for k in common)}/{len(common)} = "
+          f"{sum(A[k] for k in common) / len(common):.4f}   "
+          f"B correct {sum(B[k] for k in common)}/{len(common)} = "
+          f"{sum(B[k] for k in common) / len(common):.4f}   (null 0.500, exact by symmetry)")
+    print(f"  agreement table: both {both} · A only {a_only} · B only {b_only} · neither {neither}")
+    if n_disc == 0:
+        print("  no discordant comparisons -> the two estimators decided identically; McNemar "
+              "has nothing to test.")
+        return
+    p_b = stats.binomtest(b_only, n_disc, 0.5, alternative="greater").pvalue
+    thr = next(c for c in range(n_disc + 1)
+               if stats.binomtest(c, n_disc, 0.5, alternative="greater").pvalue < 0.05)
+    print(f"  discordants={n_disc}   B beats A on {b_only}/{n_disc}   one-sided McNemar "
+          f"p={p_b:.4f}   (null 0.500)")
+    print(f"  pre-registered threshold at n_disc={n_disc}: {thr}/{n_disc} = {thr / n_disc:.4f} "
+          f"(smallest integer with p < 0.05; {thr - 1} would give "
+          f"{stats.binomtest(thr - 1, n_disc, 0.5, alternative='greater').pvalue:.4f})")
+    print(f"  -> B {'BEATS' if b_only >= thr else 'does NOT beat'} A under the pre-registered rule.")
+
+
 def _demo():
     """Self-check on synthetic records. Run: python src/madeeg_diagnose.py --demo
 
@@ -455,6 +513,11 @@ def main():
                     help="paired test over the (subject, mixture) pairs seen with BOTH targets, "
                          "plus the power calculation that says whether it beats the plain "
                          "binomial on all trials. Needs no madeeg_dir")
+    ap.add_argument("--mcnemar", nargs=2, metavar=("A_CSV", "B_CSV"),
+                    help="paired comparison of two madeeg_ownvsother.csv files (A = baseline, "
+                         "B = challenger) on the SAME comparisons. Threshold = smallest integer "
+                         "with one-sided p < 0.05 at the observed number of discordants. "
+                         "Needs no madeeg_dir")
     ap.add_argument("--demo", action="store_true", help="self-check on synthetic records, then exit")
     ap.add_argument("--check_rule", metavar="RECORDS_CSV",
                     help="regression gate: the step-D argmax decision rule must return step "
@@ -465,6 +528,9 @@ def main():
         return
     if args.check_rule:
         _check_rule(args.check_rule)
+        return
+    if args.mcnemar:
+        mcnemar_report(*args.mcnemar)
         return
     if args.paired:
         if not args.records:

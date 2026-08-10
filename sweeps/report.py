@@ -52,10 +52,30 @@ MODELS = {
 # hparams.yaml. Controls cannot be pinned by accident: --self_test writes a DIFFERENT file
 # name (madeeg_selftest_records.csv) in a DIFFERENT directory (<tag>_selftest), so a pin
 # pointing at one finds no madeeg_records.csv and fails loudly.
+#
+# Two file shapes, because the arm has two models. The reconstruction models write
+# madeeg_records.csv + madeeg_summary.txt; the contrastive ones write
+# madeeg_contrastive_records.csv + madeeg_contrastive_summary.txt and carry no `estimator`,
+# `train_on` or `spatial` at all -- their identity is the loss and the ensemble. Each entry
+# says which files to read and which summary fields must match, so a pin is never verified
+# against a field the run does not have.
+#   (kind, fields that must match in the summary, literal marker that must appear in it)
 MADEEG_MODELS = {
-    "madeeg_ridge": "ridge",             # model 6 of the genealogy, the linear anchor
-    "madeeg_shrinkage": "shrinkage",     # AXIS 3, the paper's normalized reverse correlation
-    "madeeg_cca": "cca",                 # model 9, the multi-view CCA
+    # model 6 of the genealogy, the linear anchor -- and AXIS 3, and model 9
+    "madeeg_ridge": ("recon", {"estimator": "ridge"}, None),
+    "madeeg_shrinkage": ("recon", {"estimator": "shrinkage"}, None),
+    "madeeg_cca": ("recon", {"estimator": "cca"}, None),
+    # model 7: step C. Its summary predates the --loss flag and carries NO loss field, so the
+    # identity is checked against the marker its own title line prints. Not a weaker check: it
+    # is the string the run wrote about itself.
+    "madeeg_clap_stepC": ("contrastive", {}, "step C"),
+}
+# For the reconstruction arm the manifest's `eval`/`held_out` are --train_on / --spatial. The
+# contrastive arm has neither, so there they are the ensemble and the fold count.
+MADEEG_FILES = {
+    "recon": ("madeeg_records.csv", "madeeg_summary.txt", ("train_on", "spatial")),
+    "contrastive": ("madeeg_contrastive_records.csv", "madeeg_contrastive_summary.txt",
+                    ("ensemble", "folds")),
 }
 
 
@@ -132,21 +152,30 @@ def load_madeeg_fold(results_dir, row, problems):
     The pin is checked against madeeg_summary.txt exactly as the Akama pins are checked
     against hparams.yaml: if the run on disk is not the run the manifest claims, nothing is
     written."""
+    kind, fixed, marker = MADEEG_MODELS[row["model"]]
+    recs_name, summary_name, (eval_field, held_field) = MADEEG_FILES[kind]
     d = os.path.join(results_dir, row["run_tag"])
-    recs = os.path.join(d, "madeeg_records.csv")
+    recs = os.path.join(d, recs_name)
     if not os.path.exists(recs):
-        problems.append(f"{row['run_tag']}: no madeeg_records.csv under {results_dir}")
+        problems.append(f"{row['run_tag']}: no {recs_name} under {results_dir}")
         return None
     try:
-        summary = open(os.path.join(d, "madeeg_summary.txt")).read()
+        summary = open(os.path.join(d, summary_name)).read()
     except OSError:
-        problems.append(f"{row['run_tag']}: no madeeg_summary.txt to verify the pin against")
+        problems.append(f"{row['run_tag']}: no {summary_name} to verify the pin against")
         return None
-    got = dict(re.findall(r"\b(estimator|train_on|spatial)=([A-Za-z_]+)", summary))
-    for field, want in (("estimator", MADEEG_MODELS[row["model"]]),
-                        ("train_on", row["eval"]), ("spatial", row["held_out"])):
-        if got.get(field) != want:
-            problems.append(f"{row['run_tag']}: pinned {field}={want} but the summary "
+    if marker and marker not in summary:
+        problems.append(f"{row['run_tag']}: pinned as {row['model']} but its summary does not "
+                        f"say {marker!r}")
+        return None
+    want = dict(fixed, **{eval_field: row["eval"], held_field: row["held_out"]})
+    got = dict(re.findall(r"\b(estimator|train_on|spatial|loss|ensemble|folds)=([A-Za-z_0-9.]+)",
+                          summary))
+    for field, value in want.items():
+        if got.get(field) != value:
+            # An older run may simply not carry the field -- that is still a bad pin, not a
+            # licence to skip the check: a pin that cannot be verified is not a pin.
+            problems.append(f"{row['run_tag']}: pinned {field}={value} but the summary "
                             f"says {got.get(field)}")
             return None
     df = pd.read_csv(recs)

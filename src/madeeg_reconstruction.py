@@ -597,21 +597,29 @@ def check_alignment(meta, sq, data, raw_f, keep, spatial, donors, stim_dir):
     return ok
 
 
+def duo_eeg_segments(eeg_full_bp, soli_len, n_ech, src_fs):
+    """The trial's EEG: one segment of `soli_len`/len(n_ech) at each declared onset,
+    concatenated. Returns None if no onset fits inside the record.
+
+    Shared by the reconstruction test-trial builder and by the alpha laterality index, so the
+    two can never drift apart on WHICH SAMPLES ARE THIS TRIAL -- a divergence there would be
+    invisible in every summary and would make the two analyses answer about different data."""
+    rep_len = int(round((soli_len / max(1, len(n_ech))) / src_fs * EEG_FS))
+    segs = [eeg_full_bp[:, int(o):int(o) + rep_len] for o in n_ech
+            if int(o) + rep_len <= eeg_full_bp.shape[1]]
+    return np.concatenate(segs, axis=1) if segs else None
+
+
 def build_duo_trial_raweeg(eeg_full_bp, soli, n_ech, target_idx, n_present, src_fs,
                            target_fs, band, clamp, compression, n_bands, kind="mel"):
     """Test trial with RAW EEG (same pipeline as the solos -> no preprocessing mismatch).
     The 4 repetitions are cut from the raw EEG at their n_ech onsets (each rep length =
     soli_len/4 in EEG samples) and concatenated to match the 4-rep preprocessed 'soli'
     audio, which provides the isolated sources for the AAD decision."""
-    rep_len = int(round((soli.shape[1] / max(1, len(n_ech))) / src_fs * EEG_FS))
-    segs = []
-    for o in n_ech:
-        o = int(o)
-        if o + rep_len <= eeg_full_bp.shape[1]:
-            segs.append(eeg_full_bp[:, o:o + rep_len])
-    if not segs:
+    seg = duo_eeg_segments(eeg_full_bp, soli.shape[1], n_ech, src_fs)
+    if seg is None:
         return None
-    eeg_proc, L = _proc_eeg_segment(np.concatenate(segs, axis=1), target_fs, clamp)
+    eeg_proc, L = _proc_eeg_segment(seg, target_fs, clamp)
     reps = np.stack([source_repr(soli[i], src_fs, L, target_fs, band, compression, n_bands, kind)
                      for i in range(n_present)], axis=0)
     return [eeg_proc, reps, target_idx, n_present, "duo"]
@@ -716,6 +724,48 @@ def fit_pool(train_trials, train_pos, n_lags, lam_grid, rng, shrink, cca_cfg):
     return fit_cca_pool(train_trials, train_pos, n_lags, rng, cca_cfg)
 
 
+def native_score(model, eeg, rep, n_lags, cca_cfg, ch_names, band, fs, n_keep):
+    """The estimator's OWN similarity between one EEG segment and one source representation.
+
+    ridge / shrinkage -> band_pearson of the reconstruction.   CCA -> rho.
+    🔴 The two are NEVER compared with each other. Only the ACCURACIES they produce are, and
+    those are dimensionless. Comparing rho against a band_pearson is the metric trap in its
+    third costume (AXIS 2 on 2026-07-29, the step-1 gate this morning).
+
+    `n_keep` truncates both sides to the same number of samples, so `own` and `other` are
+    always scored on equally long windows: two solo repetitions have different durations and
+    a longer window is not a fairer one."""
+    if cca_cfg is None:
+        return band_pearson(model(eeg)[:n_keep], rep.T[:n_keep])
+    cca = _cca_mod()
+    X, _ = cca.eeg_features(eeg, ch_names, cca_cfg["views"], n_lags, band, fs, lagged_design)
+    Y, _, _ = cca.stim_features(rep, 0.0, cca_cfg["stim_views"])   # solos are mono -> position 0
+    return model.rho(X[:n_keep], Y[:n_keep])
+
+
+def mutual_pairs(trials, held_out):
+    """Disjoint MUTUAL pairs of held-out segments with DIFFERENT instruments.
+
+    Different instrument is not a refinement, it is required: `build_solo_trials` makes one
+    trial per stimulus REPETITION, so two segments of the same instrument carry the SAME
+    audio and 'other' would literally be 'own'.
+
+    Mutual and disjoint because each pair is then scored in BOTH directions, which is what
+    makes the null exactly 0.5 by symmetry: a decoder with nothing but a fixed instrument
+    preference gets exactly one of the two right, however strong the preference."""
+    out, used = [], set()
+    order = sorted(held_out)
+    for a in order:
+        if a in used:
+            continue
+        for b in order:
+            if b <= a or b in used or trials[b][5] == trials[a][5]:
+                continue
+            out.append((a, b)); used.add(a); used.add(b)
+            break
+    return out
+
+
 def kfold_indices(n, k, rng):
     idx = np.arange(n); rng.shuffle(idx)
     return [idx[i::k] for i in range(k)]
@@ -762,6 +812,27 @@ def main():
                          "onsets, and validates the borrowed-`soli` mechanism against the "
                          "stereo half where the true `soli` exists. Prints PASS/FAIL and exits. "
                          "Touches no accuracy: durations, onsets and audio only")
+    ap.add_argument("--alpha_li", action="store_true",
+                    help="THE PAIRED ALPHA TEST (vault: Exp. 6, 10/8). No decoder, no audio, no "
+                         "training: the alpha laterality index on F3/F4, C3/C4, P3/P4, O1/O2, "
+                         "scored on TWIN PAIRS (same subject, same mixture, both targets), where "
+                         "every constant of subject/channel/session cancels in the difference. "
+                         "Null 0.5 exactly, by exchangeability. Honours --spatial: mono is the "
+                         "control and must stay at chance. THIS IS A LOOK at the duos")
+    ap.add_argument("--alpha_inject", type=float, default=0.0,
+                    help="--alpha_li POSITIVE CONTROL: inject a lateralized alpha modulation of "
+                         "this amplitude (x the channel's own alpha std) into the REAL EEG, with "
+                         "the side taken from the TRUE panning, and check the same code recovers "
+                         "it. Threshold 0.90, declared in the code. Writes to a separate "
+                         "directory with the caveat inside the summary. 0 = off = real data")
+    ap.add_argument("--own_vs_other", action="store_true",
+                    help="THE REPLACEMENT GATE (vault: Exp. 6, 10/8). On held-out SOLO segments, "
+                         "does the estimator score a segment's EEG higher against its own audio "
+                         "than against another solo's? Discrimination -- the quantity de "
+                         "Cheveigne's claim is about -- on TRAINING material, so no duo is "
+                         "loaded and no attention decision is taken. Each estimator uses its OWN "
+                         "similarity and only the accuracies are compared. Null 0.5, exact by "
+                         "symmetry. Pair two runs with madeeg_diagnose.py --mcnemar")
     ap.add_argument("--inner_val_only", action="store_true",
                     help="fit the decoder exactly as a full run would and report inner_val_r "
                          "ONLY: no test trial is built and none is decided, so no accuracy "
@@ -954,6 +1025,212 @@ def main():
 
     if args.check_alignment:
         check_alignment(meta, sq, data, raw_f, keep, args.spatial, donors, stim_dir)
+        return
+
+    if args.alpha_li:
+        # THE PAIRED ALPHA TEST (vault: Exp. 6 pre-registration, 10/8). Nothing is trained and
+        # no audio is read: this is a sign test on a TONIC quantity, which is why it lives
+        # outside the CCA -- a within-trial correlation centres tonic levels out.
+        alz = _load_by_file("_alpha_lat", "models", "alpha_lateralization.py")
+        assert args.ensemble == "duo", (
+            "--alpha_li is duo-only: the trios are untouched data and opening them is a "
+            "separate, explicit decision")
+        assert args.train_on == "raw_solos", (
+            "--alpha_li reads the continuous RAW record: run it with --train_on raw_solos "
+            "(nothing is trained; that flag is what loads the raw release)")
+        assert args.spatial != "both", (
+            "--alpha_li must not pool the two renders: mono is the CONTROL arm and pooling it "
+            "into the primary destroys it. Run stereo and mono separately")
+        inj_rng = np.random.RandomState(args.seed)
+        rows = []
+        for subj in sorted(sq):
+            raw_chs = list(raw_info[subj]["ch_names"])
+            # A WIDE pre-filter only: the alpha selection happens inside laterality_index, so an
+            # injected control signal passes through the very filter under test. The 1-8 Hz
+            # analysis band of the reconstruction arm is irrelevant here and is NOT used --
+            # an alpha index computed inside a band that excludes alpha is a different quantity.
+            eeg_wide = raw_eeg_bandpassed(raw_f, raw_chs, pre_chs, subj, (1.0, 45.0),
+                                          args.eeg_clean, raw_info, args.seed, ica_diag)
+            recipes, _ = duo_test_recipes(meta, sq, subj, keep, args.spatial, donors)
+            for rec_key, raw_key, (ds_, dk_), instr, target in recipes:
+                seg = duo_eeg_segments(eeg_wide, data[ds_][dk_]["soli"].shape[1],
+                                       sq[subj][raw_key]["n_ech"],
+                                       meta[ds_][dk_]["wav_info"]["sfreq"])
+                if seg is None:
+                    continue
+                # The NOMINAL side of the attended source, from the mixture's panning. In mono
+                # there is no side physically present; the same nominal panning is used so the
+                # RULE is literally identical and the only thing removed is the spatial
+                # separation itself. That is what makes mono a control and not a different test.
+                pan = [float(p) for p in meta[ds_][dk_]["wav_info"]["panning"][:len(instr)]]
+                side = {i: (0.0 if abs(p - 0.5) < 1e-9 else (-1.0 if p < 0.5 else 1.0))
+                        for i, p in zip(instr, pan)}[target]
+                if args.alpha_inject:
+                    seg = alz.inject_lateralized_alpha(seg, pre_chs, EEG_FS, side,
+                                                       args.alpha_inject, inj_rng)
+                rows.append(dict(subject=subj, stim=rec_key,
+                                 mixture="_".join(mixture_id(rec_key)),
+                                 render=key_spatial(rec_key), target=target, side=side,
+                                 li=alz.laterality_index(seg, pre_chs, EEG_FS)))
+            print(f"  subj {subj}: trials with an LI = "
+                  f"{sum(1 for r in rows if r['subject'] == subj)}", flush=True)
+
+        li = pd.DataFrame(rows)
+        pairs, dropped_centre, dropped_same = [], 0, 0
+        for (subj, mix), grp in li.groupby(["subject", "mixture"]):
+            if len(grp) != 2 or grp.target.nunique() != 2:
+                continue
+            a, b = grp.iloc[0], grp.iloc[1]
+            if a.side == 0.0 or b.side == 0.0:
+                # A target at panning 0.5 has NO side. The Exp. 5 contract (9/8) excludes those
+                # trials A PRIORI -- all 5 are pop_mixtape_duo_GtVx_theme1_stereo_Vx, where the
+                # voice is centred -- and the pre-registered n=44 is the subset that remains.
+                dropped_centre += 1
+                continue
+            ok = alz.pair_correct(a.li, b.li, a.side, b.side)
+            if ok is None:                      # both targets on the same side: no sign predicted
+                dropped_same += 1
+                continue
+            pairs.append(dict(subject=subj, mixture=mix, render=a.render,
+                              target_a=a.target, target_b=b.target, side_a=a.side, side_b=b.side,
+                              li_a=a.li, li_b=b.li, correct=ok))
+        pr = pd.DataFrame(pairs)
+        out = os.path.join(args.log_dir, args.training_date + ("_inject" if args.alpha_inject else ""))
+        os.makedirs(out, exist_ok=True)
+        li.to_csv(os.path.join(out, "madeeg_alpha_li.csv"), index=False)
+        pr.to_csv(os.path.join(out, "madeeg_alpha_pairs.csv"), index=False)
+        import math as _m
+        k, n = int(pr.correct.sum()), len(pr)
+        p = sum(_m.comb(n, i) for i in range(k, n + 1)) / 2.0 ** n
+        thr = next(c for c in range(n + 1)
+                   if sum(_m.comb(n, i) for i in range(c, n + 1)) / 2.0 ** n < 0.05)
+        lines = ["== MAD-EEG alpha laterality, TWIN-PAIR sign test =="]
+        if args.alpha_inject:
+            lines.append(f"🔴 CAVEAT, INSIDE THE FILE AND ABOVE THE NUMBERS: this is the POSITIVE "
+                         f"CONTROL. A lateralized alpha modulation of amplitude "
+                         f"{args.alpha_inject} was INJECTED into the real EEG with the side taken "
+                         f"from the true panning. These numbers say the index and the pairing are "
+                         f"wired correctly and say NOTHING about the real data. Not a result.")
+        lines += [f"spatial={args.spatial} eeg_clean={args.eeg_clean} band=alpha "
+                  f"{alz.ALPHA} pairs={alz.LAT_PAIRS} seed={args.seed}",
+                  "RULE, fixed before the run and NOT flipped afterwards: alpha desynchronization "
+                  "is CONTRALATERAL, so attending on the right raises log P(right)-log P(left). "
+                  "A pair is correct when sign(LI_a - LI_b) == sign(side_a - side_b).",
+                  "🔴 NULL = 0.5 and it is EXACT, not estimated: under H0 the two twins are "
+                  "EXCHANGEABLE -- same subject, same mixture, same audio, same session, only "
+                  "the attended source differs -- so the sign of their LI difference is equally "
+                  "likely either way. No constant of subject, channel or impedance can survive: "
+                  "it cancels in the difference, algebraically.",
+                  f"trials with an LI: {len(li)}   twin pairs with a predicted sign: {n}   "
+                  f"(excluded: {dropped_centre} with a CENTRED target -- panning 0.5, no side, "
+                  f"excluded a priori by the 9/8 contract -- and {dropped_same} with both "
+                  f"targets on the same side)",
+                  f"PAIRED ACCURACY: {k}/{n} = {k / n:.4f}   null 0.500   "
+                  f"one-sided exact binomial p={p:.4f}",
+                  f"pre-registered threshold at n={n}: {thr}/{n} = {thr / n:.4f} "
+                  f"(p={sum(_m.comb(n, i) for i in range(thr, n + 1)) / 2.0 ** n:.4f}; {thr - 1} "
+                  f"would give {sum(_m.comb(n, i) for i in range(thr - 1, n + 1)) / 2.0 ** n:.4f})",
+                  f"-> {'ABOVE' if k >= thr else 'BELOW'} the pre-registered threshold",
+                  "per-subject: " + " ".join(f"{s}={v:.2f}"
+                                             for s, v in pr.groupby('subject').correct.mean().items())]
+        if args.spatial == "mono":
+            lines.append("📌 THIS IS THE CONTROL ARM. In mono there is no side physically present, "
+                         "so the same nominal panning of the mixture is used and the rule is "
+                         "identical: only the spatial separation is removed. The mono arm must "
+                         "stay AT CHANCE. If it matches or beats stereo, the spatial reading is "
+                         "FALSIFIED even if stereo passes.")
+        else:
+            lines.append("⚠️ EXPLORATORY BY CONSTRUCTION: the 154 stereo and 155 mono duos are "
+                         "already spent (vault: ledger of looks). No threshold written beforehand "
+                         "makes this confirmatory, and the thesis section must say so in its "
+                         "title, not in a footnote.")
+        txt = "\n".join(lines)
+        open(os.path.join(out, "madeeg_alpha_summary.txt"), "w").write(txt + "\n")
+        print("\n" + txt + f"\n[madeeg] wrote -> {out}")
+        return
+
+    if args.own_vs_other:
+        # THE REPLACEMENT GATE (vault: Exp. 6 pre-registration, 10/8). Held-out SOLO segments
+        # only: no duo is loaded, no attention decision is taken, no trio is touched. The
+        # ledger of looks declares this free -- the solos are training material.
+        assert args.train_on == "raw_solos", (
+            "--own_vs_other scores held-out SOLO segments: it needs --train_on raw_solos")
+        # AXIS 2 is NOT wired here, so it must break rather than be dropped in silence: with
+        # per-instrument decoders it is ambiguous which decoder should reconstruct the OTHER
+        # segment's audio, and an unstated choice there is exactly how the 0.1100 artefact of
+        # 2026-07-29 happened. One decoder, one meaning.
+        assert args.filters == "pooled", (
+            "--own_vs_other is pooled-only: with --filters per_instrument the choice of which "
+            "decoder scores the 'other' audio is a methodological decision, not a default")
+        # A DEDICATED rng for the split, so the folds and the pairings are identical for every
+        # estimator regardless of how much randomness the estimator itself consumed. Without
+        # this the paired test would silently compare different comparisons.
+        pair_rng = np.random.RandomState(args.seed)
+        rows = []
+        for subj in sorted(meta):
+            raw_chs = list(raw_info[subj]["ch_names"])
+            eeg_full_bp = raw_eeg_bandpassed(raw_f, raw_chs, pre_chs, subj, band,
+                                             args.eeg_clean, raw_info, args.seed, ica_diag)
+            trials = build_solo_trials(eeg_full_bp, sq, stim_dir, subj, args.target_fs, band,
+                                       args.clamp, args.compression, n_bands, args.target)
+            if len(trials) < args.cv_folds + 1:
+                print(f"  subj {subj}: only {len(trials)} solo segments -> skip"); continue
+            n_pairs = 0
+            for f, fold in enumerate(kfold_indices(len(trials), args.cv_folds, pair_rng)):
+                te = fold.tolist(); tr = [i for i in range(len(trials)) if i not in set(te)]
+                model, _, _ = fit_pool([trials[i] for i in tr], [0.0] * len(tr),
+                                       n_lags, lam_grid, rng, shrink, cca_cfg)
+                for i, j in mutual_pairs(trials, te):
+                    n_pairs += 1
+                    for a, b in ((i, j), (j, i)):        # BOTH directions -> null exactly 0.5
+                        n_keep = min(trials[a][0].shape[1], trials[b][0].shape[1])
+                        sc = [native_score(model, trials[a][0], trials[x][1][0], n_lags, cca_cfg,
+                                           ch_names, band, args.target_fs, n_keep) for x in (a, b)]
+                        rows.append(dict(subject=subj, fold=f, seg=a, other=b,
+                                         instr=trials[a][5], other_instr=trials[b][5],
+                                         n_keep=n_keep, s_own=sc[0], s_other=sc[1],
+                                         correct=int(sc[0] > sc[1])))
+            print(f"  subj {subj}: solo segments={len(trials)} mutual pairs={n_pairs} "
+                  f"comparisons={2 * n_pairs}", flush=True)
+
+        ov = pd.DataFrame(rows)
+        out = os.path.join(args.log_dir, args.training_date)
+        os.makedirs(out, exist_ok=True)
+        ov.to_csv(os.path.join(out, "madeeg_ownvsother.csv"), index=False)
+        k, n = int(ov.correct.sum()), len(ov)
+        from scipy import stats as _st
+        p = _st.binomtest(k, n, 0.5, alternative="greater").pvalue
+        stat = "rho" if cca_cfg else "band_pearson"
+        lines = ["== MAD-EEG own-vs-other on held-out SOLO segments ==",
+                 "WHAT THIS IS: for a held-out solo segment, does the estimator score that "
+                 "segment's EEG higher against its OWN audio than against another solo's? It is "
+                 "discrimination -- the same operation the real decision performs -- but on "
+                 "TRAINING material: no duo is loaded and no attention decision is taken. The "
+                 "ledger of looks declares it free.",
+                 "🔴 THE SIMILARITY IS THIS ESTIMATOR'S OWN and is NOT comparable across "
+                 f"estimators (here: {stat}). Only the ACCURACY below is comparable, because it "
+                 "is dimensionless. Never put a rho next to a band_pearson.",
+                 f"estimator={args.estimator} eeg_clean={args.eeg_clean} filters={args.filters} "
+                 f"target={args.target} n_bands={n_bands} target_fs={args.target_fs} "
+                 f"band={band} lags={n_lags} folds={args.cv_folds} seed={args.seed}"]
+        if cca_cfg is not None:
+            lines.append(f"MODEL 9: views={','.join(cca_cfg['views'])} "
+                         f"stim_views={','.join(cca_cfg['stim_views'])} k={cca_cfg['k']} "
+                         f"reg={cca_cfg['reg']:g}")
+        lines += [f"comparisons={n}  (mutual pairs x 2 directions)",
+                  "🔴 NULL = 0.5, and it is EXACT BY SYMMETRY, not estimated: every pair is "
+                  "scored in both directions, so an estimator with nothing but a fixed "
+                  "instrument preference gets exactly one of the two right.",
+                  f"own-vs-other accuracy: {k}/{n} = {k / n:.4f}   null 0.500   "
+                  f"one-sided binomial p={p:.3g}",
+                  "per-subject: " + " ".join(f"{s}={v:.3f}"
+                                             for s, v in ov.groupby('subject').correct.mean().items()),
+                  f"mean {stat}(own)={ov.s_own.mean():.4f}  mean {stat}(other)={ov.s_other.mean():.4f}",
+                  "NEXT: the paired comparison between two estimators is McNemar on the SAME "
+                  "comparisons -- python src/madeeg_diagnose.py --mcnemar <ridge.csv> <cca.csv>"]
+        txt = "\n".join(lines)
+        open(os.path.join(out, "madeeg_ownvsother_summary.txt"), "w").write(txt + "\n")
+        print("\n" + txt + f"\n[madeeg] wrote -> {out}")
         return
 
     def decide(subj, st, test_built, predict, records, inner_val_r=float("nan"), fold=-1,
