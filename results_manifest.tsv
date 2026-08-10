@@ -28,6 +28,23 @@
 #   same model-all0.ckpt, but current code AND the exact tags scripts/replicate.sh writes,
 #   so re-running replicate refreshes these pins in place.
 
+#
+# MAD-EEG arm (Cap. 2) -- rows whose `model` is madeeg_ridge / madeeg_shrinkage / madeeg_cca
+#   are read by report.py from <run_tag>/madeeg_records.csv and verified against that run's
+#   madeeg_summary.txt. Two fields are re-read for this arm:
+#       eval     -> --train_on  (duos_kfold | raw_solos)
+#       held_out -> --spatial   (stereo | mono)   [stereo and mono NEVER share a row: pooling
+#                                                  them is a research decision not taken]
+#   A control cannot be pinned by accident: --self_test writes madeeg_selftest_records.csv in
+#   <tag>_selftest, so a pin aimed at it finds no madeeg_records.csv and fails loudly.
+#
+# MODEL 9 (multi-view CCA) -- the row below is a TEMPLATE and is deliberately still a comment.
+#   The pre-registered look has not been run: no number exists yet, and a pin to a run that
+#   does not exist makes report.py refuse to write RESULTS.md at all. Uncomment it (and add
+#   the mono twin) only after the single frozen run marked (4) in
+#   50 Agenti/Report/2026-08-10 - modello 9, CCA multi-view.md has actually been executed.
+# madeeg_duo	madeeg_cca	raw_solos	stereo	cca_model9_stereo	2026-08
+# madeeg_duo	madeeg_cca	raw_solos	mono	cca_model9_mono	2026-08
 table	model	eval	held_out	run_tag	vintage
 song_out	contrastive_raw	leave_song_out	2	ct_raw_lso_song2	2026-07
 song_out	contrastive_raw	leave_song_out	3	ct_raw_lso_song3	2026-07

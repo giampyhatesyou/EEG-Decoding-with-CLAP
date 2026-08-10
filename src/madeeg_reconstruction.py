@@ -49,6 +49,32 @@ def read_f64(dset):
     return out
 
 
+def _load_by_file(name, *parts):
+    """Import a repo module by PATH, not as a package.
+
+    Both `utils/__init__.py` and `models/__init__.py` pull in the training deps (torch,
+    pytz, ...). This script is numpy/scipy/sklearn/h5py only -- that is what makes it the
+    one MAD-EEG binary an agent may run without a GPU -- so its two repo imports go through
+    the file, never through the package."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        name, os.path.join(os.path.dirname(os.path.abspath(__file__)), *parts))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+_CCA = None
+
+
+def _cca_mod():
+    """The multi-view/CCA module, loaded on first use so `--estimator ridge` imports nothing new."""
+    global _CCA
+    if _CCA is None:
+        _CCA = _load_by_file("_cca_multiview", "models", "cca_multiview.py")
+    return _CCA
+
+
 # --------------------------------------------------------------------------- #
 # backward-model primitives
 # --------------------------------------------------------------------------- #
@@ -621,6 +647,75 @@ def fit_ridge_pool(train_trials, n_lags, lam_grid, rng, shrinkage=False):
     return predict, best_lam, best_r
 
 
+def source_positions(meta, subj, stim, n_present):
+    """Side of each present source, from `wav_info.panning`: -1 left, +1 right, 0 centre.
+
+    MODEL 9 only. The mapping is the dataset's own: 0.2 = left, 0.8 = right, 0.5 = centre.
+
+    MONO IS ZERO BY CONSTRUCTION, and it is read off the trial KEY, never off the metadata
+    the trial borrows. The mono half has no entry of its own in the preprocessed yaml and
+    takes its `soli` from the stereo twin -- whose panning is +-1. Taking the donor's panning
+    would hand the mono control exactly the spatial information the control exists to
+    withhold. The dataset tutorial states the fact: "in the mono case, the panning will be
+    0.5 for all instruments".
+
+    An absent entry (the --self_test subject, which is synthetic) also gives 0: the synthetic
+    EEG carries no spatial structure to correlate with."""
+    if key_spatial(stim) == "mono":
+        return np.zeros(n_present)
+    m = meta.get(subj, {}).get(stim)
+    if m is None:
+        return np.zeros(n_present)
+    pan = [float(p) for p in m["wav_info"]["panning"][:n_present]]
+    return np.array([0.0 if abs(p - 0.5) < 1e-9 else (-1.0 if p < 0.5 else 1.0) for p in pan])
+
+
+def fit_cca_pool(train_trials, train_pos, n_lags, rng, cfg):
+    """MODEL 9 -- regularized multi-view CCA on the pooled (EEG, ATTENDED source) pairs.
+
+    Returns (model, inner_val_r, inner_val_rho), and the two numbers are NOT the same kind
+    of thing:
+
+      inner_val_r    band_pearson between the BACK-PROJECTED reconstruction and the attended
+                     representation, on the inner validation split -- the same function, the
+                     same target and the same split logic `fit_ridge_pool` uses. This is the
+                     one number comparable with the ridge's 0.0582.
+      inner_val_rho  the sum of the canonical correlations on that split. A canonical
+                     correlation is >= a Pearson BY CONSTRUCTION, so it is not comparable
+                     with any ridge number and must never be reported as if it were.
+
+    The inner split is drawn with the same `_inner_split(len, rng)` the ridge uses, so the
+    two estimators validate on the same kind of held-out solos."""
+    cca = _cca_mod()
+    Xs, Ys, Rs, cols = [], [], [], None
+    bx = by = None
+    for t, pos in zip(train_trials, train_pos):
+        X, bx = cca.eeg_features(t[0], cfg["ch_names"], cfg["views"], n_lags,
+                                 cfg["band"], cfg["fs"], lagged_design)
+        Y, by, cols = cca.stim_features(t[1][t[2]], pos, cfg["stim_views"])
+        Xs.append(X); Ys.append(Y); Rs.append(t[1][t[2]].T)
+    cfg["blocks_x"], cfg["blocks_y"] = bx, by          # for the run summary, set on first fit
+    tr_idx, val_idx = _inner_split(len(train_trials), rng)
+    inner = cca.fit(np.concatenate([Xs[i] for i in tr_idx], 0),
+                    np.concatenate([Ys[i] for i in tr_idx], 0), cfg["k"], cfg["reg"])
+    val_r = float(np.mean([band_pearson(inner.reconstruct(Xs[i])[:, cols], Rs[i]) for i in val_idx]))
+    val_rho = float(np.mean([inner.rho(Xs[i], Ys[i]) for i in val_idx]))
+    model = cca.fit(np.concatenate(Xs, 0), np.concatenate(Ys, 0), cfg["k"], cfg["reg"])
+    return model, val_r, val_rho
+
+
+def fit_pool(train_trials, train_pos, n_lags, lam_grid, rng, shrink, cca_cfg):
+    """Estimator dispatch. Returns (model, inner_val_r, inner_val_rho).
+
+    With `cca_cfg is None` this calls `fit_ridge_pool` with the arguments it always had and
+    returns its two numbers unchanged: the ridge and shrinkage paths run the same code they
+    ran before model 9 existed, and consume the rng in the same order."""
+    if cca_cfg is None:
+        predict, _lam, val_r = fit_ridge_pool(train_trials, n_lags, lam_grid, rng, shrink)
+        return predict, val_r, float("nan")
+    return fit_cca_pool(train_trials, train_pos, n_lags, rng, cca_cfg)
+
+
 def kfold_indices(n, k, rng):
     idx = np.arange(n); rng.shuffle(idx)
     return [idx[i::k] for i in range(k)]
@@ -667,6 +762,14 @@ def main():
                          "onsets, and validates the borrowed-`soli` mechanism against the "
                          "stereo half where the true `soli` exists. Prints PASS/FAIL and exits. "
                          "Touches no accuracy: durations, onsets and audio only")
+    ap.add_argument("--inner_val_only", action="store_true",
+                    help="fit the decoder exactly as a full run would and report inner_val_r "
+                         "ONLY: no test trial is built and none is decided, so no accuracy "
+                         "exists to be read by accident. The vault's ledger of looks declares "
+                         "inner_val_r free because it is scored on an inner split of the "
+                         "TRAINING material and touches no attention decision; this flag makes "
+                         "that structural instead of a matter of discipline. Use it for every "
+                         "configuration step that is not the one pre-registered look")
     ap.add_argument("--ensemble", default="duo", choices=["duo", "trio", "both"])
     ap.add_argument("--target", default="mel", choices=["mel", "envelope", "mag"],
                     help="reconstruction target; 'mag' is AXIS 4, the paper's linear magnitude "
@@ -674,10 +777,36 @@ def main():
     ap.add_argument("--n_mels", type=int, default=8)
     # --- the four axes of the published protocol. Every default is the CURRENT behaviour,
     #     so the three reference numbers stay reproducible bit-for-bit. -------------------
-    ap.add_argument("--estimator", default="ridge", choices=["ridge", "shrinkage"],
+    ap.add_argument("--estimator", default="ridge", choices=["ridge", "shrinkage", "cca"],
                     help="AXIS 3: 'shrinkage' = the paper's normalized reverse correlation, "
                          "C'_RR = (1-l)C_RR + l*nu*I at the published l (--shrinkage_lambda), "
-                         "instead of ridge with lambda picked on an inner split")
+                         "instead of ridge with lambda picked on an inner split. "
+                         "MODEL 9: 'cca' = regularized multi-view canonical correlation "
+                         "(de Cheveigne et al. 2018); the decision stays argmax over the "
+                         "present sources, of rho(s) instead of band_pearson")
+    # --- MODEL 9, the multi-view CCA. Every default reproduces the ridge's data path exactly
+    #     (one EEG view = the ridge's own design matrix, one stimulus view = the ridge's own
+    #     target), so `--estimator cca` with no other flag is the like-for-like comparison. --
+    ap.add_argument("--cca_views", default="eeg_lagged",
+                    help="MODEL 9: comma-separated EEG views -- eeg_lagged (the ridge's design "
+                         "matrix, unchanged), band_power (per-channel log power envelope per "
+                         "declared band), lateralization (log P(right)-log P(left) on F3/F4, "
+                         "C3/C4, P3/P4, O1/O2, alpha band). Bands outside --band_low/--band_high "
+                         "are zero by construction: they are dropped and the drop is declared")
+    ap.add_argument("--cca_stim_views", default="source_repr",
+                    help="MODEL 9: comma-separated stimulus views -- source_repr (the log-mel "
+                         "of the candidate source, unchanged), position (its side from "
+                         "wav_info.panning, -1/0/+1), position_env (position x the source's own "
+                         "envelope). NOTE, measured and not assumed: `position` is constant in "
+                         "time, so a within-trial Pearson centres it out and it CANNOT move the "
+                         "decision; position_env is the time-varying form, still identically 0 "
+                         "for every source in mono. src/models/cca_multiview.py pins both")
+    ap.add_argument("--cca_components", type=int, default=5,
+                    help="MODEL 9: k, the number of canonical components summed into rho(s)")
+    ap.add_argument("--cca_reg", type=float, default=1e-3,
+                    help="MODEL 9: CCA regularization in [0,1], C' = (1-r)C + r*nu*I. NOT "
+                         "optional: 20 channels x lags x views against ~150 trials overfits an "
+                         "unregularized CCA completely")
     ap.add_argument("--shrinkage_lambda", type=float, default=0.1,
                     help="AXIS 3: the paper's published smoothing parameter (grid search over "
                          "[0.1, 1] found 0.1). Only read when --estimator shrinkage")
@@ -730,6 +859,31 @@ def main():
     n_lags = int(round(args.lags_ms / 1000.0 * args.target_fs))
     n_bands = n_repr_bands(args.target, args.n_mels, args.target_fs)
     shrink = args.estimator == "shrinkage"
+    # The 20 EEG channels are in this order on BOTH paths: the preprocessed release stores
+    # them so, and `raw_eeg_bandpassed` reorders the raw record to match. The lateralization
+    # view indexes channels by name, so it must read the order from the data, not a literal.
+    _s0 = next(iter(meta)); _k0 = next(iter(meta[_s0]))
+    ch_names = list(meta[_s0][_k0]["eeg_info"]["ch_names"])
+    # MODEL 9. The cca_* flags are asserted, not ignored: a run that carries them under
+    # --estimator ridge would look like the new arm and be the old one (Comandamenti #8).
+    cca_cfg = None
+    if args.estimator == "cca":
+        _c = _cca_mod()
+        _views = _c.parse_views(args.cca_views, _c.EEG_VIEWS, "--cca_views")
+        _sviews = _c.parse_views(args.cca_stim_views, _c.STIM_VIEWS, "--cca_stim_views")
+        assert "source_repr" in _sviews, (
+            "--cca_stim_views must contain source_repr: it is the only block the "
+            "back-projection can be scored against, i.e. the only way to produce the number "
+            "that is comparable with the ridge")
+        assert args.cca_components >= 1 and 0.0 < args.cca_reg < 1.0, (
+            "--cca_components >= 1 and --cca_reg in (0,1)")
+        cca_cfg = dict(views=_views, stim_views=_sviews, k=args.cca_components,
+                       reg=args.cca_reg, band=band, fs=args.target_fs, ch_names=ch_names,
+                       blocks_x=None, blocks_y=None)
+    else:
+        assert (args.cca_views == "eeg_lagged" and args.cca_stim_views == "source_repr"
+                and args.cca_components == 5 and args.cca_reg == 1e-3), (
+            "--cca_* only mean something with --estimator cca")
     # AXIS 2 and AXIS 1 only exist on the raw path: `duos_kfold` has no solos to fit a
     # per-instrument decoder on, and the preprocessed release already carries the authors'
     # notch+ICA. Assert rather than silently ignoring -- a flag that is quietly dropped
@@ -787,15 +941,26 @@ def main():
         s0 = next(iter(meta)); k0 = next(iter(meta[s0]))
         pre_chs = list(meta[s0][k0]["eeg_info"]["ch_names"])
         print(f"[madeeg] train_on=raw_solos raw_dir={raw_dir} stimuli={stim_dir} pre_chs={len(pre_chs)}")
+        if cca_cfg is not None:
+            # MODEL 9, counted and not assumed: every training solo is a MONO render, so the
+            # position view is identically 0 across the whole training set. That is exactly
+            # why position enters the frozen configuration by DECLARATION and can never be
+            # selected on inner_val_r -- there is nothing there for it to improve.
+            solo_keys = [k for s in sq for k in sq[s] if "solo" in k]
+            assert solo_keys and all(key_spatial(k) == "mono" for k in solo_keys), (
+                "MODEL 9 assumes the training solos are mono renders; they are not")
+            print(f"[madeeg] MODEL 9: {len(solo_keys)} training solo keys, all mono -> the "
+                  f"position view is 0 for every training pair")
 
     if args.check_alignment:
         check_alignment(meta, sq, data, raw_f, keep, args.spatial, donors, stim_dir)
         return
 
     def decide(subj, st, test_built, predict, records, inner_val_r=float("nan"), fold=-1,
-               instr_map=None):
+               instr_map=None, inner_val_rho=float("nan")):
         """`predict` is one callable (pooled) or, under AXIS 2, a dict instrument->callable,
-        in which case every candidate source is reconstructed by ITS OWN decoder.
+        in which case every candidate source is reconstructed by ITS OWN decoder. Under
+        MODEL 9 it is a CCAModel (or a dict of them) and the score is rho(s) instead.
 
         `instr_map` gives stim -> instruments explicitly; it is required for the mono half,
         whose stim keys have no entry in the preprocessed metadata at all."""
@@ -804,7 +969,25 @@ def main():
             m = meta.get(subj, {}).get(st[i])                     # absent under --self_test
             instr = (instr_map[st[i]] if instr_map else
                      (list(m["instruments"]) if m else [str(j) for j in range(npr)]))
-            if callable(predict):
+            extra = {}
+            if cca_cfg is not None:
+                # MODEL 9: rho(s) = sum of the first k canonical correlations of CCA(X, Y_s).
+                # The rule is unchanged -- argmax over the sources PRESENT IN THIS TRIAL, no
+                # label space anywhere -- but the statistic is not a band_pearson, so the
+                # record says which one it is.
+                pos = source_positions(meta, subj, st[i], npr)
+                cca = _cca_mod()
+                X, _ = cca.eeg_features(eeg, ch_names, cca_cfg["views"], n_lags,
+                                        band, args.target_fs, lagged_design)
+                pick = ((lambda j: predict[instr[j]]) if isinstance(predict, dict)
+                        else (lambda j: predict))
+                sims = []
+                for j in range(npr):
+                    Y, _, _ = cca.stim_features(reps[j], pos[j], cca_cfg["stim_views"])
+                    sims.append(pick(j).rho(X, Y))
+                extra = dict(score_kind="rho_cca", inner_val_rho=inner_val_rho,
+                             target_position=float(pos[tgt]))
+            elif callable(predict):
                 shat = predict(eeg)
                 sims = [band_pearson(shat, reps[j].T) for j in range(npr)]
             else:
@@ -814,7 +997,7 @@ def main():
                                 pred=pred, correct=int(pred == tgt),
                                 r_attended=sims[tgt], r_best_unattended=max(s for j, s in enumerate(sims) if j != tgt),
                                 inner_val_r=inner_val_r, fold=fold,
-                                target_instr=instr[tgt], pred_instr=instr[pred]))
+                                target_instr=instr[tgt], pred_instr=instr[pred], **extra))
 
     if args.self_test:
         # Positive control (see synth_attended_eeg): swap every trial's EEG for a synthetic
@@ -822,7 +1005,7 @@ def main():
         # pipeline (fit_ridge_pool + decide) unchanged. Passing proves that chance-level AAD on
         # the real EEG is a genuine absence of decodable signal, not a loader/decoder bug.
         lags_op = W_op = None
-        built, stims = [], []
+        built, stims, built_pos = [], [], []
         for s, k in trials:
             eeg, reps, tgt, npr, ens = build_trial(data, meta, s, k, args.target_fs, band,
                                                     args.clamp, args.compression, n_bands, args.target)
@@ -833,6 +1016,7 @@ def main():
             built.append([synth_attended_eeg(reps[tgt], lags_op, W_op, rng, args.self_test_snr),
                           reps, tgt, npr, ens])
             stims.append(k)
+            built_pos.append(source_positions(meta, s, k, npr)[tgt])   # MODEL 9 only
         st_records = []
         pooled = []
         for fold in kfold_indices(len(built), args.cv_folds, rng):
@@ -846,29 +1030,59 @@ def main():
             if args.self_test_pool and len(tr) > args.self_test_pool:
                 tr = sorted(rng.permutation(tr)[:args.self_test_pool].tolist())
             pooled.append(len(tr))
-            predict, _, val_r = fit_ridge_pool([built[i] for i in tr], n_lags, lam_grid, rng, shrink)
-            decide("synthetic", [stims[i] for i in fold], [built[i] for i in fold], predict, st_records, val_r)
+            predict, val_r, val_rho = fit_pool([built[i] for i in tr], [built_pos[i] for i in tr],
+                                               n_lags, lam_grid, rng, shrink, cca_cfg)
+            decide("synthetic", [stims[i] for i in fold], [built[i] for i in fold], predict,
+                   st_records, val_r, inner_val_rho=val_rho)
         rec = pd.DataFrame(st_records)
         acc, ra, ru = rec.correct.mean(), rec.r_attended.mean(), rec.r_best_unattended.mean()
         chance = float(np.mean(1.0 / rec.n_present))
+        # Threshold 0.90, declared in the code before the run and unchanged for MODEL 9:
+        # applying the SAME decision rule to the envelopes alone decides 154/154 trials, so
+        # the signal is separable in principle and only the wiring is on trial here.
         ok = acc >= 0.90 and ra > ru
-        print("\n== MAD-EEG SELF-TEST (synthetic attended-signal positive control) ==")
-        print(f"n_trials={len(rec)} chance={chance:.3f} snr={args.self_test_snr} "
-              f"n_ch={n_ch} n_bands={n_bands} lags={n_lags} target_fs={args.target_fs}")
-        print(f"training trials pooled per fold: {pooled}"
-              + (f"  (capped at --self_test_pool {args.self_test_pool}; the threshold below is "
-                 f"unchanged, a smaller pool only makes the control HARDER to pass)"
-                 if args.self_test_pool else "  (full pool)"))
-        print(f"AAD accuracy={acc:.4f}  mean r(attended)={ra:.4f}  mean r(best unattended)={ru:.4f}")
-        print(f"[{'PASS' if ok else 'FAIL'}] " + (
-              "ridge recovers the attended source (r_att >> r_unatt, AAD>=0.90) -> pipeline is "
-              "wired correctly, so chance-level AAD on real EEG is genuine signal absence."
-              if ok else
-              "ridge did NOT recover a signal it should trivially decode -> fix the loader/decoder "
-              "before interpreting the real-data result."))
+        who = "CCA" if cca_cfg is not None else "ridge"
+        stat = "rho_cca" if cca_cfg is not None else "r"
+        head = ["\n== MAD-EEG SELF-TEST (synthetic attended-signal positive control) ==",
+                "CAVEAT, INSIDE THE FILE AND ABOVE THE NUMBERS: the EEG here is SYNTHETIC -- a "
+                "fixed linear mixture of each trial's ATTENDED source at the model's lags, plus "
+                "noise. These numbers say the pipeline is wired correctly and say NOTHING about "
+                "the real data. They are not a result and must never be cited as one.",
+                f"n_trials={len(rec)} chance={chance:.3f} snr={args.self_test_snr} "
+                f"n_ch={n_ch} n_bands={n_bands} lags={n_lags} target_fs={args.target_fs} "
+                f"estimator={args.estimator}",
+                f"training trials pooled per fold: {pooled}"
+                + (f"  (capped at --self_test_pool {args.self_test_pool}; the threshold below is "
+                   f"unchanged, a smaller pool only makes the control HARDER to pass)"
+                   if args.self_test_pool else "  (full pool)"),
+                f"AAD accuracy={acc:.4f}  mean {stat}(attended)={ra:.4f}  "
+                f"mean {stat}(best unattended)={ru:.4f}",
+                f"[{'PASS' if ok else 'FAIL'}] " + (
+                    f"{who} recovers the attended source ({stat}_att >> {stat}_unatt, AAD>=0.90) "
+                    "-> pipeline is wired correctly, so chance-level AAD on real EEG is genuine "
+                    "signal absence."
+                    if ok else
+                    f"{who} did NOT recover a signal it should trivially decode -> fix the "
+                    "loader/decoder before interpreting the real-data result.")]
+        if cca_cfg is not None:
+            head.append(f"views={','.join(cca_cfg['views'])} stim_views={','.join(cca_cfg['stim_views'])} "
+                        f"k={cca_cfg['k']} reg={cca_cfg['reg']:g} "
+                        f"blocks_x={cca_cfg['blocks_x']} blocks_y={cca_cfg['blocks_y']}")
+            head.append(f"mean inner_val_r (back-projected, comparable with the ridge)="
+                        f"{rec.inner_val_r.mean():.4f}   mean inner_val_rho (canonical, NOT "
+                        f"comparable)={rec.inner_val_rho.mean():.4f}")
+        txt = "\n".join(head)
+        print(txt)
+        # A control never writes over a result (Comandamenti #9): its own directory, and the
+        # caveat lives in the file, which outlives the terminal.
+        st_out = os.path.join(args.log_dir, args.training_date + "_selftest")
+        os.makedirs(st_out, exist_ok=True)
+        open(os.path.join(st_out, "madeeg_selftest_summary.txt"), "w").write(txt.lstrip("\n") + "\n")
+        rec.to_csv(os.path.join(st_out, "madeeg_selftest_records.csv"), index=False)
+        print(f"[madeeg] wrote -> {st_out}")
         return
 
-    records = []
+    records, ival = [], []
     for subj in meta:
         st = [k for k in meta[subj] if meta[subj][k].get("ensemble") in keep]   # test set = duos/trios
         if not st:
@@ -887,13 +1101,24 @@ def main():
                 groups = {}
                 for t in train_trials:
                     groups.setdefault(t[5], []).append(t)
-                predict, vrs = {}, []
+                predict, vrs, vrhos = {}, [], []
                 for instrument in sorted(groups):
-                    p, _, vr = fit_ridge_pool(groups[instrument], n_lags, lam_grid, rng, shrink)
-                    predict[instrument] = p; vrs.append(vr)
-                val_r = float(np.mean(vrs))
+                    p, vr, vrho = fit_pool(groups[instrument], [0.0] * len(groups[instrument]),
+                                           n_lags, lam_grid, rng, shrink, cca_cfg)
+                    predict[instrument] = p; vrs.append(vr); vrhos.append(vrho)
+                val_r, val_rho = float(np.mean(vrs)), float(np.mean(vrhos))
             else:
-                predict, lam, val_r = fit_ridge_pool(train_trials, n_lags, lam_grid, rng, shrink)
+                predict, val_r, val_rho = fit_pool(train_trials, [0.0] * len(train_trials),
+                                                   n_lags, lam_grid, rng, shrink, cca_cfg)
+            if args.inner_val_only:
+                # Stop before a single test duo is even BUILT: nothing downstream can produce
+                # an accuracy, so this configuration costs no look at the 154/155 spent trials.
+                ival.append(dict(subject=subj, fold=-1, n_train=len(train_trials),
+                                 inner_val_r=val_r, inner_val_rho=val_rho))
+                print(f"  subj {subj}: solos={len(train_trials)} inner_val_r={val_r:.4f}"
+                      + (f" inner_val_rho={val_rho:.4f}" if cca_cfg else "")
+                      + "  [inner_val_only: no test trial built]", flush=True)
+                continue
             # build test duos: raw EEG (no mismatch) or preprocessed EEG
             test_instr = {}
             if args.test_eeg == "raw":
@@ -916,8 +1141,12 @@ def main():
                 test_built = [build_trial(data, meta, subj, k, args.target_fs, band, args.clamp, args.compression, n_bands, args.target) for k in st]
                 test_instr = {k: list(meta[subj][k]["instruments"]) for k in st}
                 n_candidates = len(st)
-            if not callable(predict):
-                # AXIS 2: a trial is undecidable when one of its sources has no solo for this
+            if isinstance(predict, dict):
+                # AXIS 2 -- the test is `is this a per-instrument dict`, NOT `is this not a
+                # callable`. A MODEL 9 pooled decoder is a CCAModel: not a dict, and not a
+                # callable either, so the old negative test sent it in here and `x in predict`
+                # raised TypeError on the first trial. Positive tests, always.
+                # A trial is undecidable when one of its sources has no solo for this
                 # subject (subject 0007 recorded 7 solos, not 14). Dropped and COUNTED, never
                 # silently reconstructed with somebody else's filter.
                 keepable = [i for i, k in enumerate(st_used)
@@ -926,7 +1155,8 @@ def main():
                 if dropped:
                     print(f"  subj {subj}: {dropped} trial(s) dropped -- no solo decoder for one of their sources")
                 test_built = [test_built[i] for i in keepable]; st_used = [st_used[i] for i in keepable]
-            decide(subj, st_used, test_built, predict, records, val_r, instr_map=test_instr)
+            decide(subj, st_used, test_built, predict, records, val_r, instr_map=test_instr,
+                   inner_val_rho=val_rho)
             print(f"  subj {subj}: solos={len(train_trials)} test={len(test_built)}/{n_candidates} "
                   f"spatial={args.spatial} test_eeg={args.test_eeg} "
                   f"inner_val_r={val_r:.3f} AAD_acc={np.mean([r['correct'] for r in records if r['subject']==subj]):.3f}", flush=True)
@@ -937,13 +1167,68 @@ def main():
             folds = kfold_indices(len(test_built), args.cv_folds, rng)
             for f in range(args.cv_folds):
                 te = set(folds[f].tolist()); tr = [i for i in range(len(test_built)) if i not in te]
-                predict, lam, val_r = fit_ridge_pool([test_built[i] for i in tr], n_lags, lam_grid, rng, shrink)
-                decide(subj, [st[i] for i in folds[f]], [test_built[i] for i in folds[f]], predict, records, val_r, fold=f)
-            print(f"  subj {subj}: trials={len(st)} AAD_acc={np.mean([r['correct'] for r in records if r['subject']==subj]):.3f}", flush=True)
+                # MODEL 9: here the training trials ARE duos, so the attended source has a real
+                # side. (Under --train_on raw_solos they are solos, all mono -> position 0.)
+                tr_pos = [source_positions(meta, subj, st[i], test_built[i][3])[test_built[i][2]]
+                          for i in tr]
+                predict, val_r, val_rho = fit_pool([test_built[i] for i in tr], tr_pos,
+                                                   n_lags, lam_grid, rng, shrink, cca_cfg)
+                if args.inner_val_only:          # fit, score the inner split, decide nothing
+                    ival.append(dict(subject=subj, fold=f, n_train=len(tr),
+                                     inner_val_r=val_r, inner_val_rho=val_rho))
+                    continue
+                decide(subj, [st[i] for i in folds[f]], [test_built[i] for i in folds[f]], predict,
+                       records, val_r, fold=f, inner_val_rho=val_rho)
+            if args.inner_val_only:
+                print(f"  subj {subj}: trials={len(st)} inner_val_r="
+                      f"{np.mean([r['inner_val_r'] for r in ival if r['subject'] == subj]):.4f}"
+                      "  [inner_val_only: nothing decided]", flush=True)
+            else:
+                print(f"  subj {subj}: trials={len(st)} AAD_acc={np.mean([r['correct'] for r in records if r['subject']==subj]):.3f}", flush=True)
 
-    rec = pd.DataFrame(records)
     out = os.path.join(args.log_dir, args.training_date)
     os.makedirs(out, exist_ok=True)
+
+    if args.inner_val_only:
+        iv = pd.DataFrame(ival)
+        iv.to_csv(os.path.join(out, "madeeg_innerval.csv"), index=False)
+        head = ["== MAD-EEG inner-validation ONLY (no trial was decided) ==",
+                "CAVEAT, INSIDE THE FILE AND ABOVE THE NUMBERS: this run built no test trial "
+                "and produced no attention decision. There is no accuracy here and there is "
+                "none on disk. inner_val_r is reconstruction quality on an inner split of the "
+                "TRAINING material -- it says how well the decoder reconstructs, never whether "
+                "it selects the attended source.",
+                f"train_on={args.train_on} ensemble={args.ensemble} target={args.target} "
+                f"n_bands={n_bands} target_fs={args.target_fs} lags={n_lags} band={band} "
+                f"estimator={args.estimator} filters={args.filters} eeg_clean={args.eeg_clean} "
+                f"spatial={args.spatial} folds={args.cv_folds}"]
+        if cca_cfg is not None:
+            head += [f"MODEL 9: views={','.join(cca_cfg['views'])} "
+                     f"stim_views={','.join(cca_cfg['stim_views'])} k={cca_cfg['k']} "
+                     f"reg={cca_cfg['reg']:g} blocks_x={cca_cfg['blocks_x']} "
+                     f"blocks_y={cca_cfg['blocks_y']}",
+                     "🔴 inner_val_r is BACK-PROJECTED and comparable with the ridge; "
+                     "inner_val_rho is a sum of canonical correlations and is NOT comparable "
+                     "with any ridge number (a canonical correlation is >= a Pearson by "
+                     "construction)."]
+        head += ["WEIGHTING, and it is not the same as a full run's: the mean below is over "
+                 "(subject x fold) UNWEIGHTED, because no test trial was built and the "
+                 "per-subject trial counts are unknown here. A full run averages the same "
+                 "quantity over TRIALS, so the two differ whenever subjects contribute "
+                 "unequal numbers of trials (raw_solos ridge: 0.0562 here vs 0.0582 "
+                 "trial-weighted). Compare inner_val_only against inner_val_only.",
+                 f"units={len(iv)} (subject x fold)",
+                 f"mean inner_val_r = {iv.inner_val_r.mean():.4f}",
+                 "per-subject inner_val_r: " + " ".join(
+                     f"{s}={v:.4f}" for s, v in iv.groupby('subject').inner_val_r.mean().items())]
+        if cca_cfg is not None:
+            head.append(f"mean inner_val_rho = {iv.inner_val_rho.mean():.4f}  (NOT comparable)")
+        txt = "\n".join(head)
+        open(os.path.join(out, "madeeg_innerval_summary.txt"), "w").write(txt + "\n")
+        print("\n" + txt + f"\n[madeeg] wrote -> {out}")
+        return
+
+    rec = pd.DataFrame(records)
     rec.to_csv(os.path.join(out, "madeeg_records.csv"), index=False)
     chance = float(np.mean(1.0 / rec.n_present))
     per_subj = rec.groupby("subject").correct.mean()
@@ -975,8 +1260,37 @@ def main():
              f"macro={f1s['macro']:.4f} weighted={f1s['weighted']:.4f}",
              "  ^ the paper (WASPAA 2019 Table 1) reports F1 without naming the averaging;"
              " its duets column is AE 58 / MAG 74 / MEL 79",
-             f"mean r(attended)={rec.r_attended.mean():.4f}  mean r(best unattended)={rec.r_best_unattended.mean():.4f}",
+             f"mean {'rho_cca' if cca_cfg else 'r'}(attended)={rec.r_attended.mean():.4f}  "
+             f"mean {'rho_cca' if cca_cfg else 'r'}(best unattended)={rec.r_best_unattended.mean():.4f}",
              f"mean inner_val_r (in-distribution reconstruction)={rec.inner_val_r.mean():.4f}"]
+    if cca_cfg is not None:
+        # MODEL 9. The caveat goes INSIDE the file and ABOVE the numbers (Comandamenti #9):
+        # this file is what survives the terminal, and the two statistics below look alike.
+        lines.insert(1, "\n".join([
+            f"MODEL 9 (multi-view CCA): views={','.join(cca_cfg['views'])} "
+            f"stim_views={','.join(cca_cfg['stim_views'])} k={cca_cfg['k']} reg={cca_cfg['reg']:g} "
+            f"blocks_x={cca_cfg['blocks_x']} blocks_y={cca_cfg['blocks_y']}",
+            "  band-power/lateralization views use only the declared bands that fit inside the "
+            "analysis band above; a band outside it is ZERO by construction and is dropped, not "
+            "carried as noise. Widening the band is a separate, declared change (--band_high).",
+            "🔴 TWO STATISTICS IN THIS FILE, AND THEY ARE NOT COMPARABLE:",
+            "   inner_val_r = band_pearson between the BACK-PROJECTED reconstruction and the "
+            "attended representation, computed with the SAME function the ridge uses. THIS is "
+            "the number to put next to the ridge's inner_val_r (0.0582 on raw_solos, 0.0245 on "
+            "duos_kfold).",
+            "   rho_cca / inner_val_rho = the sum of the first k canonical correlations. A "
+            "canonical correlation is >= a plain Pearson BY CONSTRUCTION -- CCA optimizes both "
+            "sides to maximize it -- so comparing it with any ridge number shows an improvement "
+            "that does not exist. It is the DECISION statistic and nothing else.",
+            "   The position view is constant in time within a trial, so a within-trial Pearson "
+            "centres it out: it cannot change the decision. Verified as an assertion in "
+            "src/models/cca_multiview.py. position_env is the time-varying form (still 0 for "
+            "every source in mono)."]))
+        lines.append(f"mean inner_val_rho (canonical, NOT comparable with the ridge)="
+                     f"{rec.inner_val_rho.mean():.4f}")
+        lines.append(f"trials by target side (from wav_info.panning): "
+                     + " ".join(f"{int(k):+d}:{v}" for k, v in
+                                sorted(rec.target_position.value_counts().items())))
     if ica_diag:
         lines.append("EEG cleaning (AXIS 1) per subject -- positive control is the drop in "
                      "frontal-EOG coupling:")
