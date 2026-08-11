@@ -1,0 +1,72 @@
+
+[mcnemar] A=runs/results/ovo_sweep_REF/madeeg_ownvsother.csv
+          B=runs/results/ovo_sweep_C1/madeeg_ownvsother.csv
+  comparisons: A=376  B=376  in common=376
+  A correct 208/376 = 0.5532   B correct 209/376 = 0.5559   (null 0.500, exact by symmetry)
+  agreement table: both 186 · A only 22 · B only 23 · neither 145
+  discordants=45   B beats A on 23/45   one-sided McNemar p=0.5000   (null 0.500)
+  pre-registered threshold at n_disc=45: 29/45 = 0.6444 (smallest integer with p < 0.05; 28 would give 0.0676)
+  -> B does NOT beat A under the pre-registered rule.
+
+[mcnemar] A=runs/results/ovo_sweep_REF/madeeg_ownvsother.csv
+          B=runs/results/ovo_sweep_C2/madeeg_ownvsother.csv
+  comparisons: A=376  B=376  in common=376
+  A correct 208/376 = 0.5532   B correct 212/376 = 0.5638   (null 0.500, exact by symmetry)
+  agreement table: both 184 · A only 24 · B only 28 · neither 140
+  discordants=52   B beats A on 28/52   one-sided McNemar p=0.3389   (null 0.500)
+  pre-registered threshold at n_disc=52: 33/52 = 0.6346 (smallest integer with p < 0.05; 32 would give 0.0632)
+  -> B does NOT beat A under the pre-registered rule.
+
+[mcnemar] A=runs/results/ovo_sweep_REF/madeeg_ownvsother.csv
+          B=runs/results/ovo_sweep_C3/madeeg_ownvsother.csv
+  comparisons: A=376  B=376  in common=376
+  A correct 208/376 = 0.5532   B correct 213/376 = 0.5665   (null 0.500, exact by symmetry)
+  agreement table: both 180 · A only 28 · B only 33 · neither 135
+  discordants=61   B beats A on 33/61   one-sided McNemar p=0.3045   (null 0.500)
+  pre-registered threshold at n_disc=61: 38/61 = 0.6230 (smallest integer with p < 0.05; 37 would give 0.0619)
+  -> B does NOT beat A under the pre-registered rule.
+
+[mcnemar] A=runs/results/ovo_sweep_REF/madeeg_ownvsother.csv
+          B=runs/results/ovo_sweep_C4/madeeg_ownvsother.csv
+  comparisons: A=376  B=376  in common=376
+  A correct 208/376 = 0.5532   B correct 204/376 = 0.5426   (null 0.500, exact by symmetry)
+  agreement table: both 190 · A only 18 · B only 14 · neither 154
+  discordants=32   B beats A on 14/32   one-sided McNemar p=0.8115   (null 0.500)
+  pre-registered threshold at n_disc=32: 22/32 = 0.6875 (smallest integer with p < 0.05; 21 would give 0.0551)
+  -> B does NOT beat A under the pre-registered rule.
+
+[mcnemar] A=runs/results/ovo_sweep_REF/madeeg_ownvsother.csv
+          B=runs/results/ovo_sweep_C5/madeeg_ownvsother.csv
+  comparisons: A=376  B=376  in common=376
+  A correct 208/376 = 0.5532   B correct 203/376 = 0.5399   (null 0.500, exact by symmetry)
+  agreement table: both 169 · A only 39 · B only 34 · neither 134
+  discordants=73   B beats A on 34/73   one-sided McNemar p=0.7586   (null 0.500)
+  pre-registered threshold at n_disc=73: 45/73 = 0.6164 (smallest integer with p < 0.05; 44 would give 0.0503)
+  -> B does NOT beat A under the pre-registered rule.
+
+[mcnemar] A=runs/results/ovo_sweep_REF/madeeg_ownvsother.csv
+          B=runs/results/ovo_sweep_C6/madeeg_ownvsother.csv
+  comparisons: A=376  B=376  in common=376
+  A correct 208/376 = 0.5532   B correct 203/376 = 0.5399   (null 0.500, exact by symmetry)
+  agreement table: both 182 · A only 26 · B only 21 · neither 147
+  discordants=47   B beats A on 21/47   one-sided McNemar p=0.8092   (null 0.500)
+  pre-registered threshold at n_disc=47: 30/47 = 0.6383 (smallest integer with p < 0.05; 29 would give 0.0719)
+  -> B does NOT beat A under the pre-registered rule.
+
+[mcnemar] A=runs/results/ovo_sweep_REF/madeeg_ownvsother.csv
+          B=runs/results/ovo_sweep_C7/madeeg_ownvsother.csv
+  comparisons: A=376  B=376  in common=376
+  A correct 208/376 = 0.5532   B correct 203/376 = 0.5399   (null 0.500, exact by symmetry)
+  agreement table: both 168 · A only 40 · B only 35 · neither 133
+  discordants=75   B beats A on 35/75   one-sided McNemar p=0.7557   (null 0.500)
+  pre-registered threshold at n_disc=75: 46/75 = 0.6133 (smallest integer with p < 0.05; 45 would give 0.0527)
+  -> B does NOT beat A under the pre-registered rule.
+
+[mcnemar] A=runs/results/ovo_sweep_REF/madeeg_ownvsother.csv
+          B=runs/results/ovo_sweep_C8/madeeg_ownvsother.csv
+  comparisons: A=376  B=376  in common=376
+  A correct 208/376 = 0.5532   B correct 203/376 = 0.5399   (null 0.500, exact by symmetry)
+  agreement table: both 170 · A only 38 · B only 33 · neither 135
+  discordants=71   B beats A on 33/71   one-sided McNemar p=0.7617   (null 0.500)
+  pre-registered threshold at n_disc=71: 43/71 = 0.6056 (smallest integer with p < 0.05; 42 would give 0.0770)
+  -> B does NOT beat A under the pre-registered rule.

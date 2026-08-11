@@ -1,0 +1,34 @@
+
+[diagnose] /Users/andrea/Library/Mobile Documents/com~apple~CloudDocs/Tesi/_baldo_archive_2026-07-18/results/madeeg_clap_kfold_within/madeeg_contrastive_records.csv   folds=global
+  70/154 = 0.4545 correct, chance 0.500
+
+  accuracy split by whether the trial's own target was the training majority
+    target IS  the majority of its mixture: 44/53 = 0.830
+    target is NOT                         : 14/71 = 0.197
+    Fisher exact p = 1.03e-12   odds ratio = 19.90
+    chance is 0.500 in BOTH cells: every duo mixture is presented with both of
+    its instruments as the target, so the prior is not legitimate information
+
+  the model chose the training majority in 101/124 = 0.8145 of the decidable trials
+  null is NOT 0.5 but 0.4274 = P(prior == target): a model that simply reads
+  the EEG agrees with the prior that often by coincidence   ->  p=1.0e-18
+  and because that null is below 0.5, following the prior LOSES: the k-fold takes
+  the test trial out of the count, tipping a balanced mixture the other way
+
+  by how lopsided the training count is (compare each row with its own null):
+    gap 0   n=30   follows it 0/30 = 0.000   (no majority to follow)
+    gap 1   n=62   follows it 46/62 = 0.742   null 0.435
+    gap 2   n=27   follows it 23/27 = 0.852   null 0.556
+    gap 3+  n=35   follows it 32/35 = 0.914   null 0.314
+
+  grain of the prior the model is reading:
+    mixture (piece+pair+theme)       101/124 = 0.815   null 0.427   p=1.0e-18
+    instrument pair, themes pooled   75/132 = 0.568   null 0.288   p=1.7e-11
+    subject                          76/135 = 0.563   null 0.185   p=1.5e-22
+    whole training set               67/142 = 0.472   null 0.408   p=7.4e-02  <- BELOW a coin flip: not prior-following
+  ⚠ a small null makes p misleading on its own: a coin-flipping model agrees with
+  the prior ~0.500 of the time and beats any null below that. Read agreement
+  against BOTH the null (a perfect decoder scores it) and 0.500 (a coin flip).
+  ⚠ these grains are nested and correlated -- a prior at one grain lifts all the
+  others, so this table says THAT the model follows a training prior, not WHICH
+  grain it reads. Separating them needs a design that decorrelates them.

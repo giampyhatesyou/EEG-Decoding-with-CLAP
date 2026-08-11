@@ -1,0 +1,23 @@
+
+[mcnemar] A=runs/results/canary_rawsolos/madeeg_records.csv
+          B=runs/results/exp9_P1_rawsolos_flux/madeeg_records.csv
+  comparisons: A=154  B=154  in common=154
+  A correct 74/154 = 0.4805   B correct 76/154 = 0.4935   (null 0.500, exact by symmetry)
+  agreement table: both 43 · A only 31 · B only 33 · neither 47
+  discordants=64   B beats A on 33/64   one-sided McNemar p=0.4503   (null 0.500)
+  pre-registered threshold at n_disc=64: 40/64 = 0.6250 (smallest integer with p < 0.05; 39 would give 0.0517)
+  -> B does NOT beat A under the pre-registered rule.
+
+[mcnemar] A=runs/results/canary_duo/madeeg_records.csv
+          B=runs/results/exp9_P2_duo_flux/madeeg_records.csv
+  comparisons: A=154  B=154  in common=154
+  A correct 86/154 = 0.5584   B correct 77/154 = 0.5000   (null 0.500, exact by symmetry)
+  agreement table: both 51 · A only 35 · B only 26 · neither 42
+  discordants=61   B beats A on 26/61   one-sided McNemar p=0.9000   (null 0.500)
+  pre-registered threshold at n_disc=61: 38/61 = 0.6230 (smallest integer with p < 0.05; 37 would give 0.0619)
+  -> B does NOT beat A under the pre-registered rule.
+
+AUDIO-ONLY within-duo representation similarity (36 unique duo stimuli, no EEG read):
+  between-stem corr MEL:  mean 0.1772  median 0.1442
+  between-stem corr FLUX: mean 0.2874  median 0.2417
+  flux more similar than mel on 30/36 duos (mean diff +0.1103)
