@@ -868,6 +868,11 @@ def main():
                          "that structural instead of a matter of discipline. Use it for every "
                          "configuration step that is not the one pre-registered look")
     ap.add_argument("--ensemble", default="duo", choices=["duo", "trio", "both"])
+    ap.add_argument("--score_rule", default="plain", choices=["plain", "ortho"],
+                    help="EXP. 10: 'ortho' scores each duo candidate by the correlation with "
+                         "the part of its representation ORTHOGONAL to the competitor's "
+                         "(per band). Removes the component the ensemble shares across stems "
+                         "-- the measured cause of Exp. 9's transfer failure. Duo-only.")
     ap.add_argument("--target", default="mel", choices=["mel", "envelope", "mag", "flux", "flux_mel"],
                     help="reconstruction target; 'mag' is AXIS 4, the paper's linear magnitude "
                          "spectrogram (bins fixed by the STFT geometry, --n_mels ignored)")
@@ -1273,6 +1278,29 @@ def main():
             instr = (instr_map[st[i]] if instr_map else
                      (list(m["instruments"]) if m else [str(j) for j in range(npr)]))
             extra = {}
+            if args.score_rule == "ortho":
+                # CHANGED(baseline): Exp. 10 -- score each candidate on the part of its
+                # representation orthogonal to its competitor's, per band. The shared
+                # component (ensembles synchronize onsets across stems: inter-stem corr
+                # flux 0.287 vs mel 0.177, 30/36 duos) is removed BY CONSTRUCTION from both
+                # candidates; training and representations are untouched. Duo-only: with 3+
+                # sources "the competitor" is ambiguous, so it must break, not choose.
+                assert npr == 2, "--score_rule ortho is defined for duos only (n_present == 2)"
+                assert cca_cfg is None, "--score_rule ortho is not defined for the CCA path"
+                orth = []
+                for j in range(npr):
+                    # Center per band before projecting, so orthogonality is exact under
+                    # Pearson (which centers) even if an upstream target ever stops being
+                    # z-scored -- exactness by construction, not by upstream invariant.
+                    s_c = reps[j].astype(np.float64)
+                    s_c = s_c - s_c.mean(axis=1, keepdims=True)
+                    s_o = reps[1 - j].astype(np.float64)
+                    s_o = s_o - s_o.mean(axis=1, keepdims=True)
+                    proj = (np.sum(s_c * s_o, axis=1, keepdims=True)
+                            / (np.sum(s_o * s_o, axis=1, keepdims=True) + 1e-12)) * s_o
+                    orth.append(s_c - proj)
+                reps = np.stack(orth, axis=0)
+                extra = dict(score_kind="band_pearson_ortho")
             if cca_cfg is not None:
                 # MODEL 9: rho(s) = sum of the first k canonical correlations of CCA(X, Y_s).
                 # The rule is unchanged -- argmax over the sources PRESENT IN THIS TRIAL, no
