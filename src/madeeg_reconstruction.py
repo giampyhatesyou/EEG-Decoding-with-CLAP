@@ -151,6 +151,8 @@ def n_repr_bands(kind, n_mels, target_fs, src_fs=AUDIO_FS):
     it (n_fft = 2*hop -> hop+1 bins), so it cannot be chosen with --n_mels."""
     if kind == "mag":
         return max(1, int(round(src_fs / target_fs))) + 1
+    if kind == "flux":
+        return 1
     return 1 if (kind == "envelope" or n_mels <= 1) else n_mels
 
 
@@ -174,6 +176,30 @@ def source_repr(src, src_fs, out_len, target_fs, band, compression, n_mels, kind
         hop = max(1, int(round(src_fs / target_fs)))
         S = np.abs(librosa.stft(y=x, n_fft=2 * hop, hop_length=hop))     # (hop+1, frames)
         rep = np.log(S + 1e-6)
+        if rep.shape[1] != out_len:
+            rep = resample(rep, out_len, axis=1)
+    elif kind == "flux":
+        # CHANGED(baseline): Exp. 8 -- onset-strength regressor. Weineck, Wen & Henry
+        # (eLife 2022, 75515): neural synchronization to natural music is strongest to the
+        # SPECTRAL FLUX, not the amplitude envelope; flux carries rhythm communicated by
+        # pitch changes with no amplitude change. Everything downstream (band-pass +
+        # z-score) is identical to the mel branch, so the manipulation is single-variable.
+        import librosa
+        hop = max(1, int(round(src_fs / target_fs)))
+        flux = librosa.onset.onset_strength(y=x, sr=int(src_fs), hop_length=hop)
+        rep = flux[None, :].astype(np.float64)
+        if rep.shape[1] != out_len:
+            rep = resample(rep, out_len, axis=1)
+    elif kind == "flux_mel":
+        # CHANGED(baseline): Exp. 8 -- per-band spectral flux, capacity-matched to the mel
+        # reference: same STFT geometry and n_mels as the mel branch, then the half-wave
+        # rectified first difference per band (the standard per-band flux).
+        import librosa
+        hop = max(1, int(round(src_fs / target_fs)))
+        n_fft = int(2 ** np.ceil(np.log2(2 * hop)))
+        S = librosa.feature.melspectrogram(y=x, sr=int(src_fs), n_fft=n_fft, hop_length=hop, n_mels=n_mels)
+        logS = np.log(S + 1e-6)
+        rep = np.maximum(np.diff(logS, axis=1, prepend=logS[:, :1]), 0.0)
         if rep.shape[1] != out_len:
             rep = resample(rep, out_len, axis=1)
     elif n_mels <= 1:
@@ -842,7 +868,7 @@ def main():
                          "that structural instead of a matter of discipline. Use it for every "
                          "configuration step that is not the one pre-registered look")
     ap.add_argument("--ensemble", default="duo", choices=["duo", "trio", "both"])
-    ap.add_argument("--target", default="mel", choices=["mel", "envelope", "mag"],
+    ap.add_argument("--target", default="mel", choices=["mel", "envelope", "mag", "flux", "flux_mel"],
                     help="reconstruction target; 'mag' is AXIS 4, the paper's linear magnitude "
                          "spectrogram (bins fixed by the STFT geometry, --n_mels ignored)")
     ap.add_argument("--n_mels", type=int, default=8)
