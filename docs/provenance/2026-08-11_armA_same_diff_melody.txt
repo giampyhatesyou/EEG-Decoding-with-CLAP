@@ -1,0 +1,17 @@
+ARM A -- same/diff-melody split of the faithful-package runs (descriptive, exploratory,
+duos spent). "Same" = the subject's training solos of the ATTENDED instrument include
+one with the duo's (piece, theme); solos pooled per instrument as in per_instrument
+training. Split computed from runs/results/armA_paper_*/madeeg_records.csv +
+madeeg_sequences_raw.yaml (piece/theme parsed from stim keys). n = 89 same + 61 diff.
+
+armA_paper_package  (band 1-8 Hz):   same 46/89 = 0.5169   diff 33/61 = 0.5410
+armA_paper_band02_40 (band 0.2-40):  same 51/89 = 0.5730   diff 30/61 = 0.4918
+
+Paper (WASPAA 2019 Table 1, MEL, F1): same 79 / diff 60.
+
+READING (inferred, descriptive n): the paper's same-melody advantage -- its own
+stimulus-following component ("the models are mostly tracking the pitch contour") --
+lives in the slow (<1 Hz) spectral contour: with a 1-Hz high-pass it vanishes entirely;
+lowering the high-pass to 0.2 Hz re-opens it (+8 points) while diff-melody drops to
+chance. Decomposes the reproduction gap: part of the published 79 is slow
+melody-identity matching that an honest band choice removes.
