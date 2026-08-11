@@ -367,12 +367,16 @@ def mcnemar_report(csv_a, csv_b):
     binomial p < 0.05 at the OBSERVED number of discordants, the same rule Exp. 4 used, so it
     has no degrees of freedom once the data are in.
     """
-    key = ("subject", "fold", "seg", "other")
-
     def load_ov(path):
         rows = list(csv.DictReader(open(path)))
         if not rows or "correct" not in rows[0]:
-            sys.exit(f"{path}: not an own-vs-other records file")
+            sys.exit(f"{path}: not a records file with a 'correct' column")
+        # CHANGED(baseline): Exp. 9 -- also accept attention-decision records
+        # (madeeg_records.csv, one row per trial, keyed subject+stim), so a flux run can be
+        # paired against a mel run on the SAME trials. Own-vs-other files keep the original
+        # 4-field key; the two files must be of the same kind or the intersection is empty
+        # and the guard below fires.
+        key = ("subject", "stim") if "stim" in rows[0] else ("subject", "fold", "seg", "other")
         return {tuple(r[k] for k in key): int(r["correct"]) for r in rows}
 
     A, B = load_ov(csv_a), load_ov(csv_b)
