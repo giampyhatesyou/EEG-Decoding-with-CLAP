@@ -146,17 +146,25 @@ def process_eeg(resp, target_fs, band, clamp):
     return resample(x, L, axis=1), L
 
 
-def n_repr_bands(kind, n_mels, target_fs, src_fs=AUDIO_FS):
+def n_repr_bands(kind, n_mels, target_fs, src_fs=AUDIO_FS, n_mfcc=0):
     """Rows of the representation source_repr() returns. For "mag" the STFT geometry fixes
-    it (n_fft = 2*hop -> hop+1 bins), so it cannot be chosen with --n_mels."""
+    it (n_fft = 2*hop -> hop+1 bins), so it cannot be chosen with --n_mels.
+
+    CHANGED(baseline): Exp. 14 -- "mfcc"/"mfcc_c0" are the ONLY targets whose row count is
+    not their source resolution: the rows are the kept DCT coefficients (--n_mfcc), the mel
+    resolution stays --n_mels. Callers that feed this number back in as the source
+    resolution must therefore pass --n_mels for these two kinds (see `n_src` in main)."""
     if kind == "mag":
         return max(1, int(round(src_fs / target_fs))) + 1
     if kind == "flux":
         return 1
+    if kind in ("mfcc", "mfcc_c0"):
+        assert n_mfcc >= 1, "--target mfcc/mfcc_c0 needs --n_mfcc >= 1"
+        return n_mfcc + (1 if kind == "mfcc_c0" else 0)
     return 1 if (kind == "envelope" or n_mels <= 1) else n_mels
 
 
-def source_repr(src, src_fs, out_len, target_fs, band, compression, n_mels, kind="mel"):
+def source_repr(src, src_fs, out_len, target_fs, band, compression, n_mels, kind="mel", n_mfcc=0):
     """Isolated source (1-D @44100) -> representation (n_bands, out_len), band-matched to EEG.
     n_mels<=1 -> broadband Hilbert envelope; else -> log-mel spectrogram (per-band temporal
     series). Each band is band-passed to the EEG band and z-scored.
@@ -170,7 +178,7 @@ def source_repr(src, src_fs, out_len, target_fs, band, compression, n_mels, kind
     """
     x = np.asarray(src, dtype=np.float64)
     if not np.any(x):
-        return np.zeros((n_repr_bands(kind, n_mels, target_fs, src_fs), out_len))
+        return np.zeros((n_repr_bands(kind, n_mels, target_fs, src_fs, n_mfcc), out_len))
     if kind == "mag":
         import librosa
         hop = max(1, int(round(src_fs / target_fs)))
@@ -202,6 +210,28 @@ def source_repr(src, src_fs, out_len, target_fs, band, compression, n_mels, kind
         rep = np.maximum(np.diff(logS, axis=1, prepend=logS[:, :1]), 0.0)
         if rep.shape[1] != out_len:
             rep = resample(rep, out_len, axis=1)
+    elif kind in ("mfcc", "mfcc_c0"):
+        # CHANGED(baseline): Exp. 14 -- MFCC, the winner of the Exp. 13 audio-only
+        # separability gate. Orthonormal DCT-II of the SAME log-mel this file already
+        # computes (same STFT geometry, same log(S + 1e-6)), keeping coefficients
+        # 1..n_mfcc. Coefficient 0 is the overall log energy, i.e. the amplitude envelope:
+        # "mfcc" DROPS it (the gate's candidate; that removal is what the gate rewarded),
+        # "mfcc_c0" KEEPS it (0..n_mfcc). The two kinds differ ONLY by that row, so the
+        # comparison isolates the energy term and nothing else. Everything downstream
+        # (band-pass + z-score per row) is identical to the mel branch: single variable.
+        import librosa
+        from scipy.fft import dct
+        assert n_mfcc >= 1 and n_mfcc < n_mels, (
+            f"--target {kind} needs 1 <= --n_mfcc < --n_mels (got n_mfcc={n_mfcc}, "
+            f"n_mels={n_mels}): the coefficients are a strict truncation of the DCT of the "
+            "log-mel, so asking for as many as the mel bands is not a truncation at all")
+        hop = max(1, int(round(src_fs / target_fs)))
+        n_fft = int(2 ** np.ceil(np.log2(2 * hop)))
+        S = librosa.feature.melspectrogram(y=x, sr=int(src_fs), n_fft=n_fft, hop_length=hop, n_mels=n_mels)
+        C = dct(np.log(S + 1e-6), axis=0, type=2, norm="ortho")      # (n_mels, frames)
+        rep = C[0 if kind == "mfcc_c0" else 1:n_mfcc + 1]
+        if rep.shape[1] != out_len:
+            rep = resample(rep, out_len, axis=1)
     elif n_mels <= 1:
         env = np.abs(hilbert(x))
         if compression and compression != 1.0:
@@ -225,14 +255,15 @@ def source_repr(src, src_fs, out_len, target_fs, band, compression, n_mels, kind
     return out
 
 
-def build_trial(data, meta, subj, stim, target_fs, band, clamp, compression, n_mels, kind="mel"):
+def build_trial(data, meta, subj, stim, target_fs, band, clamp, compression, n_mels, kind="mel",
+                n_mfcc=0):
     m = meta[subj][stim]
     instruments = list(m["instruments"])
     n_present = len(instruments)
     target_idx = instruments.index(m["target"])
     eeg, L = process_eeg(read_f64(data[subj][stim]["response"]), target_fs, band, clamp)
     soli = read_f64(data[subj][stim]["soli"])
-    reps = np.stack([source_repr(soli[i], m["wav_info"]["sfreq"], L, target_fs, band, compression, n_mels, kind)
+    reps = np.stack([source_repr(soli[i], m["wav_info"]["sfreq"], L, target_fs, band, compression, n_mels, kind, n_mfcc)
                      for i in range(n_present)], axis=0)             # (n_present, n_bands, L)
     return eeg, reps, target_idx, n_present, m["ensemble"]
 
@@ -418,7 +449,7 @@ def duo_test_recipes(meta, sq, subj, keep, spatial, donors):
 
 
 def build_solo_trials(eeg_full_bp, sq, stimuli_dir, subj, target_fs, band, clamp, compression, n_bands,
-                      kind="mel"):
+                      kind="mel", n_mfcc=0):
     """Paper protocol training pairs: each solo stimulus repetition is cut from the
     band-passed continuous raw EEG at its n_ech sample index and paired with the solo
     source audio (from stimuli/). Returns trials
@@ -440,7 +471,7 @@ def build_solo_trials(eeg_full_bp, sq, stimuli_dir, subj, target_fs, band, clamp
             if b > N or seg_len < EEG_FS:
                 continue
             eeg_proc, L = _proc_eeg_segment(eeg_full_bp[:, a:b], target_fs, clamp)
-            rep = source_repr(audio, sr, L, target_fs, band, compression, n_bands, kind)
+            rep = source_repr(audio, sr, L, target_fs, band, compression, n_bands, kind, n_mfcc)
             trials.append([eeg_proc, rep[None, ...], 0, 1, "solo", solo_instrument(k)])
     return trials
 
@@ -637,7 +668,7 @@ def duo_eeg_segments(eeg_full_bp, soli_len, n_ech, src_fs):
 
 
 def build_duo_trial_raweeg(eeg_full_bp, soli, n_ech, target_idx, n_present, src_fs,
-                           target_fs, band, clamp, compression, n_bands, kind="mel"):
+                           target_fs, band, clamp, compression, n_bands, kind="mel", n_mfcc=0):
     """Test trial with RAW EEG (same pipeline as the solos -> no preprocessing mismatch).
     The 4 repetitions are cut from the raw EEG at their n_ech onsets (each rep length =
     soli_len/4 in EEG samples) and concatenated to match the 4-rep preprocessed 'soli'
@@ -646,7 +677,7 @@ def build_duo_trial_raweeg(eeg_full_bp, soli, n_ech, target_idx, n_present, src_
     if seg is None:
         return None
     eeg_proc, L = _proc_eeg_segment(seg, target_fs, clamp)
-    reps = np.stack([source_repr(soli[i], src_fs, L, target_fs, band, compression, n_bands, kind)
+    reps = np.stack([source_repr(soli[i], src_fs, L, target_fs, band, compression, n_bands, kind, n_mfcc)
                      for i in range(n_present)], axis=0)
     return [eeg_proc, reps, target_idx, n_present, "duo"]
 
@@ -873,10 +904,20 @@ def main():
                          "the part of its representation ORTHOGONAL to the competitor's "
                          "(per band). Removes the component the ensemble shares across stems "
                          "-- the measured cause of Exp. 9's transfer failure. Duo-only.")
-    ap.add_argument("--target", default="mel", choices=["mel", "envelope", "mag", "flux", "flux_mel"],
+    ap.add_argument("--target", default="mel",
+                    choices=["mel", "envelope", "mag", "flux", "flux_mel", "mfcc", "mfcc_c0"],
                     help="reconstruction target; 'mag' is AXIS 4, the paper's linear magnitude "
-                         "spectrogram (bins fixed by the STFT geometry, --n_mels ignored)")
+                         "spectrogram (bins fixed by the STFT geometry, --n_mels ignored). "
+                         "EXP. 14: 'mfcc' = DCT-II (ortho) of the log-mel, coefficients "
+                         "1..--n_mfcc, coefficient 0 (the overall log energy) DROPPED -- the "
+                         "candidate the Exp. 13 gate promoted; 'mfcc_c0' is the same with "
+                         "coefficient 0 KEPT, the declared conditional diagnostic")
     ap.add_argument("--n_mels", type=int, default=8)
+    ap.add_argument("--n_mfcc", type=int, default=0,
+                    help="EXP. 14: number of DCT coefficients kept by --target mfcc/mfcc_c0. "
+                         "Must be 0 for every other target: it is asserted, not ignored, so a "
+                         "run that carries it under --target mel breaks instead of looking like "
+                         "the new arm and being the old one (Comandamenti #8)")
     # --- the four axes of the published protocol. Every default is the CURRENT behaviour,
     #     so the three reference numbers stay reproducible bit-for-bit. -------------------
     ap.add_argument("--estimator", default="ridge", choices=["ridge", "shrinkage", "cca"],
@@ -959,7 +1000,18 @@ def main():
     band = (args.band_low, args.band_high)
     rng = np.random.RandomState(args.seed)
     n_lags = int(round(args.lags_ms / 1000.0 * args.target_fs))
-    n_bands = n_repr_bands(args.target, args.n_mels, args.target_fs)
+    n_bands = n_repr_bands(args.target, args.n_mels, args.target_fs, n_mfcc=args.n_mfcc)
+    # EXP. 14. `n_bands` is what comes OUT of the representation; `n_src` is the source
+    # resolution that goes IN. For every pre-existing target they are the same number and
+    # this line is a no-op (the md5 canary of --target mel pins that). Only mfcc separates
+    # them: rows = --n_mfcc, mel resolution = --n_mels. Asserted rather than defaulted --
+    # a stray --n_mfcc under --target mel must break, not be silently dropped.
+    _is_mfcc = args.target in ("mfcc", "mfcc_c0")
+    assert _is_mfcc or args.n_mfcc == 0, "--n_mfcc only means something with --target mfcc/mfcc_c0"
+    assert not _is_mfcc or 1 <= args.n_mfcc < args.n_mels, (
+        f"--target {args.target} needs 1 <= --n_mfcc < --n_mels (got n_mfcc={args.n_mfcc}, "
+        f"n_mels={args.n_mels})")
+    n_src = args.n_mels if _is_mfcc else n_bands
     shrink = args.estimator == "shrinkage"
     # The 20 EEG channels are in this order on BOTH paths: the preprocessed release stores
     # them so, and `raw_eeg_bandpassed` reorders the raw record to match. The lateralization
@@ -1203,7 +1255,7 @@ def main():
             eeg_full_bp = raw_eeg_bandpassed(raw_f, raw_chs, pre_chs, subj, band,
                                              args.eeg_clean, raw_info, args.seed, ica_diag)
             trials = build_solo_trials(eeg_full_bp, sq, stim_dir, subj, args.target_fs, band,
-                                       args.clamp, args.compression, n_bands, args.target)
+                                       args.clamp, args.compression, n_src, args.target, args.n_mfcc)
             if len(trials) < args.cv_folds + 1:
                 print(f"  subj {subj}: only {len(trials)} solo segments -> skip"); continue
             n_pairs = 0
@@ -1339,7 +1391,7 @@ def main():
         built, stims, built_pos = [], [], []
         for s, k in trials:
             eeg, reps, tgt, npr, ens = build_trial(data, meta, s, k, args.target_fs, band,
-                                                    args.clamp, args.compression, n_bands, args.target)
+                                                    args.clamp, args.compression, n_src, args.target, args.n_mfcc)
             if W_op is None:                       # one fixed forward operator, shared by all trials
                 n_ch = eeg.shape[0]
                 lags_op = rng.randint(0, n_lags + 1, size=n_ch)
@@ -1423,7 +1475,7 @@ def main():
             eeg_full_bp = raw_eeg_bandpassed(raw_f, raw_chs, pre_chs, subj, band,
                                              args.eeg_clean, raw_info, args.seed, ica_diag)
             train_trials = build_solo_trials(eeg_full_bp, sq, stim_dir, subj, args.target_fs, band,
-                                             args.clamp, args.compression, n_bands, args.target)
+                                             args.clamp, args.compression, n_src, args.target, args.n_mfcc)
             if len(train_trials) < 3:
                 print(f"  subj {subj}: only {len(train_trials)} solo segments -> skip"); continue
             if args.filters == "per_instrument":
@@ -1463,13 +1515,13 @@ def main():
                     t = build_duo_trial_raweeg(eeg_full_bp, read_f64(data[ds_][dk_]["soli"]),
                                                sq[subj][raw_key]["n_ech"], instr.index(target), len(instr),
                                                dm["wav_info"]["sfreq"], args.target_fs, band, args.clamp,
-                                               args.compression, n_bands, args.target)
+                                               args.compression, n_src, args.target, args.n_mfcc)
                     if t is not None:
                         test_built.append(t); st_used.append(rec_key); test_instr[rec_key] = instr
                 n_candidates = len(recipes) + len(dropped_rec)
             else:
                 st_used = st
-                test_built = [build_trial(data, meta, subj, k, args.target_fs, band, args.clamp, args.compression, n_bands, args.target) for k in st]
+                test_built = [build_trial(data, meta, subj, k, args.target_fs, band, args.clamp, args.compression, n_src, args.target, args.n_mfcc) for k in st]
                 test_instr = {k: list(meta[subj][k]["instruments"]) for k in st}
                 n_candidates = len(st)
             if isinstance(predict, dict):
@@ -1492,7 +1544,7 @@ def main():
                   f"spatial={args.spatial} test_eeg={args.test_eeg} "
                   f"inner_val_r={val_r:.3f} AAD_acc={np.mean([r['correct'] for r in records if r['subject']==subj]):.3f}", flush=True)
         else:
-            test_built = [build_trial(data, meta, subj, k, args.target_fs, band, args.clamp, args.compression, n_bands, args.target) for k in st]
+            test_built = [build_trial(data, meta, subj, k, args.target_fs, band, args.clamp, args.compression, n_src, args.target, args.n_mfcc) for k in st]
             if len(st) < args.cv_folds:
                 print(f"  subj {subj}: only {len(st)} trials -> skip"); continue
             folds = kfold_indices(len(test_built), args.cv_folds, rng)

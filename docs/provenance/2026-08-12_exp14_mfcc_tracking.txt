@@ -1,0 +1,118 @@
+!! READ BEFORE THE NUMBERS (Comandamenti #9).
+!! WHAT THIS MEASURES: own-vs-other measures TRACKING and nothing else. Given the EEG
+!! of a held-out SOLO segment, is that segment's own audio scored above ANOTHER
+!! solo's? The other segment is a different song, so nothing here says anything about
+!! separating the two stems of a duo, and nothing here is an attention decision.
+!! NULL = 0.500, EXACT BY SYMMETRY, not estimated: every pair is scored in both
+!! directions, so a decoder with nothing but a fixed instrument preference gets
+!! exactly one of the two right. The null is printed next to every accuracy.
+!! NOTHING IS SPENT: the solos are declared free training material by the vault's
+!! ledger of looks. No duo decision, no trio, no split by genre/melody/instrument/
+!! subject. The positive control is the Exp. 8 construction: it enumerates the duo
+!! stimuli to build its trial list, but every EEG is REPLACED by a synthetic mixture,
+!! so no real-EEG number is produced by it and none can be cited from it.
+!! THE POSITIVE-CONTROL NUMBERS ARE NOT RESULTS. They license the wiring and say
+!! nothing about the real data.
+!! K = 2, the bar (>= 208/376) and the four readings of the outcome were written in
+!! the vault contract of 12/8/2026 BEFORE this file existed, and are not editable now.
+!! McNemar against the mel-8 reference is DESCRIPTIVE, in both directions, and does
+!! NOT enter the verdict.
+
+=== EXP. 14 -- own-vs-other tracking of the two gate representations ===
+interpreter /opt/miniconda3/bin/python · protocol: ridge, pooled, notch+ICA, 1-8 Hz, 64 Hz, lags 0-250 ms,
+seed 42, 5 folds -- every one of them identical to the mel-8 reference. Single variable:
+the stimulus representation.
+
+=== GATE 1 -- REGRESSION CANARY (crossed before anything else) ===
+  --target mel --n_mels 8 -> 208/376 (expected 208/376)   null 0.500
+  md5(madeeg_ownvsother.csv) = 2eaa926244de340d31907c6deeb04b0c
+                    expected = 2eaa926244de340d31907c6deeb04b0c
+  -> [PASSED] the default path is bit-for-bit what it was before the diff.
+
+=== GATE 2 -- REPRESENTATION IDENTITY with the Exp. 13 candidate (audio only) ===
+  source_repr(--target mfcc --n_mels 64 --n_mfcc 13) vs Exp. 13 C3 (_raw_mfcc + _post) on classique_morceau1_duo_CoFl_theme1_mono_Co_1.wav
+  max abs difference = 0.000e+00  -> [PASSED] (must be 0 to floating point)
+
+=== GATE 3 -- POSITIVE CONTROL per candidate, threshold >= 0.95 (contract SS2) ===
+  Synthetic EEG built FROM each candidate representation (Exp. 8 construction). A PASS
+  licenses the wiring of that candidate and says NOTHING about the real data.
+  T1 MFCC-13   AAD accuracy on synthetic EEG = 1.0000   chance 0.500   -> [PASSED]
+  T2 mel-64    AAD accuracy on synthetic EEG = 1.0000   chance 0.500   -> [PASSED]
+  Both wirings licensed. The real numbers may now be read.
+
+=== THE MEASUREMENT -- own-vs-other on held-out SOLO segments ===
+  primary bar, written before the code: >= 208/376, one-sided exact binomial
+  P(X >= 208 | 376, 0.5) = 0.0221 <= 0.025 = 0.05/2 (Bonferroni, K = 2).
+  The bar is also the mel-8 reference itself (208/376 = 0.5532), re-measured by Gate 1 today.
+
+  T1 MFCC-13   214/376 = 0.5691   null 0.500   one-sided exact binomial p = 0.004224   bar 208/376   -> TRACKS
+  T2 mel-64    212/376 = 0.5638   null 0.500   one-sided exact binomial p = 0.007623   bar 208/376   -> TRACKS
+  mel-8 (ref)  208/376 = 0.5532   null 0.500   one-sided exact binomial p = 0.02208   (the bar itself)
+
+  -- the two lines that carry the CAUSE, per run (null 0.500 applies to each) --
+  T1 MFCC-13:
+    per-subject: 0001=0.600 0002=0.620 0003=0.640 0004=0.654 0005=0.462 0007=0.542 0008=0.500 0009=0.520
+    mean band_pearson(own)=0.0165  mean band_pearson(other)=0.0069
+  T2 mel-64:
+    per-subject: 0001=0.460 0002=0.580 0003=0.680 0004=0.692 0005=0.519 0007=0.500 0008=0.438 0009=0.600
+    mean band_pearson(own)=0.0341  mean band_pearson(other)=0.0061
+  mel-8 (ref):
+    per-subject: 0001=0.480 0002=0.620 0003=0.680 0004=0.654 0005=0.519 0007=0.375 0008=0.500 0009=0.500
+    mean band_pearson(own)=0.0360  mean band_pearson(other)=0.0107
+  Read them for two questions the headline cannot answer: whether a net gain is one
+  subject or many, and whether the accuracy follows the SIZE of the reconstruction
+  correlations. The decision is an argmax, so it is invariant to a uniform rescaling
+  of those correlations -- which is exactly the contraction Exp. 13 flagged as the
+  unresolved part of its own verdict.
+
+=== DESCRIPTIVE -- McNemar against the mel-8 reference, BOTH directions ===
+  Does not enter the verdict (contract SS4). Both directions are printed so that a
+  candidate that is WORSE than the reference is as readable as one that is better.
+
+  -- T1 MFCC-13 vs mel-8 --
+
+[mcnemar] A=/Users/andrea/Library/Mobile Documents/com~apple~CloudDocs/Tesi/akami/runs/results/exp14_gate1_canary_mel8/madeeg_ownvsother.csv
+          B=/Users/andrea/Library/Mobile Documents/com~apple~CloudDocs/Tesi/akami/runs/results/exp14_mfcc13_ovo/madeeg_ownvsother.csv
+  comparisons: A=376  B=376  in common=376
+  A correct 208/376 = 0.5532   B correct 214/376 = 0.5691   (null 0.500, exact by symmetry)
+  agreement table: both 134 · A only 74 · B only 80 · neither 88
+  discordants=154   B beats A on 80/154   one-sided McNemar p=0.3436   (null 0.500)
+  pre-registered threshold at n_disc=154: 88/154 = 0.5714 (smallest integer with p < 0.05; 87 would give 0.0627)
+  -> B does NOT beat A under the pre-registered rule.
+
+[mcnemar] A=/Users/andrea/Library/Mobile Documents/com~apple~CloudDocs/Tesi/akami/runs/results/exp14_mfcc13_ovo/madeeg_ownvsother.csv
+          B=/Users/andrea/Library/Mobile Documents/com~apple~CloudDocs/Tesi/akami/runs/results/exp14_gate1_canary_mel8/madeeg_ownvsother.csv
+  comparisons: A=376  B=376  in common=376
+  A correct 214/376 = 0.5691   B correct 208/376 = 0.5532   (null 0.500, exact by symmetry)
+  agreement table: both 134 · A only 80 · B only 74 · neither 88
+  discordants=154   B beats A on 74/154   one-sided McNemar p=0.7136   (null 0.500)
+  pre-registered threshold at n_disc=154: 88/154 = 0.5714 (smallest integer with p < 0.05; 87 would give 0.0627)
+  -> B does NOT beat A under the pre-registered rule.
+
+  -- T2 mel-64 vs mel-8 --
+
+[mcnemar] A=/Users/andrea/Library/Mobile Documents/com~apple~CloudDocs/Tesi/akami/runs/results/exp14_gate1_canary_mel8/madeeg_ownvsother.csv
+          B=/Users/andrea/Library/Mobile Documents/com~apple~CloudDocs/Tesi/akami/runs/results/exp14_mel64_ovo/madeeg_ownvsother.csv
+  comparisons: A=376  B=376  in common=376
+  A correct 208/376 = 0.5532   B correct 212/376 = 0.5638   (null 0.500, exact by symmetry)
+  agreement table: both 184 · A only 24 · B only 28 · neither 140
+  discordants=52   B beats A on 28/52   one-sided McNemar p=0.3389   (null 0.500)
+  pre-registered threshold at n_disc=52: 33/52 = 0.6346 (smallest integer with p < 0.05; 32 would give 0.0632)
+  -> B does NOT beat A under the pre-registered rule.
+
+[mcnemar] A=/Users/andrea/Library/Mobile Documents/com~apple~CloudDocs/Tesi/akami/runs/results/exp14_mel64_ovo/madeeg_ownvsother.csv
+          B=/Users/andrea/Library/Mobile Documents/com~apple~CloudDocs/Tesi/akami/runs/results/exp14_gate1_canary_mel8/madeeg_ownvsother.csv
+  comparisons: A=376  B=376  in common=376
+  A correct 212/376 = 0.5638   B correct 208/376 = 0.5532   (null 0.500, exact by symmetry)
+  agreement table: both 184 · A only 28 · B only 24 · neither 140
+  discordants=52   B beats A on 24/52   one-sided McNemar p=0.7558   (null 0.500)
+  pre-registered threshold at n_disc=52: 33/52 = 0.6346 (smallest integer with p < 0.05; 32 would give 0.0632)
+  -> B does NOT beat A under the pre-registered rule.
+
+=== VERDICT -- the reading was written before the numbers (contract SS5) ===
+  BRANCH 1 (both track): arm C's front end is named -- MFCC-13, maximum separability
+  AND tracking. Any EEG use beyond own-vs-other stays behind a NEW pre-registration.
+
+=== CONDITIONAL SECONDARY (contract SS6) ===
+  NOT RUN: it is defined only if T1 misses the bar, and T1 cleared it. No other
+  variant is run, in any branch.
