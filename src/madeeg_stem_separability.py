@@ -78,6 +78,43 @@ CANDIDATES = [
 ]
 REFERENCES = [("mel-8", ("mel", 8)), ("flux", ("flux", 1))]
 
+# ---- EXP. 16 ARM A, contract SSA. Reached ONLY with --clap_dir; without it this file is
+#      byte-for-byte the Exp. 13 run, same candidates, same output path (Comandamenti #8). --
+CLAP_CANDIDATE = ("C7 CLAP-512", "clap")
+CLAP_DIM = 512                 # laion_clap's audio tower output width
+CLAP_SERIES_HZ = 16.0          # hop 62.5 ms, contract SSA.3
+NEG_SEED = 20260812            # declared before the run
+NEG_CAVEAT = [
+    "!! THIS RUN IS A NEGATIVE CONTROL AND CONTAINS NO DATA. Every candidate series is WHITE",
+    "!! NOISE with the dimensionality and the frame rate CLAP would have (512 dims at 16 Hz),",
+    "!! drawn from a generator seeded per stem, independent across stems by construction.",
+    "!! NOTHING HERE IS A RESULT AND NOTHING HERE MAY BE CITED AS ONE.",
+    "!! WHY IT EXISTS: Comandamenti #3 asks what the instrument does when the answer is known.",
+    "!! Here the answer is known to be NOTHING -- noise cannot separate anything -- so whatever",
+    "!! the gate says about this row is a statement about the CRITERION, not about a candidate.",
+    "!! Read it as the number a real 512-dimensional candidate has to beat before its own",
+    "!! PASS means anything: the `w/floor` column of this row is the no-structure baseline.",
+]
+CLAP_CAVEAT = [
+    "!! EXP. 16 ARM A. The K=1 candidate of this run is CLAP, the thesis's own premise, which",
+    "!! Registro SS2.5 records as NEVER having been tested as a reconstruction target. The six",
+    "!! Exp. 13 candidates are re-computed here only as the reference frame; the criterion,",
+    "!! the canary and the floor are the Exp. 13 ones, unchanged.",
+    "!! THE TIME-SCALE GAP, DECLARED BEFORE THE NUMBER: CLAP is time-invariant BY DESIGN and",
+    "!! its input aperture is 10 s. The pre-registered band (1-8 Hz) forces a 62.5 ms hop by",
+    "!! Nyquist, and a 62.5 ms window so that the aperture does not annihilate the band",
+    "!! (a W-long aperture nulls at 1/W: at 125 ms that null sits exactly on 8 Hz). So the",
+    "!! series is read at 160x finer a time scale than the model was built for. Whatever the",
+    "!! gate returns, THAT gap belongs next to it.",
+    "!! THE EMBEDDINGS WERE COMPUTED IN A DIFFERENT INTERPRETER (/opt/anaconda3, laion_clap",
+    "!! is not installed in /opt/miniconda3 and nothing was installed there). That is why the",
+    "!! Exp. 13 CANARY at the top of this file is the load-bearing check: it proves the",
+    "!! MEASUREMENT environment is unchanged. The embeddings enter as data, like a wav does.",
+    "!! A GO HERE IS A HYPOTHESIS, NOT A RESULT, and must be written so everywhere: Exp. 15",
+    "!! showed this gate can be won by a representation that then got WORSE on the real task.",
+    "!! Read the `w/floor` column before the gate column.",
+]
+
 CAVEAT = [
     "!! AUDIO ONLY, ZERO LOOKS SPENT: no EEG was read. This file opens the preprocessed",
     "!! HDF5 for its `soli` datasets and metadata only -- never ['response'], never a",
@@ -140,6 +177,26 @@ def _raw_contrast(x, sr, n_bands):
     return librosa.feature.spectral_contrast(S=S, sr=int(sr), n_bands=n_bands)
 
 
+def _load_clap(x, clap_dir):
+    """EXP. 16 ARM A. The pre-computed CLAP series of THIS stem, (512, n_frames).
+
+    Keyed by md5 of the stem's own float64 bytes, recomputed here from this process's copy of
+    the audio: a .npy can only be paired with the stem it was extracted from, so a renamed or
+    reordered file cannot silently attach the wrong series to a stem. The embeddings were
+    produced by a DIFFERENT interpreter (/opt/anaconda3, Legacy SS4 trap 1) and enter here as
+    data, exactly like a wav does -- the Exp. 13 canary above is what proves THIS
+    environment, the one that measures, has not moved."""
+    import hashlib
+    sha = hashlib.md5(np.ascontiguousarray(x, dtype=np.float64).tobytes()).hexdigest()
+    p = os.path.join(os.path.expanduser(clap_dir), sha + ".npy")
+    assert os.path.isfile(p), (
+        f"no CLAP embedding for the stem hashing to {sha} in {clap_dir} -- run stage 1 "
+        f"(src/madeeg_exp16a_clap_extract.py) on the SAME madeeg_dir first")
+    rep = np.load(p)
+    assert rep.ndim == 2 and rep.shape[0] == 512, f"{p}: expected (512, T), got {rep.shape}"
+    return np.asarray(rep, dtype=np.float64)
+
+
 def represent(x, sr, spec):
     """(stem @ sr) -> (n_bands, out_len), band-matched to the EEG grid. out_len comes from
     the AUDIO duration, never from an EEG trial."""
@@ -151,6 +208,22 @@ def represent(x, sr, spec):
         return _post(_raw_mfcc(x, sr, param), out_len)
     if kind == "contrast":
         return _post(_raw_contrast(x, sr, param), out_len)
+    if kind == "noise":
+        # NEGATIVE CONTROL. White noise with CLAP's shape: `param` dimensions at 16 Hz, for as
+        # long as this stem lasts. The generator is seeded from the stem's own bytes, so the
+        # series is reproducible and INDEPENDENT across stems by construction -- there is no
+        # shared structure for any criterion to find.
+        import hashlib
+        seed = int(hashlib.md5(np.ascontiguousarray(x, dtype=np.float64).tobytes()
+                               ).hexdigest()[:8], 16) ^ NEG_SEED
+        n_fr = int(x.shape[0] / sr * CLAP_SERIES_HZ)
+        return _post(np.random.RandomState(seed).standard_normal((param, n_fr)), out_len)
+    if kind == "clap":
+        # Same tail as every other candidate: resample onto the 64 Hz grid, band-pass each
+        # dimension to 1-8 Hz, z-score it. The CLAP series arrives at 16 Hz (hop 62.5 ms), so
+        # this is an UPsampling and it cannot create content above its own 8 Hz Nyquist --
+        # which is exactly why the contract fixes the hop rather than the window.
+        return _post(_load_clap(x, param), out_len)
     raise ValueError(f"unknown representation kind {kind!r}")
 
 
@@ -224,13 +297,40 @@ def main():
     ap.add_argument("--madeeg_dir", required=True)
     ap.add_argument("--out", default="", help="provenance file (default: "
                                               "docs/provenance/2026-08-12_exp13_stem_separability.txt)")
+    ap.add_argument("--clap_dir", default="",
+                    help="EXP. 16 ARM A: directory written by stage 1 (src/"
+                         "madeeg_exp16a_clap_extract.py) holding one <md5>.npy per stem plus "
+                         "manifest.json. Given it, ONE candidate is appended (C7 CLAP-512) "
+                         "and the run writes to the Exp. 16A provenance file instead of the "
+                         "Exp. 13 one -- a variant never writes over a result "
+                         "(Comandamenti #9). Without it this file is the Exp. 13 run, "
+                         "unchanged (Comandamenti #8)")
+    ap.add_argument("--negative_control", action="store_true",
+                    help="EXP. 16 ARM A: replace the CLAP candidate by WHITE NOISE of the same "
+                         f"shape ({CLAP_DIM} dims at {CLAP_SERIES_HZ:g} Hz). Comandamenti #3 "
+                         "the other way round: the answer is known to be 'nothing', so what "
+                         "the gate returns is a statement about the CRITERION. Writes to its "
+                         "own provenance file and cannot be confused with a result")
     args = ap.parse_args()
+    assert not (args.clap_dir and args.negative_control), (
+        "--clap_dir and --negative_control are two different runs and must not be mixed: one "
+        "measures a candidate, the other measures the criterion")
     md = os.path.expanduser(args.madeeg_dir)
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    out_path = args.out or os.path.join(root, "docs", "provenance",
-                                        "2026-08-12_exp13_stem_separability.txt")
+    default_out = ("2026-08-12_exp16A_negative_control.txt" if args.negative_control else
+                   "2026-08-12_exp16A_clap_separability.txt" if args.clap_dir else
+                   "2026-08-12_exp13_stem_separability.txt")
+    out_path = args.out or os.path.join(root, "docs", "provenance", default_out)
 
+    candidates = list(CANDIDATES)
     L = list(CAVEAT)
+    if args.clap_dir:
+        name, kind = CLAP_CANDIDATE
+        candidates.append((name, (kind, args.clap_dir)))
+        L = CLAP_CAVEAT + L
+    if args.negative_control:
+        candidates.append((f"N1 noise-{CLAP_DIM}", ("noise", CLAP_DIM)))
+        L = NEG_CAVEAT + L
 
     def say(line=""):
         L.append(line)
@@ -245,6 +345,27 @@ def main():
     say("          identical to the Exp. 9 audio-only diagnostic; the criterion then takes |corr|.")
     say(f"_post/source_repr equivalence on real audio: max abs diff "
         f"{check_post_matches_source_repr(stems):.3e} (must be 0 to fp)")
+
+    if args.clap_dir:
+        # The provenance of the embeddings belongs INSIDE this file, not only next to it.
+        import json
+        man = json.load(open(os.path.join(os.path.expanduser(args.clap_dir), "manifest.json")))
+        say()
+        say("=== EXP. 16A -- provenance of the CLAP series (stage 1, a DIFFERENT interpreter) ===")
+        for k in ("model", "checkpoint", "checkpoint_bytes", "checkpoint_sha256",
+                  "audio_sample_rate_in", "clap_sample_rate", "resampler", "window_s", "hop_s",
+                  "series_rate_hz", "nyquist_hz", "clap_input_len_s", "clap_padding",
+                  "embedding_dim", "l2_normalised_per_frame", "seed", "interpreter",
+                  "versions", "total_frames", "extraction_seconds"):
+            say(f"  {k}: {man.get(k)}")
+        miss = [h for h in man["stems"] if not os.path.isfile(
+            os.path.join(os.path.expanduser(args.clap_dir), h + ".npy"))]
+        say(f"  stems with a series on disk: {len(man['stems']) - len(miss)}/{len(stems)} "
+            f"(missing: {miss if miss else 'none'})")
+        say("  The criterion, the canary, the floor and the 26/36 threshold are the Exp. 13")
+        say("  ones, applied UNCHANGED as the contract requires (K=1 for this arm; the")
+        say("  threshold is deliberately NOT re-derived for a smaller K -- that would be")
+        say("  loosening a pre-registered number after the fact).")
 
     # ---- CANARY FIRST. No candidate is computed until it passes. ----
     say()
@@ -280,7 +401,7 @@ def main():
         f"deterministic, no seed. Unequal-length pairs truncated to the shorter stem.")
 
     rows = []
-    for name, spec in REFERENCES + CANDIDATES:
+    for name, spec in REFERENCES + candidates:
         w, fl, nb = ref[name] if name in ref else stats(units, stems, spec)
         aw, af = np.abs(w), np.abs(fl)
         k = int((aw < mel8).sum())
@@ -302,7 +423,11 @@ def main():
         f"{'floor':>7s} {'sd':>6s} {'n':>4s} | {'gap':>7s} {'w/floor':>8s} | "
         f"{'vs mel-8':>9s} {'p':>8s} | c1  c2  gate")
     for r in rows:
-        tag = "ref" if r["name"] in ("mel-8", "flux") else ("PASS" if r["passed"] else "no")
+        # A negative control can never be a winner, but its c1/c2 must be printed honestly:
+        # the whole point is what the CRITERION does with a row that has nothing in it.
+        tag = ("ref" if r["name"] in ("mel-8", "flux")
+               else ("NOISE MEETS BOTH" if r["c1"] and r["c2"] else "noise, fails")
+               if r["name"].startswith("N") else ("PASS" if r["passed"] else "no"))
         say(f"  {r['name']:15s} {r['nb']:4d} {r['mean']:7.4f} {r['med']:7.4f} {r['signed']:+7.4f} | "
             f"{r['fmean']:7.4f} {r['fsd']:6.4f} {r['fn']:4d} | {r['gap']:+7.4f} "
             f"{r['mean'] / r['fmean']:8.3f} | "
@@ -322,13 +447,43 @@ def main():
 
     cand = [r for r in rows if r["name"].startswith("C")]
     winners = [r["name"] for r in cand if r["passed"]]
+    for r in [r for r in rows if r["name"].startswith("N")]:
+        say()
+        say("=== NEGATIVE CONTROL -- what the criterion does with a row that has NOTHING in it ===")
+        say(f"  {r['name']}: {CLAP_DIM} independent white-noise dimensions at "
+            f"{CLAP_SERIES_HZ:g} Hz, one draw per stem, seed {NEG_SEED}, no shared structure")
+        say(f"  by construction. criterion 1: {r['k']}/{len(units)} (needs >= {CRIT1_MIN}) -> "
+            f"{'MET' if r['c1'] else 'not met'} · criterion 2: gap {r['gap']:+.4f} "
+            f"(needs <= {CRIT2_GAP:.2f}) -> {'MET' if r['c2'] else 'not met'}")
+        say(f"  w/floor = {r['mean'] / r['fmean']:.3f}   (mel-8 "
+            f"{rows[0]['mean'] / rows[0]['fmean']:.3f})")
+        if r["c1"] and r["c2"]:
+            say("  ==> THE PRE-REGISTERED CRITERION IS MET BY NOISE. It is therefore NOT")
+            say("  sufficient on its own to distinguish 'this representation separates the two")
+            say("  stems' from 'this representation has many independent dimensions and a small")
+            say("  aggregate correlation'. Exp. 13 SS5.1 declared this weakness in words and")
+            say("  left it open; this row is the number. A candidate of the same dimensionality")
+            say("  that passes the gate has demonstrated NOTHING until its w/floor is read")
+            say("  against this row -- which is why the contract makes that column mandatory.")
+            say("  NOT DONE HERE: the criterion is NOT changed. Changing a pre-registered")
+            say("  threshold after seeing what it admits is exactly what pre-registration")
+            say("  exists to prevent (Comandamenti #5/#6). This is a control, reported next")
+            say("  to the criterion, not a replacement for it.")
+        else:
+            say("  ==> the criterion rejects a structureless row, which is the outcome a")
+            say("  criterion should have. It says nothing about any real candidate.")
     say()
-    say("=== descriptive ranking of the 6 gaps (contract SS6: the only secondary allowed) ===")
+    say(f"=== descriptive ranking of the {len(cand)} gaps "
+        "(contract SS6: the only secondary allowed) ===")
     for i, r in enumerate(sorted(cand, key=lambda r: r["gap"]), 1):
         say(f"  {i}. {r['name']:15s} gap {r['gap']:+.4f}   "
             f"(within {r['mean']:.4f} vs floor {r['fmean']:.4f})")
     say()
     say(f"=== VERDICT: {'GO' if winners else 'NO-GO'} ===")
+    if args.negative_control:
+        say("  (In a negative-control run the six C rows are the Exp. 13 candidates recomputed;")
+        say("   they reproduce that run exactly. The line below is Exp. 13's verdict restated,")
+        say("   NOT a new one, and the N row above is not a candidate and cannot win anything.)")
     say(f"  candidates passing BOTH criteria: {', '.join(winners) if winners else 'none'}")
     if winners:
         say("  Pre-declared reading (contract SS6): arm C has a named target, and the")

@@ -1,0 +1,144 @@
+!! READ BEFORE THE NUMBERS (Comandamenti #9).
+!! WHAT THIS MEASURES: own-vs-other measures TRACKING and nothing else. Given the EEG
+!! of a held-out SOLO segment, is that segment's own audio scored above ANOTHER solo's?
+!! The other segment is a different song, so nothing here says anything about separating
+!! the two stems of a duo, and nothing here is an attention decision.
+!! NULL = 0.500, EXACT BY SYMMETRY, not estimated: every pair is scored in both
+!! directions, so a decoder with nothing but a fixed instrument preference gets exactly
+!! one of the two right. The null is printed next to every accuracy.
+!! NOTHING IS SPENT FROM THE LEDGER OF LOOKS: the solos are declared free training
+!! material. No duo decision, no trio, no split by genre/melody/instrument/subject.
+!! BUT IT IS NOT FREE IN THE FAMILY-WISE ERROR RATE: with Exp. 7 (8 candidates),
+!! Exp. 8 (2) and Exp. 14 (2), this is the 13th comparison on the SAME 376 decisions.
+!! Any sentence of the form 'we found something that beats 208/376' must carry that
+!! count next to it (contract, preamble).
+!! THE POSITIVE-CONTROL NUMBER IS NOT A RESULT. It licenses the wiring of the
+!! multi-view path and says nothing about the real data.
+!! rho (CCA) and band_pearson (ridge) are DIFFERENT statistics and are never compared.
+!! Only the ACCURACY is comparable across estimators, because it is dimensionless.
+!! K = 1 for this arm and the bar (>= 208/376) were written in the vault contract of
+!! 12/8/2026 BEFORE this file existed, and are not editable now. McNemar is DESCRIPTIVE,
+!! in both directions, against BOTH references, and does NOT enter the verdict.
+
+=== EXP. 16 ARM B -- a richer EEG feature extraction on own-vs-other ===
+interpreter /opt/miniconda3/bin/python · protocol: raw_solos, pooled, notch+ICA, mel-8 target, 1-8 Hz,
+64 Hz, lags 0-250 ms, seed 42, 5 folds -- every one of them identical to the two
+pinned references. Single variable: the EEG-side feature set of the CCA.
+
+=== PRELIMINARY GATE (contract SSB.2) -- which views produced the pinned 209/376? ===
+  /Users/andrea/Library/Mobile Documents/com~apple~CloudDocs/Tesi/akami/runs/results/ovo_cca_ica/madeeg_ownvsother_summary.txt
+    MODEL 9: views=eeg_lagged stim_views=source_repr k=5 reg=0.001
+  -> the pinned run used the SINGLE view eeg_lagged: the arm is NOT already done, and it proceeds.
+
+=== GATE 1 -- REGRESSION CANARY on the default path (crossed before anything else) ===
+  ridge --target mel --n_mels 8 -> 208/376 (expected 208/376)   null 0.500
+  md5(madeeg_ownvsother.csv) = 2eaa926244de340d31907c6deeb04b0c
+                    expected = 2eaa926244de340d31907c6deeb04b0c
+  -> [PASSED] the default path is bit-for-bit what it was.
+
+=== GATE 2 -- SINGLE-VIEW CCA REPRODUCTION (addition of this file, not a relaxation) ===
+  The contract's descriptive comparison is against 'the 209/376 of the
+  single-view CCA', measured on 10/8. madeeg_reconstruction.py has been edited twice
+  since (Exp. 14). Re-measured here; it must reproduce the count AND the decisions.
+  --cca_views eeg_lagged -> 209/376 (expected 209/376)   null 0.500
+  decision-identity against the archived 10/8 run: 376/376 comparisons in common, discordant = 0 (expected 0)
+  md5 archived dbbe6400764c94876a569aa4e6ff4c7b · today dbbe6400764c94876a569aa4e6ff4c7b
+  (the md5 may differ without the gate failing: it also hashes the float columns.
+   The gate is on the DECISIONS, which are what the McNemar pairs.)
+  -> [PASSED]
+
+=== GATE 3 -- POSITIVE CONTROL of the multi-view CCA path, threshold >= 0.95 ===
+  Synthetic EEG (Exp. 8/14 construction). A PASS licenses the wiring of the multi-view
+  path and says NOTHING about the real data. The file's own built-in PASS line still
+  reads 0.90; the contract's 0.95 is applied HERE and anything between the
+  two counts as FAILED.
+  B1 CCA eeg_lagged+band_power AAD accuracy on synthetic EEG = 1.0000   chance 0.500   -> [PASSED]
+    views=eeg_lagged,band_power stim_views=source_repr k=5 reg=0.001 blocks_x=[('eeg_lagged', 340), ('band_power', 40)] blocks_y=[('source_repr', 8)]
+    ^ blocks_x is the measured proof that band_power actually entered, and with how
+      many columns: 20 channels x the bands that FIT inside 1-8 Hz (delta 1-4, theta
+      4-8). alpha and beta are ZERO by construction inside this band and the module
+      drops them and declares the drop -- widening the band would be a separate,
+      declared change and is NOT made here.
+  The wiring is licensed. The real number may now be read.
+
+=== THE MEASUREMENT -- own-vs-other on held-out SOLO segments, K = 1 ===
+  primary bar, written before the code: >= 208/376, one-sided exact binomial
+  P(X >= 208 | 376, 0.5) = 0.0221 <= 0.025 = 0.05/2 (Bonferroni, K = 2 with arm A).
+
+  B1 CCA eeg_lagged+band_power 202/376 = 0.5372   null 0.500   one-sided exact binomial p = 0.08185   bar 208/376   -> MISSES THE BAR
+  ridge mel-8 (ref, = the bar) 208/376 = 0.5532   null 0.500   p = 0.02208
+  CCA single view (ref)        209/376 = 0.5559   null 0.500   p = 0.01717
+
+  -- the lines that carry the CAUSE rather than the headline (null 0.500 each) --
+  B1 CCA eeg_lagged+band_power:
+    MODEL 9: views=eeg_lagged,band_power stim_views=source_repr k=5 reg=0.001
+    per-subject: 0001=0.480 0002=0.620 0003=0.640 0004=0.692 0005=0.462 0007=0.417 0008=0.479 0009=0.440
+    mean rho(own)=0.0629  mean rho(other)=0.0058
+  CCA single view:
+    MODEL 9: views=eeg_lagged stim_views=source_repr k=5 reg=0.001
+    per-subject: 0001=0.660 0002=0.560 0003=0.640 0004=0.654 0005=0.423 0007=0.458 0008=0.646 0009=0.360
+    mean rho(own)=0.0666  mean rho(other)=0.0112
+  ridge mel-8:
+    per-subject: 0001=0.480 0002=0.620 0003=0.680 0004=0.654 0005=0.519 0007=0.375 0008=0.500 0009=0.500
+    mean band_pearson(own)=0.0360  mean band_pearson(other)=0.0107
+  Read them for the two questions the headline cannot answer: whether a change is one
+  subject or many, and whether the accuracy follows the SIZE of the similarity. The
+  decision is an argmax between two scores of the SAME estimator, so it is invariant
+  to a uniform rescaling of them -- a bigger mean rho is not a better decoder.
+
+=== DESCRIPTIVE -- McNemar, BOTH references, BOTH directions ===
+  Does not enter the verdict (contract SSB.3). Both directions are printed so that a
+  candidate WORSE than a reference is as readable as one that is better. The second
+  pair is what isolates what band_power adds, since it holds the estimator fixed and
+  changes only the EEG feature set.
+
+  -- B1 CCA eeg_lagged+band_power vs the ridge mel-8 reference (208/376) --
+
+[mcnemar] A=/Users/andrea/Library/Mobile Documents/com~apple~CloudDocs/Tesi/akami/runs/results/exp16b_gate1_canary_mel8/madeeg_ownvsother.csv
+          B=/Users/andrea/Library/Mobile Documents/com~apple~CloudDocs/Tesi/akami/runs/results/exp16b_cca_bp_ovo/madeeg_ownvsother.csv
+  comparisons: A=376  B=376  in common=376
+  A correct 208/376 = 0.5532   B correct 202/376 = 0.5372   (null 0.500, exact by symmetry)
+  agreement table: both 136 · A only 72 · B only 66 · neither 102
+  discordants=138   B beats A on 66/138   one-sided McNemar p=0.7243   (null 0.500)
+  pre-registered threshold at n_disc=138: 80/138 = 0.5797 (smallest integer with p < 0.05; 79 would give 0.0527)
+  -> B does NOT beat A under the pre-registered rule.
+
+[mcnemar] A=/Users/andrea/Library/Mobile Documents/com~apple~CloudDocs/Tesi/akami/runs/results/exp16b_cca_bp_ovo/madeeg_ownvsother.csv
+          B=/Users/andrea/Library/Mobile Documents/com~apple~CloudDocs/Tesi/akami/runs/results/exp16b_gate1_canary_mel8/madeeg_ownvsother.csv
+  comparisons: A=376  B=376  in common=376
+  A correct 202/376 = 0.5372   B correct 208/376 = 0.5532   (null 0.500, exact by symmetry)
+  agreement table: both 136 · A only 66 · B only 72 · neither 102
+  discordants=138   B beats A on 72/138   one-sided McNemar p=0.3353   (null 0.500)
+  pre-registered threshold at n_disc=138: 80/138 = 0.5797 (smallest integer with p < 0.05; 79 would give 0.0527)
+  -> B does NOT beat A under the pre-registered rule.
+
+  -- B1 CCA eeg_lagged+band_power vs the single-view CCA (209/376) -- what band_power adds --
+
+[mcnemar] A=/Users/andrea/Library/Mobile Documents/com~apple~CloudDocs/Tesi/akami/runs/results/exp16b_gate2_cca_single/madeeg_ownvsother.csv
+          B=/Users/andrea/Library/Mobile Documents/com~apple~CloudDocs/Tesi/akami/runs/results/exp16b_cca_bp_ovo/madeeg_ownvsother.csv
+  comparisons: A=376  B=376  in common=376
+  A correct 209/376 = 0.5559   B correct 202/376 = 0.5372   (null 0.500, exact by symmetry)
+  agreement table: both 159 · A only 50 · B only 43 · neither 124
+  discordants=93   B beats A on 43/93   one-sided McNemar p=0.7965   (null 0.500)
+  pre-registered threshold at n_disc=93: 55/93 = 0.5914 (smallest integer with p < 0.05; 54 would give 0.0731)
+  -> B does NOT beat A under the pre-registered rule.
+
+[mcnemar] A=/Users/andrea/Library/Mobile Documents/com~apple~CloudDocs/Tesi/akami/runs/results/exp16b_cca_bp_ovo/madeeg_ownvsother.csv
+          B=/Users/andrea/Library/Mobile Documents/com~apple~CloudDocs/Tesi/akami/runs/results/exp16b_gate2_cca_single/madeeg_ownvsother.csv
+  comparisons: A=376  B=376  in common=376
+  A correct 202/376 = 0.5372   B correct 209/376 = 0.5559   (null 0.500, exact by symmetry)
+  agreement table: both 159 · A only 43 · B only 50 · neither 124
+  discordants=93   B beats A on 50/93   one-sided McNemar p=0.2670   (null 0.500)
+  pre-registered threshold at n_disc=93: 55/93 = 0.5914 (smallest integer with p < 0.05; 54 would give 0.0731)
+  -> B does NOT beat A under the pre-registered rule.
+
+=== VERDICT -- the reading was written before the numbers (contract SS5) ===
+  B FAILS: on the EEG side too, the hand-picked-feature route is closed, with
+  band_power -- the only EEG view this project ever proposed from the literature
+  and never tried. Pre-declared reading, contract SS5.
+
+  Family-wise bookkeeping, printed with the verdict: this is comparison 13 on the
+  same 376 decisions (Exp. 7 x8 + Exp. 8 x2 + Exp. 14 x2 + this x1). The bar itself
+  is Bonferroni-corrected only for K = 2 WITHIN Exp. 16.
+  What this arm does NOT say, in any branch: nothing about the duo attention
+  decision, nothing about any split, and nothing that licenses a second candidate.

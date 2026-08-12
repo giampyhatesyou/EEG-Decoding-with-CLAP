@@ -1,0 +1,124 @@
+!! STATUS: **NOT EXECUTED**. THIS FILE CONTAINS NO MEASUREMENT AND NO NUMBER ABOUT CLAP.
+!! It is the provenance of a gate that was PREPARED and then BLOCKED, and it is written by
+!! hand. When stage 1 and stage 2 actually run, they OVERWRITE this file with the real
+!! output; until the first line of that output says otherwise, nothing here may be cited as
+!! a measurement of anything (Comandamenti #9: the caveat lives inside the file, above the
+!! numbers -- here, in place of them).
+!!
+!! ZERO LOOKS SPENT. No EEG was opened by anything described here.
+
+=== EXP. 16 ARM A -- does CLAP separate the two stems? (AUDIO ONLY) ===
+contract: vault, "Cap. 2 -- Exp. 16: la premessa della tesi messa alla prova -- CLAP come
+          bersaglio e le feature EEG ricche, criterio pre-registrato (12 ago 2026)", SSA
+written:  12 August 2026, by the agent executing that contract
+
+--------------------------------------------------------------------------------------
+WHY THERE IS NO NUMBER, AND IT IS NOT THE COMPUTE BUDGET
+--------------------------------------------------------------------------------------
+The contract's SSA.2 records, correctly, that `laion_clap` is installed in /opt/anaconda3
+and not in /opt/miniconda3, and prescribes the two-stage design that follows from it. What
+the contract could not know is that the MODEL WEIGHTS ARE NOT ON THIS MACHINE:
+
+  * `~/.cache/laion_clap/` does not exist; no *.pt over 100 MB exists anywhere under $HOME;
+    `/opt/anaconda3/lib/python3.12/site-packages/laion_clap/*.pt` does not exist;
+    `akami/checkpoints/` holds only a README.
+  * `laion_clap.CLAP_Module.load_ckpt()` with no argument therefore DOWNLOADS
+        https://huggingface.co/lukewys/laion_clap/resolve/main/630k-audioset-best.pt
+    VERIFIED by an HTTP HEAD (no bytes transferred): content-length = 1 863 587 645,
+    i.e. 1.74 GiB.
+
+Downloading 1.74 GiB is A.'s decision, exactly as the 18.4 GiB SparrKULee download is
+(Progress log, 12/8: "A. non scarica finche' il gate Exp. 13 non parla"). The agent did not
+download it. `src/madeeg_exp16a_clap_extract.py` REFUSES to trigger the download by itself:
+it exits unless --ckpt points at a file that already exists.
+
+--------------------------------------------------------------------------------------
+WHAT WAS SETTLED ANYWAY, BEFORE ANY NUMBER COULD EXIST
+--------------------------------------------------------------------------------------
+1. THE COMPUTE BUDGET IS NOT THE BINDING CONSTRAINT, and this is MEASURED, not estimated.
+   The CLAP audio tower (HTSAT-tiny, enable_fusion=False, the architecture
+   src/models/clap_encoder.py uses) was instantiated with RANDOM weights -- a stopwatch,
+   not an experiment, and no embedding from it was kept or looked at -- and timed on this
+   machine:
+        batch  8:  0.51 s -> 63.9 ms per window
+        batch 32:  1.97 s -> 61.7 ms per window
+   The 24 distinct duo stems carry 555.16 s of audio; at hop 62.5 ms that is 8876 windows
+   (counted, by framing the real stems). 8876 x 62 ms = ~9.2 minutes of CPU.
+   BUDGET: 90 minutes (contract SSA.3). ==> IT FITS, with ~10x of margin.
+   ==> THE DECLARED FALLBACK RECIPE (hop 125 ms, band 1-4 Hz, mel-8 re-run in the same band
+   as a paired reference) IS NOT USED AND WAS NOT NEEDED. The criterion is untouched.
+
+2. THE RECIPE IS FROZEN IN THE CODE, before any number exists (contract SSA.3):
+        hop    62.5 ms  -> series rate 16 Hz -> Nyquist 8 Hz = the top of the band
+        window 62.5 ms  = hop, consecutive, non-overlapping
+        input  mono, resampled 44100 -> 48000 with scipy.signal.resample_poly(x, 160, 147)
+        output 512 dims per frame, float32, one <md5-of-the-stem>.npy per stem
+   Three independent reasons for that window, all written before any number:
+   (a) MEASURED in laion_clap.training.data.get_audio_features: any input shorter than 10 s
+       is `repeatpad`, i.e. the waveform is REPEATED floor(480000/len) times and only the
+       remainder is zero-filled. 3000 samples divides 480000 exactly (160 repeats), so this
+       window is padded with NO zeros at all -- the model never sees invented silence.
+   (b) a sliding aperture of length W attenuates the series like |sinc(f W)|. At W = 125 ms
+       the first null falls exactly on 8 Hz and the top of the pre-registered band is
+       annihilated by the aperture itself; at W = 62.5 ms the first null is at 16 Hz and the
+       whole 1-8 Hz band survives (0.64 at 8 Hz).
+   (c) window = hop makes the frames disjoint, so no correlation between neighbouring frames
+       is manufactured by overlap.
+
+3. !! THE LIMIT THAT COMES WITH THE RECIPE, DECLARED NOW AND NOT AFTER THE NUMBER:
+   CLAP is time-invariant BY DESIGN and its input aperture is 10 s. The pre-registered band
+   forces 62.5 ms. The two time scales are 160x apart. This is not an implementation defect
+   and it cannot be engineered away inside this contract: it is the premise of the thesis
+   and the premise of the decoder being built on different time scales. Whatever the gate
+   eventually returns, THAT belongs next to it.
+
+4. THE MEASUREMENT PATH IS PROVEN TO RUN END TO END. Stage 2 is
+   `src/madeeg_stem_separability.py --clap_dir`, i.e. the Exp. 13 gate reading the .npy as
+   just another representation. Checked on this machine with SYNTHETIC arrays of the right
+   shape, written outside the repo: the Exp. 13 canary is crossed first and passes, the C7
+   row is produced, the run takes 11 s. And the DEFAULT path is untouched: re-running
+   `src/madeeg_stem_separability.py` with no new flag rewrites
+   docs/provenance/2026-08-12_exp13_stem_separability.txt BYTE-IDENTICALLY (md5
+   a3c7533cb0d79ee849bb4c8c90ced803 before and after the diff, `git diff` empty)
+   -- Comandamenti #8.
+
+--------------------------------------------------------------------------------------
+THE ONE REAL NUMBER THIS ARM DID PRODUCE, AND IT IS ABOUT THE CRITERION
+--------------------------------------------------------------------------------------
+See docs/provenance/2026-08-12_exp16A_negative_control.txt (11 s, no checkpoint needed):
+
+  512 independent white-noise dimensions at 16 Hz, one draw per stem, seed 20260812, no
+  shared structure by construction, pushed through the SAME protocol as every candidate:
+      criterion 1:  36/36   (threshold >= 26/36, P(X>=26|36,0.5) = 0.005657)  -> MET
+      criterion 2:  gap -0.0002  (threshold <= 0.05)                          -> MET
+      w/floor    :  0.922        (mel-8 3.131 · MFCC-13 2.084)
+
+  ==> THE PRE-REGISTERED CRITERION IS MET BY NOISE at this dimensionality. It cannot, on
+  its own, distinguish "this representation separates the two stems" from "this
+  representation has many independent dimensions and therefore a small aggregate
+  correlation". Exp. 13 SS5.1 declared this weakness in words and left it open; this is the
+  number. CLAP-512 has exactly that dimensionality.
+
+  THE CRITERION WAS NOT CHANGED (Comandamenti #5/#6). Changing a pre-registered threshold
+  after seeing what it admits is precisely what pre-registration exists to prevent. What was
+  done instead is what Exp. 13 did with the same problem: print the scale-free column next
+  to it. `w/floor` = 0.922 is the number a real CLAP row has to beat before its own PASS
+  means anything.
+
+--------------------------------------------------------------------------------------
+TO EXECUTE, ONCE A. HAS DECIDED ON THE 1.74 GiB
+--------------------------------------------------------------------------------------
+  CKPT=/path/to/630k-audioset-best.pt bash scripts/replicate/exp16a_clap_separability.sh
+which runs, in order:
+  /opt/anaconda3/bin/python src/madeeg_exp16a_clap_extract.py --madeeg_dir ~/madeeg \
+      --out_dir runs/clap_exp16a --ckpt "$CKPT"                      # ~9 min, extraction only
+  /opt/miniconda3/bin/python src/madeeg_stem_separability.py --madeeg_dir ~/madeeg \
+      --clap_dir runs/clap_exp16a                                    # ~11 s, THE measurement
+The second command overwrites THIS file with the real output. Its first block is the Exp. 13
+CANARY (mel-8 0.1772/0.1442 · flux 0.2874/0.2417 · 30/36, tolerance +-0.0010) and it
+hard-exits if the canary fails: that canary is the proof that the MEASUREMENT environment
+did not move while the embeddings were computed in another interpreter.
+
+AND WHEN IT RUNS: a GO IS A HYPOTHESIS, NOT A RESULT, and must be written that way in every
+line of every report (contract SSA.4). Exp. 15 won this gate with MFCC-13 and then got WORSE
+on the real task; the negative control above shows noise wins it too. Read `w/floor` first.

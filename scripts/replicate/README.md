@@ -55,6 +55,8 @@ questo qui ci sono script su file e array bash, non one-liner con variabili.
 | `exp13_stem_separability.sh` | separabilità dei due stem **solo audio**, 6 rappresentazioni, contro un pavimento cross-brano | **~10 s CPU (misurato)** | **NO** — nessun EEG aperto | canarino mel-8 **0.1772/0.1442**, flux **0.2874/0.2417**, 30/36 · C3 MFCC-13 **0.0533** vs pav. 0.0256, 32/36 · GO | `docs/provenance/2026-08-12_exp13_stem_separability.txt` |
 | `exp14_mfcc_tracking.sh` | se MFCC-13 e mel-64 sono **tracciate** dall'EEG (own-vs-other), barra ≥ 208/376 | ~3–4 min CPU (misurato dai timestamp) | **NO** | T1 **214/376 = 0.5691** · T2 **212/376** · entrambe tracciano | `docs/provenance/2026-08-12_exp14_mfcc_tracking.txt` · `runs/results/exp14_*/` |
 | `exp15_mfcc_differential.sh` | il **differenziale attenzionale standardizzato** D sotto MFCC contro mel, permutazione appaiata | ~2–3 min CPU (misurato dai timestamp) | **SÌ** (duo, già spesi) | D(mel) **+0.1001** vs D(MFCC) **−0.1119**, p **0.9833**, MDD **0.2467** · accuratezza 65/154 vs 86/154 | `docs/provenance/2026-08-12_exp15_mfcc_differential.txt` · `runs/results/exp15_*/` |
+| `exp16a_clap_separability.sh` | **CLAP** come settimo candidato del gate di separabilità, in due stadi (estrazione in `/opt/anaconda3`, misura in `/opt/miniconda3`) | ~9 min CPU **misurati** per l'estrazione + 11 s per la misura | **NO** — nessun EEG aperto | 🔴 **stadio 1 non eseguito**: il checkpoint (1.74 GiB) non è in cache e scaricarlo è decisione di A. · **controllo negativo già misurato: 512 dim di rumore soddisfano ENTRAMBI i criteri** (36/36, gap −0.0002, w/pav. **0.922** contro 3.131 di mel-8) | `docs/provenance/2026-08-12_exp16A_negative_control.txt` |
+| `exp16b_ccaviews.sh` | se `band_power` (potenza log per canale, δ+θ) aggiunta alla CCA alza il tracciamento su own-vs-other, barra ≥ 208/376 | ~7 min CPU (misurato) | **NO** | **202/376 = 0.5372** (p 0.0819) contro ridge 208 e CCA 1-vista 209 · 🔴 **barra non superata** · McNemar non distingue in nessuna delle 4 direzioni | `docs/provenance/2026-08-12_exp16B_ccaviews_ownvsother.txt` · `runs/results/exp16b_*/` |
 | `run_all_cheap.sh` | in sequenza **solo** exp13 · exp07 · exp08 · exp14 | ~25–50 min CPU | **NO** | — | — |
 
 **Come si legge la colonna «sguardi»:** *NO* = il registro degli sguardi dichiara
@@ -95,4 +97,6 @@ scritta 38/90).
   `python src/madeeg_diagnose.py --records ...` → `docs/provenance/2026-08-11_diagnose_step{C,D}.txt`.
 - **Exp. 10** — ritirato **prima** della run (insensibile per algebra). Il flag
   `--score_rule ortho` esiste ed è inerte: **non produrre numeri con esso**.
-- **Exp. 16** — in corso su un altro tavolo al 12/8.
+- **Exp. 16** — coperto: braccio B eseguito (`exp16b_ccaviews.sh`), braccio A fermo
+  allo stadio 1 per un download di 1.74 GiB che è decisione di A.
+  (`exp16a_clap_separability.sh`, che gira comunque il controllo negativo).
