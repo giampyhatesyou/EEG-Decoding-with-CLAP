@@ -1,0 +1,212 @@
+!! READ BEFORE THE NUMBERS (Comandamenti #9).
+!! EXPLORATORY BY CONSTRUCTION, AND SAID SO IN THE TITLE. This runs on the DUOS, which
+!! the vault's ledger of looks declares ALREADY ALL SPENT. No number here is
+!! confirmatory, whatever threshold it clears. NO TRIO IS TOUCHED: 92 stereo + 93 mono
+!! are the only untouched holdout, ONE shot, and even a GREEN primary here does not open
+!! them -- that requires a NEW pre-registration read by A. first (contract SS6).
+!! THE PRIMARY IS THE STANDARDIZED DIFFERENTIAL D = mean(d)/sd(d), NOT THE ACCURACY.
+!! Why: the contract's SS0 check ('can this test be won?') was done BEFORE the design,
+!! with our own measurements, and predicted +1.4 trials where the Exp. 9 bar needs +4
+!! (power 0.370). A pre-registered accuracy primary would have been a pre-registered
+!! failure. The bar was NOT lowered; the QUANTITY changed. And the standardization is
+!! mandatory: MFCC correlations are ~46% of the mel ones, so comparing RAW differentials
+!! would repeat exactly the scale-invariance defect Exp. 13 left open.
+!! NULL = 0, EXACT BY CONSTRUCTION, not estimated: the same quantity under two
+!! representations on the same trials has expected difference 0 under the null. It is
+!! printed next to the statistic.
+!! ACCURACY IS SECONDARY AND DESCRIPTIVE. It is reported next to SS0's prediction
+!! (87.4/154) and next to the Exp. 9 bar (90/154). MISSING THAT BAR IS THE PREDICTED
+!! OUTCOME, NOT A SURPRISE -- and no threshold anywhere has been lowered to meet it.
+!! THE POSITIVE-CONTROL NUMBER IS NOT A RESULT. It licenses the wiring of the MFCC path
+!! on the duo decision and says NOTHING about the real data: every EEG in it is
+!! synthetic. It may never be cited as a result.
+!! K = 1. One permutation test, on the k-fold duo protocol (P2), the one SS0's model is
+!! built on. D under the paper protocol (P1) is printed as a DESCRIPTIVE statistic and
+!! is not tested.
+
+=== EXP. 15 (EXPLORATORY) -- the standardized attentional differential under MFCC-13 ===
+interpreter /opt/miniconda3/bin/python · protocol: ridge, pooled, eeg_clean none, 1-8 Hz, 64 Hz,
+lags 0-250 ms, seed 42, 5 folds, stereo -- every one of them identical to the Exp. 9
+mel anchors. Single variable: the stimulus representation.
+  mel-8    : --target mel --n_mels 8
+  MFCC-13  : --target mfcc --n_mels 64 --n_mfcc 13   (DCT-II ortho of log-mel-64,
+             coefficients 1..13, c0 dropped -- the Exp. 13 C3 / Exp. 14 T1 object)
+
+=== GATE 1 -- MEL ANCHORS DECISION-IDENTICAL to Exp. 9 (crossed before anything else) ===
+  Not a total-count check: pred and correct are compared TRIAL BY TRIAL, keyed
+  subject+stim. These re-runs are also the mel-8 arm of the primary.
+  P1 vs runs/results/canary_rawsolos/: n_new=154 n_old=154 in common=154 (expected 154)
+     74/154 correct (expected 74/154)   null 0.500   discordant decisions = 0 (must be 0)
+     [G1b, addition] max abs deviation of the correlations behind those decisions = 0.000e+00
+     -> [PASSED]
+  P2 vs runs/results/canary_duo/: n_new=154 n_old=154 in common=154 (expected 154)
+     86/154 correct (expected 86/154)   null 0.500   discordant decisions = 0 (must be 0)
+     [G1b, addition] max abs deviation of the correlations behind those decisions = 0.000e+00
+     -> [PASSED]
+  Both anchors are decision-identical, trial by trial. The wiring is Exp. 9's.
+
+=== GATE 2 -- POSITIVE CONTROL, MFCC path on the DUO DECISION, threshold >= 0.95 ===
+  Exp. 8/14 construction: every EEG replaced by a synthetic linear mixture of that
+  trial's attended MFCC-13 representation at the model's lags + noise, then the REAL
+  pipeline decides. A PASS licenses the wiring and says NOTHING about the real data.
+  MFCC-13 AAD accuracy on synthetic EEG = 1.0000   chance 0.500   threshold >= 0.95   -> [PASSED]
+  The wiring is licensed. The real numbers may now be read.
+
+=== THE MEASUREMENT -- MFCC-13 on the two Exp. 9 duo protocols ===
+
+=== PRIMARY (K = 1) -- the STANDARDIZED attentional differential, P2 (k-fold duo) ===
+  d_i = corr(s_hat_i, s_att,i) - corr(s_hat_i, s_unatt,i);  D = mean_i d_i / sd_i d_i
+  sd is the sample sd (ddof = 1). On a duo the 'best unattended' is the ONE
+  competitor (n_present == 2, asserted per trial), so d_i is the contract's d_i.
+
+  -- raw differentials, for the record and NOT for the comparison (the reason the
+     contract standardizes: these are not on a common scale) --
+     P1 mel-8    mean d = -0.005882   sd d = 0.076037
+     P1 MFCC-13  mean d = +0.003411   sd d = 0.039874
+     P2 mel-8    mean d = +0.008360   sd d = 0.083535
+     P2 MFCC-13  mean d = -0.003625   sd d = 0.032400
+
+  -- D, standardized, dimensionless (null for the DIFFERENCE = 0 by construction) --
+     P1 (descriptive, not tested):
+       D(mel-8   ) = -0.0774   Phi(D) = 0.4692 = 72.3/154   observed accuracy = 74/154 = 0.4805   |diff| = 1.13 pts
+       D(MFCC-13 ) = +0.0855   Phi(D) = 0.5341 = 82.2/154   observed accuracy = 75/154 = 0.4870   |diff| = 4.71 pts
+       D(MFCC-13) - D(mel-8) = +0.1629   null 0 by construction
+     P2 (PRIMARY):
+       D(mel-8   ) = +0.1001   Phi(D) = 0.5399 = 83.1/154   observed accuracy = 86/154 = 0.5584   |diff| = 1.86 pts
+       D(MFCC-13 ) = -0.1119   Phi(D) = 0.4555 = 70.1/154   observed accuracy = 65/154 = 0.4221   |diff| = 3.34 pts
+       D(MFCC-13) - D(mel-8) = -0.2120   null 0 by construction
+
+  PRIMARY TEST, P2, one-sided (MFCC-13 > mel-8), alpha = 0.05, K = 1:
+     paired sign-flip permutation on the STANDARDIZED paired differences,
+     n = 154 trials, B = 10000 sign patterns, seed 20260812 (2**154 = 2.3e+46 patterns: enumeration infeasible, Monte Carlo as the
+     contract allows). Statistic = mean(z_MFCC - z_mel) = D(MFCC) - D(mel).
+     observed statistic = -0.2120   NULL = 0 (exact, by construction)
+     permutation mean = +0.000227  sd = 0.100577  (the null distribution is centred on 0, as it must be)
+     p = (9833 + 1)/(10000 + 1) = 0.9833   (MC standard error 0.0013)
+     -> does NOT reject the null at alpha = 0.05
+
+=== THE DETECTABILITY FLOOR -- mandatory, contract SS2 ===
+  sd of the paired standardized differences = 1.2312  (observed, n = 154;
+  corr(z_mel, z_MFCC) = 0.2421 -- the pairing
+  is what buys the power, so it is printed rather than assumed)
+  MINIMUM DETECTABLE DIFFERENCE in D at n = 154, power 0.8, one-sided alpha = 0.05:
+     MDD = (z_0.95 + z_0.80) * sd/sqrt(n) = (1.6449 + 0.8416) * 1.2312/sqrt(154) = 0.2467
+  THE EFFECT THE CONTRACT'S SS0 PREDICTS, in the same units (two routes, they must
+  agree because SS0's accuracy prediction IS Phi of its margin prediction):
+     +16.1% of D(mel-8) = 0.161 * +0.1001 = +0.0161
+     Phi^-1(87.4/154) - Phi^-1(86/154) = +0.0231
+  power of THIS test against SS0's predicted effect = 0.069
+  -> the floor is ABOVE the predicted effect (0.2467 vs +0.0161)
+
+=== COHERENCE CHECK (contract SS1) -- Phi(D) against the observed accuracy ===
+  If they diverge by more than ~3 accuracy points, the SS0 model is
+  wrong and that MUST BE SAID, not worked around.
+  P1 mel-8   : Phi(D) = 0.4692   observed = 0.4805   divergence = 1.13 points   [OK]
+  P1 MFCC-13 : Phi(D) = 0.5341   observed = 0.4870   divergence = 4.71 points   [MODEL WRONG -- SAID, NOT WORKED AROUND]
+  P2 mel-8   : Phi(D) = 0.5399   observed = 0.5584   divergence = 1.86 points   [OK]
+  P2 MFCC-13 : Phi(D) = 0.4555   observed = 0.4221   divergence = 3.34 points   [MODEL WRONG -- SAID, NOT WORKED AROUND]
+  worst divergence over the four cells = 4.71 points   -> [THE SS0 MODEL IS WRONG]
+
+  -- WHAT MAKES IT DIVERGE (added after the first run, because the contract says the
+     divergence must be SAID, and saying it usefully means naming its cause; no
+     threshold, test or branch rule was touched -- Comandamenti #2) --
+     The accuracy IS the fraction of POSITIVE differentials: argmax(corr) == attended
+     is the same event as d_i > 0 (asserted below, exactly). Phi(D) equals that
+     fraction only if d is NORMAL. So every point of divergence is non-normality of
+     d, and its SIGN says which way: d skewed right => the mean is pulled above the
+     median => Phi(D) OVERSTATES how often d is positive, and vice versa.
+     cell            frac(d>0)  accuracy   Phi(D)     skew  exc.kurt  Phi(med/sd)
+     P1 mel-8           0.4805    0.4805   0.4692   -0.077     0.209       0.4869
+     P1 MFCC-13         0.4870    0.4870   0.5341    0.830     2.191       0.4945
+     P2 mel-8           0.5584    0.5584   0.5399    0.246     0.042       0.5317
+     P2 MFCC-13         0.4221    0.4221   0.4555    0.155     0.099       0.4276
+     Read the last column against the third: the MEDIAN-based figure is the one that
+     tracks the accuracy, which is what a mean/sd summary of a non-normal d cannot do.
+
+=== SECONDARY -- ACCURACY, DESCRIPTIVE (contract SS4) ===
+  Reported next to SS0's prediction (87.4/154) and next to the Exp. 9 bar
+  (90/154 = 0.5844). MISSING THAT BAR IS THE PREDICTED OUTCOME,
+  NOT A SURPRISE: SS0 computed the power of the binary test at that bar as 0.370
+  BEFORE any of this ran. No threshold has been lowered. Null 0.500 by construction
+  on a duo (two candidates, argmax).
+  -- P1 (paper protocol, raw_solos) --
+     mel-8    74/154 = 0.4805   null 0.500   one-sided exact binomial p = 0.7136   bar 90/154 -> not cleared (the PREDICTED outcome)
+     MFCC-13  75/154 = 0.4870   null 0.500   one-sided exact binomial p = 0.6564   bar 90/154 -> not cleared (the PREDICTED outcome)
+     SS0 predicted for MFCC-13 on P2: 87.4/154 = 0.5675; observed 75/154 = 0.4870
+  -- P2 (k-fold duo) --
+     mel-8    86/154 = 0.5584   null 0.500   one-sided exact binomial p = 0.08526   bar 90/154 -> not cleared (the PREDICTED outcome)
+     MFCC-13  65/154 = 0.4221   null 0.500   one-sided exact binomial p = 0.9782   bar 90/154 -> not cleared (the PREDICTED outcome)
+     SS0 predicted for MFCC-13 on P2: 87.4/154 = 0.5675; observed 65/154 = 0.4221   <- the protocol SS0's model is about
+
+=== SECONDARY -- McNEMAR against the mel anchors, BOTH directions (descriptive) ===
+  Does not enter the verdict. Both directions are printed so that a representation
+  that is WORSE than the anchor is as readable as one that is better.
+
+  -- P1: MFCC-13 vs mel-8 --
+
+[mcnemar] A=/Users/andrea/Library/Mobile Documents/com~apple~CloudDocs/Tesi/akami/runs/results/exp15_gate1_mel8_p1/madeeg_records.csv
+          B=/Users/andrea/Library/Mobile Documents/com~apple~CloudDocs/Tesi/akami/runs/results/exp15_mfcc13_p1/madeeg_records.csv
+  comparisons: A=154  B=154  in common=154
+  A correct 74/154 = 0.4805   B correct 75/154 = 0.4870   (null 0.500, exact by symmetry)
+  agreement table: both 42 · A only 32 · B only 33 · neither 47
+  discordants=65   B beats A on 33/65   one-sided McNemar p=0.5000   (null 0.500)
+  pre-registered threshold at n_disc=65: 40/65 = 0.6154 (smallest integer with p < 0.05; 39 would give 0.0680)
+  -> B does NOT beat A under the pre-registered rule.
+
+[mcnemar] A=/Users/andrea/Library/Mobile Documents/com~apple~CloudDocs/Tesi/akami/runs/results/exp15_mfcc13_p1/madeeg_records.csv
+          B=/Users/andrea/Library/Mobile Documents/com~apple~CloudDocs/Tesi/akami/runs/results/exp15_gate1_mel8_p1/madeeg_records.csv
+  comparisons: A=154  B=154  in common=154
+  A correct 75/154 = 0.4870   B correct 74/154 = 0.4805   (null 0.500, exact by symmetry)
+  agreement table: both 42 · A only 33 · B only 32 · neither 47
+  discordants=65   B beats A on 32/65   one-sided McNemar p=0.5978   (null 0.500)
+  pre-registered threshold at n_disc=65: 40/65 = 0.6154 (smallest integer with p < 0.05; 39 would give 0.0680)
+  -> B does NOT beat A under the pre-registered rule.
+
+  -- P2: MFCC-13 vs mel-8 --
+
+[mcnemar] A=/Users/andrea/Library/Mobile Documents/com~apple~CloudDocs/Tesi/akami/runs/results/exp15_gate1_mel8_p2/madeeg_records.csv
+          B=/Users/andrea/Library/Mobile Documents/com~apple~CloudDocs/Tesi/akami/runs/results/exp15_mfcc13_p2/madeeg_records.csv
+  comparisons: A=154  B=154  in common=154
+  A correct 86/154 = 0.5584   B correct 65/154 = 0.4221   (null 0.500, exact by symmetry)
+  agreement table: both 41 · A only 45 · B only 24 · neither 44
+  discordants=69   B beats A on 24/69   one-sided McNemar p=0.9962   (null 0.500)
+  pre-registered threshold at n_disc=69: 42/69 = 0.6087 (smallest integer with p < 0.05; 41 would give 0.0740)
+  -> B does NOT beat A under the pre-registered rule.
+
+[mcnemar] A=/Users/andrea/Library/Mobile Documents/com~apple~CloudDocs/Tesi/akami/runs/results/exp15_mfcc13_p2/madeeg_records.csv
+          B=/Users/andrea/Library/Mobile Documents/com~apple~CloudDocs/Tesi/akami/runs/results/exp15_gate1_mel8_p2/madeeg_records.csv
+  comparisons: A=154  B=154  in common=154
+  A correct 65/154 = 0.4221   B correct 86/154 = 0.5584   (null 0.500, exact by symmetry)
+  agreement table: both 41 · A only 24 · B only 45 · neither 44
+  discordants=69   B beats A on 45/69   one-sided McNemar p=0.0077   (null 0.500)
+  pre-registered threshold at n_disc=69: 42/69 = 0.6087 (smallest integer with p < 0.05; 41 would give 0.0740)
+  -> B BEATS A under the pre-registered rule.
+
+=== VERDICT -- the three readings were written before the numbers (contract SS5) ===
+  BRANCH 2 (AMBER): the primary does not reject, and the floor is ABOVE the effect
+  SS0 predicts (0.2467 vs +0.0161). NOT CONCLUSIVE, FOR POWER, and
+  the floor says it in figures. No conclusion about the representation may be
+  drawn from this: an effect of the predicted size would have been missed here.
+     paired trials needed to see SS0's predicted effect at power 0.8: 36098
+     (MAD-EEG has 154 stereo duo decisions in total, so this design is short by
+     a factor of ~234. THIS is what 'the limit is n' means in figures.)
+
+  ⚠️ THE PRE-DECLARED TAXONOMY HAS NO CELL FOR WHAT WAS OBSERVED, AND SAYING SO IS
+  PART OF APPLYING IT. The contract's branches 2 and 3 both begin with the word
+  'flat'. The observed point estimate is NOT flat: it is
+  -0.2120, i.e. 0.86x the detectability floor, in the
+  OPPOSITE direction to the hypothesis. Branch 2 is applied because that is the
+  rule as written and a rule is not edited after seeing the number (Comandamenti
+  #5), and the qualifier is printed next to it because branch 2's own words
+  ('no conclusion may be drawn') would otherwise hide a large negative estimate.
+  WHAT IS NOT DONE HERE: the sign is NOT flipped (Comandamenti #6). 'mel-8 beats
+  MFCC-13 on attention' is NOT a result of this experiment -- the pre-registered
+  test was one-sided in the other direction, and turning a below-hypothesis
+  outcome into a claim by re-aiming the test is precisely the move the
+  pre-registration exists to prevent. The reverse-direction McNemar above is a
+  DESCRIPTIVE secondary the contract mandates in both directions; a confirmatory
+  claim in that direction needs a NEW pre-registration and fresh material.
+
+  NOT DONE, DELIBERATELY: no trio; no split by genre / melody / instrument / subject;
+  no third representation; no sign of anything flipped; no threshold moved; no GPU;
+  no push; no external download.
