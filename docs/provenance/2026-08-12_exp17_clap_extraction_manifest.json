@@ -1,0 +1,356 @@
+{
+  "experiment": "Exp. 16 arm A stage 1 (extraction only -- no measurement here)",
+  "contract": "Cap. 2 -- Exp. 16 ... criterio pre-registrato (12 ago 2026), SSA",
+  "model": "laion_clap.CLAP_Module(enable_fusion=False, amodel='HTSAT-tiny')",
+  "checkpoint": "/home/andrea.giampietro/clap_ckpt/630k-audioset-best.pt",
+  "checkpoint_bytes": 1863587645,
+  "checkpoint_sha256": "8053c9775516af2f4902e1e8281e356cc1bf7a85e8b761908170767b77c3f037",
+  "audio_sample_rate_in": 44100,
+  "clap_sample_rate": 48000,
+  "resampler": "scipy.signal.resample_poly(x, 160, 147)  # 44100 -> 48000, polyphase",
+  "window_s": 0.0625,
+  "hop_s": 0.0625,
+  "series_rate_hz": 16.0,
+  "nyquist_hz": 8.0,
+  "clap_input_len_s": 10.0,
+  "clap_padding": "repeatpad: the 3000-sample window is repeated 160 times to fill 480000; no zeros are added",
+  "embedding_dim": 512,
+  "l2_normalised_per_frame": {
+    "mean_frame_norm": 1.0,
+    "note": "1.0 means laion_clap L2-normalises every frame, so the series carries DIRECTION only and the per-band z-score of the protocol is applied to a already-unit-norm vector. Measured, not assumed."
+  },
+  "batch": 32,
+  "seed": 20260812,
+  "interpreter": "/home/andrea.giampietro/.conda/envs/eeg_attention/bin/python",
+  "machine": "baldo",
+  "platform": "Linux-5.14.0-570.49.1.el9_6.x86_64-x86_64-with-glibc2.34",
+  "device": "cpu",
+  "versions": {
+    "python": "3.9.25",
+    "torch": "2.2.2+cu121",
+    "numpy": "1.26.4",
+    "scipy": "1.11.4",
+    "laion_clap": "1.1.6"
+  },
+  "caveats": [
+    "EXTRACTION ONLY. No statistic is computed here and no number in this directory is a result. The gate runs in /opt/miniconda3 (Legacy SS4 trap 1).",
+    "CLAP's design aperture is 10 s and the model is time-invariant by design; the pre-registered band forces a 62.5 ms window. The two time scales are 160x apart, and that gap must be reported next to whatever the gate returns.",
+    "ZERO LOOKS SPENT: audio only, no EEG opened, no label read."
+  ],
+  "stems": {
+    "4dedddaae1fe2f232b14709a3ce8bac4": {
+      "key": [
+        "classique",
+        "morceau1",
+        "theme1",
+        "stereo",
+        "Co"
+      ],
+      "n_samples": 1235312,
+      "sr": 44100,
+      "duration_s": 28.011609977324262,
+      "n_frames": 448
+    },
+    "4f5b0869e00ff1519d63420b1d7a5e02": {
+      "key": [
+        "classique",
+        "morceau1",
+        "theme1",
+        "stereo",
+        "Fl"
+      ],
+      "n_samples": 1235312,
+      "sr": 44100,
+      "duration_s": 28.011609977324262,
+      "n_frames": 448
+    },
+    "342b822c79ec2a2142edc1836972182d": {
+      "key": [
+        "classique",
+        "morceau1",
+        "theme1",
+        "stereo",
+        "Ob"
+      ],
+      "n_samples": 1235312,
+      "sr": 44100,
+      "duration_s": 28.011609977324262,
+      "n_frames": 448
+    },
+    "77345fdd8827336179571513f03cac10": {
+      "key": [
+        "classique",
+        "morceau1",
+        "theme2",
+        "stereo",
+        "Co"
+      ],
+      "n_samples": 1058916,
+      "sr": 44100,
+      "duration_s": 24.01170068027211,
+      "n_frames": 384
+    },
+    "764f727bd7fc567dfff60605b6ab9ab8": {
+      "key": [
+        "classique",
+        "morceau1",
+        "theme2",
+        "stereo",
+        "Fl"
+      ],
+      "n_samples": 1058916,
+      "sr": 44100,
+      "duration_s": 24.01170068027211,
+      "n_frames": 384
+    },
+    "ba26abe746e974771192d96c2660248e": {
+      "key": [
+        "classique",
+        "morceau1",
+        "theme2",
+        "stereo",
+        "Ob"
+      ],
+      "n_samples": 1058916,
+      "sr": 44100,
+      "duration_s": 24.01170068027211,
+      "n_frames": 384
+    },
+    "cd713c1e124a8f456c9369ce618b903b": {
+      "key": [
+        "classique",
+        "morceau2",
+        "theme1",
+        "stereo",
+        "Bo"
+      ],
+      "n_samples": 1058916,
+      "sr": 44100,
+      "duration_s": 24.01170068027211,
+      "n_frames": 384
+    },
+    "c1911889c73900da7eb3b7a6bc1a47dd": {
+      "key": [
+        "classique",
+        "morceau2",
+        "theme1",
+        "stereo",
+        "Fh"
+      ],
+      "n_samples": 1058916,
+      "sr": 44100,
+      "duration_s": 24.01170068027211,
+      "n_frames": 384
+    },
+    "2ae93da326e490d26f859c4f5ba0078e": {
+      "key": [
+        "classique",
+        "morceau2",
+        "theme1",
+        "stereo",
+        "Fl"
+      ],
+      "n_samples": 1058916,
+      "sr": 44100,
+      "duration_s": 24.01170068027211,
+      "n_frames": 384
+    },
+    "e8ab20f69a0cb3a4e51cb96e29985bfd": {
+      "key": [
+        "classique",
+        "morceau2",
+        "theme2",
+        "stereo",
+        "Bo"
+      ],
+      "n_samples": 1058916,
+      "sr": 44100,
+      "duration_s": 24.01170068027211,
+      "n_frames": 384
+    },
+    "717aaedd6e2b35a3b8e95d1a1082a58c": {
+      "key": [
+        "classique",
+        "morceau2",
+        "theme2",
+        "stereo",
+        "Fh"
+      ],
+      "n_samples": 1058916,
+      "sr": 44100,
+      "duration_s": 24.01170068027211,
+      "n_frames": 384
+    },
+    "1b3c0d1bd00d3f0cb2450f89e7f139eb": {
+      "key": [
+        "classique",
+        "morceau2",
+        "theme2",
+        "stereo",
+        "Fl"
+      ],
+      "n_samples": 1058916,
+      "sr": 44100,
+      "duration_s": 24.01170068027211,
+      "n_frames": 384
+    },
+    "75be8bc8edeb00fdeda7aa62b8be1ab9": {
+      "key": [
+        "pop",
+        "falldead",
+        "theme1",
+        "stereo",
+        "Bs"
+      ],
+      "n_samples": 870148,
+      "sr": 44100,
+      "duration_s": 19.73124716553288,
+      "n_frames": 315
+    },
+    "ede8396b8d3ad32fe6a4ef906abeb735": {
+      "key": [
+        "pop",
+        "falldead",
+        "theme1",
+        "stereo",
+        "Dr"
+      ],
+      "n_samples": 870148,
+      "sr": 44100,
+      "duration_s": 19.73124716553288,
+      "n_frames": 315
+    },
+    "87e5060effbefe0821d188c39e675001": {
+      "key": [
+        "pop",
+        "falldead",
+        "theme1",
+        "stereo",
+        "Gt"
+      ],
+      "n_samples": 870148,
+      "sr": 44100,
+      "duration_s": 19.73124716553288,
+      "n_frames": 315
+    },
+    "e3650b18131eb12ec99efd24ba996771": {
+      "key": [
+        "pop",
+        "falldead",
+        "theme1",
+        "stereo",
+        "Vx"
+      ],
+      "n_samples": 870148,
+      "sr": 44100,
+      "duration_s": 19.73124716553288,
+      "n_frames": 315
+    },
+    "66f917535bad7b596abbf5d1011e3656": {
+      "key": [
+        "pop",
+        "mixtape",
+        "theme1",
+        "stereo",
+        "Bs"
+      ],
+      "n_samples": 882516,
+      "sr": 44100,
+      "duration_s": 20.01170068027211,
+      "n_frames": 320
+    },
+    "8afd48300584ca21c1991b1493ff1f2c": {
+      "key": [
+        "pop",
+        "mixtape",
+        "theme1",
+        "stereo",
+        "Dr"
+      ],
+      "n_samples": 882516,
+      "sr": 44100,
+      "duration_s": 20.01170068027211,
+      "n_frames": 320
+    },
+    "c3f2e863506b369a638141b2dd128917": {
+      "key": [
+        "pop",
+        "mixtape",
+        "theme1",
+        "stereo",
+        "Gt"
+      ],
+      "n_samples": 882516,
+      "sr": 44100,
+      "duration_s": 20.01170068027211,
+      "n_frames": 320
+    },
+    "a01a35baff177dfa1519ae71c5f711ff": {
+      "key": [
+        "pop",
+        "mixtape",
+        "theme1",
+        "stereo",
+        "Vx"
+      ],
+      "n_samples": 882516,
+      "sr": 44100,
+      "duration_s": 20.01170068027211,
+      "n_frames": 320
+    },
+    "0119725deea72e8ca125a8f09bac408a": {
+      "key": [
+        "pop",
+        "mixtape",
+        "theme2",
+        "stereo",
+        "Bs"
+      ],
+      "n_samples": 1058916,
+      "sr": 44100,
+      "duration_s": 24.01170068027211,
+      "n_frames": 384
+    },
+    "e4f2ffc273457efd61b022677e5cfb61": {
+      "key": [
+        "pop",
+        "mixtape",
+        "theme2",
+        "stereo",
+        "Dr"
+      ],
+      "n_samples": 1058916,
+      "sr": 44100,
+      "duration_s": 24.01170068027211,
+      "n_frames": 384
+    },
+    "ab7d36771872dfa9078660e24b18f5a5": {
+      "key": [
+        "pop",
+        "mixtape",
+        "theme2",
+        "stereo",
+        "Gt"
+      ],
+      "n_samples": 1058916,
+      "sr": 44100,
+      "duration_s": 24.01170068027211,
+      "n_frames": 384
+    },
+    "53e0d950151b47304986057547a28d70": {
+      "key": [
+        "pop",
+        "mixtape",
+        "theme2",
+        "stereo",
+        "Vx"
+      ],
+      "n_samples": 1058916,
+      "sr": 44100,
+      "duration_s": 24.01170068027211,
+      "n_frames": 384
+    }
+  },
+  "extraction_seconds": 496.6,
+  "total_frames": 8876
+}

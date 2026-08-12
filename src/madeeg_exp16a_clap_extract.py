@@ -65,8 +65,18 @@ import json
 import time
 import hashlib
 import argparse
+import platform
 
 import numpy as np
+
+
+def _dist_version(name):
+    """Installed distribution version, for packages that expose no __version__."""
+    try:
+        from importlib.metadata import version
+        return version(name)
+    except Exception as e:                       # noqa: BLE001 -- reported, never guessed
+        return f"unknown ({type(e).__name__})"
 
 SR_CLAP = 48000
 WIN_S = 0.0625                 # 62.5 ms -- see the recipe above. Not editable after the fact.
@@ -156,9 +166,13 @@ def main():
         l2_normalised_per_frame=None,          # MEASURED below, not assumed
         batch=BATCH, seed=SEED,
         interpreter=sys.executable,
+        machine=platform.node(), platform=platform.platform(),
+        device="cpu" if not torch.cuda.is_available() else torch.cuda.get_device_name(0),
         versions=dict(python=sys.version.split()[0], torch=torch.__version__,
                       numpy=np.__version__, scipy=scipy.__version__,
-                      laion_clap=getattr(laion_clap, "__version__", "unversioned")),
+                      # laion_clap ships no __version__ attribute; the DISTRIBUTION version is
+                      # the only honest answer and the provenance gate asks for it by name.
+                      laion_clap=_dist_version("laion_clap")),
         caveats=[
             "EXTRACTION ONLY. No statistic is computed here and no number in this directory "
             "is a result. The gate runs in /opt/miniconda3 (Legacy SS4 trap 1).",

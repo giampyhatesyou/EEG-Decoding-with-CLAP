@@ -57,6 +57,7 @@ questo qui ci sono script su file e array bash, non one-liner con variabili.
 | `exp15_mfcc_differential.sh` | il **differenziale attenzionale standardizzato** D sotto MFCC contro mel, permutazione appaiata | ~2–3 min CPU (misurato dai timestamp) | **SÌ** (duo, già spesi) | D(mel) **+0.1001** vs D(MFCC) **−0.1119**, p **0.9833**, MDD **0.2467** · accuratezza 65/154 vs 86/154 | `docs/provenance/2026-08-12_exp15_mfcc_differential.txt` · `runs/results/exp15_*/` |
 | `exp16a_clap_separability.sh` | **CLAP** come settimo candidato del gate di separabilità, in due stadi (estrazione in `/opt/anaconda3`, misura in `/opt/miniconda3`) | ~9 min CPU **misurati** per l'estrazione + 11 s per la misura | **NO** — nessun EEG aperto | 🔴 **stadio 1 non eseguito**: il checkpoint (1.74 GiB) non è in cache e scaricarlo è decisione di A. · **controllo negativo già misurato: 512 dim di rumore soddisfano ENTRAMBI i criteri** (36/36, gap −0.0002, w/pav. **0.922** contro 3.131 di mel-8) | `docs/provenance/2026-08-12_exp16A_negative_control.txt` |
 | `exp16b_ccaviews.sh` | se `band_power` (potenza log per canale, δ+θ) aggiunta alla CCA alza il tracciamento su own-vs-other, barra ≥ 208/376 | ~7 min CPU (misurato) | **NO** | **202/376 = 0.5372** (p 0.0819) contro ridge 208 e CCA 1-vista 209 · 🔴 **barra non superata** · McNemar non distingue in nessuna delle 4 direzioni | `docs/provenance/2026-08-12_exp16B_ccaviews_ownvsother.txt` · `runs/results/exp16b_*/` |
+| `exp17_clap_separability.sh` | **CLAP** nel gate di separabilità, col criterio **rifatto invariante alla dimensionalità** (il vecchio è falsificato: il rumore-512 lo soddisfa). Estrazione ▶️ su baldo (CPU), misura sul Mac | 9 min 35 s estrazione (misurati, baldo CPU) + 24 s misura | **NO** — nessun EEG aperto | rumore-512 w/pav. **0.922** · mel-8 **3.131** · MFCC-13 **2.084** · **CLAP-512 3.837** → 🔴 **NO-GO**, criterio 2 non superato (e col criterio VECCHIO CLAP sarebbe passato) | `docs/provenance/2026-08-12_exp17_clap_separability.txt` · log integrale `..._exp17_baldo_extraction.log` · manifest `..._exp17_clap_extraction_manifest.json` |
 | `run_all_cheap.sh` | in sequenza **solo** exp13 · exp07 · exp08 · exp14 | ~25–50 min CPU | **NO** | — | — |
 
 **Come si legge la colonna «sguardi»:** *NO* = il registro degli sguardi dichiara
@@ -100,3 +101,8 @@ scritta 38/90).
 - **Exp. 16** — coperto: braccio B eseguito (`exp16b_ccaviews.sh`), braccio A fermo
   allo stadio 1 per un download di 1.74 GiB che è decisione di A.
   (`exp16a_clap_separability.sh`, che gira comunque il controllo negativo).
+  ⚠️ **Il braccio A è stato poi eseguito dall'Exp. 17** (`exp17_clap_separability.sh`),
+  che è il seguito da usare: stesso stadio 1, ma il criterio dell'Exp. 16A è
+  **ritirato perché falsificato dal rumore-512** e sostituito da quello invariante
+  alla dimensionalità. `exp16a_clap_separability.sh` resta agli atti, non si rilancia
+  per giudicare CLAP.

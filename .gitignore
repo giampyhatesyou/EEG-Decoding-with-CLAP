@@ -45,6 +45,10 @@ env/
 *.out
 # Pre-2026-07-26 layout, superseded by runs/logs/; a pull leaves it behind.
 /logs/
+# ...except under docs/provenance/, where a log is not run noise but EVIDENCE: the
+# Exp. 17 extraction ran on baldo, in another interpreter, and its integral output is
+# the only record of the download, the checkpoint hash and the per-stem frame counts.
+!docs/provenance/*.log
 
 # Never commit re-derivable binaries. Paper checkpoints ship as
 # archive/*.7z and are unpacked locally by scripts/setup_checkpoints.sh.

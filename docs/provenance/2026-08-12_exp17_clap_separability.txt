@@ -1,0 +1,196 @@
+!! EXP. 17 -- the Exp. 13 gate with a criterion REMADE to be invariant to dimensionality.
+!! WHY THE OLD CRITERION IS RETIRED, AND WHY THIS IS NOT MOVING A GOALPOST: Comandamenti
+!! #5 forbids changing a threshold AFTER SEEING THE NUMBER THAT MUST BEAT IT. There is no
+!! CLAP number here to protect -- none has ever been computed. What exists is a NEGATIVE
+!! CONTROL (12/8, docs/provenance/2026-08-12_exp16A_negative_control.txt) showing that 512
+!! dimensions of WHITE NOISE satisfy BOTH old criteria: 36/36 against mel-8 and gap
+!! -0.0002. CLAP has exactly 512 dimensions. Under the old criterion a GO would have been
+!! INDISTINGUISHABLE FROM NOISE, i.e. the test could not be LOST -- the mirror image of
+!! the error for which Exp. 10 was retired pre-run and the CCA gate on inner_val_r was
+!! declared unwinnable. A falsified criterion is retired in writing (Comandamenti #12);
+!! it is not quietly relaxed. Exp. 13's own verdict is NOT touched retroactively.
+!! THE NEW CRITERION, all three required, written before this file could read a .npy:
+!!   1. |corr| within-duo strictly below mel-8 on >= 26/36 (unchanged from Exp. 13),
+!!   2. w/floor <= 1.80  -- dimensionality-invariant, >= 60% of the way from mel-8 (3.131)
+!!      to noise (0.922); stricter than BOTH best known candidates,
+!!   3. w/floor >= 1.20  -- MANDATORY MARGIN OVER NOISE. Below it the candidate is declared
+!!      indistinguishable from noise at its dimensionality and DOES NOT WIN.
+!! The negative control is RE-RUN IN THIS RUN at CLAP's exact dimensionality, its row is
+!! printed ABOVE CLAP's, and if its w/floor leaves [0.85, 1.05] this script EXITS before
+!! CLAP is even computed (Comandamenti #3: the control is crossed BEFORE the real number).
+!! !! AND THE LIMIT THAT BELONGS IN EVERY BRANCH OF THE OUTCOME: CLAP's design aperture is
+!! 10 s, 160x the window used here, and below 10 s laion_clap applies `repeatpad`. WE ARE
+!! MEASURING CLAP OUTSIDE THE REGIME IT WAS TRAINED FOR. A failure here is NOT evidence
+!! against CLAP at 10 s; it is a statement about this window.
+!! EXP. 16 ARM A. The K=1 candidate of this run is CLAP, the thesis's own premise, which
+!! Registro SS2.5 records as NEVER having been tested as a reconstruction target. The six
+!! Exp. 13 candidates are re-computed here only as the reference frame; the criterion,
+!! the canary and the floor are the Exp. 13 ones, unchanged.
+!! THE TIME-SCALE GAP, DECLARED BEFORE THE NUMBER: CLAP is time-invariant BY DESIGN and
+!! its input aperture is 10 s. The pre-registered band (1-8 Hz) forces a 62.5 ms hop by
+!! Nyquist, and a 62.5 ms window so that the aperture does not annihilate the band
+!! (a W-long aperture nulls at 1/W: at 125 ms that null sits exactly on 8 Hz). So the
+!! series is read at 160x finer a time scale than the model was built for. Whatever the
+!! gate returns, THAT gap belongs next to it.
+!! THE EMBEDDINGS WERE COMPUTED IN A DIFFERENT INTERPRETER (/opt/anaconda3, laion_clap
+!! is not installed in /opt/miniconda3 and nothing was installed there). That is why the
+!! Exp. 13 CANARY at the top of this file is the load-bearing check: it proves the
+!! MEASUREMENT environment is unchanged. The embeddings enter as data, like a wav does.
+!! A GO HERE IS A HYPOTHESIS, NOT A RESULT, and must be written so everywhere: Exp. 15
+!! showed this gate can be won by a representation that then got WORSE on the real task.
+!! Read the `w/floor` column before the gate column.
+!! AUDIO ONLY, ZERO LOOKS SPENT: no EEG was read. This file opens the preprocessed
+!! HDF5 for its `soli` datasets and metadata only -- never ['response'], never a
+!! trial, never a label. Nothing here is a statement about EEG.
+!! GATE, not a result: a GO is a NECESSARY condition for arm C's fixed-target route,
+!! not evidence that the EEG tracks the winning representation. A NO-GO says the
+!! ceiling is a property of ensemble music under the whole family tested.
+!! Criterion, thresholds and the K=6 candidate list were written in the vault
+!! contract of 12/8/2026 BEFORE this file existed, and are not editable after.
+!! The 36 units are 18 distinct duo mixtures x 2 attended targets. The two stim ids
+!! of a mixture carry the SAME audio, so the paired counts are exactly 2x the count
+!! over 18 mixtures and the binomial on 36 treats duplicated units as independent.
+!! Applied as pre-registered; the effective independent n is 18, stated as a limit.
+
+units: 36 unique duo stim ids from 18 distinct mixtures · 24 distinct stems
+protocol: representation at 64 Hz -> band-pass 1.0-8.0 Hz -> z-score per band -> mean over bands of the per-band Pearson r (signed),
+          identical to the Exp. 9 audio-only diagnostic; the criterion then takes |corr|.
+_post/source_repr equivalence on real audio: max abs diff 0.000e+00 (must be 0 to fp)
+
+=== EXP. 16A -- provenance of the CLAP series (stage 1, a DIFFERENT interpreter) ===
+  model: laion_clap.CLAP_Module(enable_fusion=False, amodel='HTSAT-tiny')
+  checkpoint: /home/andrea.giampietro/clap_ckpt/630k-audioset-best.pt
+  checkpoint_bytes: 1863587645
+  checkpoint_sha256: 8053c9775516af2f4902e1e8281e356cc1bf7a85e8b761908170767b77c3f037
+  audio_sample_rate_in: 44100
+  clap_sample_rate: 48000
+  resampler: scipy.signal.resample_poly(x, 160, 147)  # 44100 -> 48000, polyphase
+  window_s: 0.0625
+  hop_s: 0.0625
+  series_rate_hz: 16.0
+  nyquist_hz: 8.0
+  clap_input_len_s: 10.0
+  clap_padding: repeatpad: the 3000-sample window is repeated 160 times to fill 480000; no zeros are added
+  embedding_dim: 512
+  l2_normalised_per_frame: {'mean_frame_norm': 1.0, 'note': '1.0 means laion_clap L2-normalises every frame, so the series carries DIRECTION only and the per-band z-score of the protocol is applied to a already-unit-norm vector. Measured, not assumed.'}
+  seed: 20260812
+  interpreter: /home/andrea.giampietro/.conda/envs/eeg_attention/bin/python
+  versions: {'python': '3.9.25', 'torch': '2.2.2+cu121', 'numpy': '1.26.4', 'scipy': '1.11.4', 'laion_clap': '1.1.6'}
+  total_frames: 8876
+  extraction_seconds: 496.6
+  stems with a series on disk: 24/24 (missing: none)
+  GATE 3 -- provenance complete: PASSED
+  sha256 of the checkpoint actually loaded: 8053c9775516af2f4902e1e8281e356cc1bf7a85e8b761908170767b77c3f037
+  The criterion, the canary, the floor and the 26/36 threshold are the Exp. 13
+  ones, applied UNCHANGED as the contract requires (K=1 for this arm; the
+  threshold is deliberately NOT re-derived for a smaller K -- that would be
+  loosening a pre-registered number after the fact).
+
+=== CANARY (contract SS2, tolerance +-0.0010) -- crossed BEFORE anything else ===
+  mel-8  mean 0.1772 (expected 0.1772)  median 0.1442 (expected 0.1442)  -> [PASSED]
+  flux   mean 0.2874 (expected 0.2874)  median 0.2417 (expected 0.2417)  -> [PASSED]
+  flux more similar than mel-8 on 30/36 (expected 30) mean diff +0.1103  -> [PASSED]
+  CANARY PASSED: the shared feature path reproduces Exp. 9. It licenses the wiring
+  and nothing else.
+
+=== CROSS-SONG FLOOR (the null, computed from the data -- Comandamenti #4) ===
+  all stem pairs from different (genre, song): n = 212 pairs, deterministic, no seed. Unequal-length pairs truncated to the shorter stem.
+
+=== GATE 2 -- negative control RE-RUN at CLAP's exact dimensionality ===
+  N1 noise-512: w/floor = 0.922   must land in [0.85, 1.05] (12/8 reference: 0.922)
+  -> [PASSED] the no-structure baseline reproduces. It licenses the scale on
+     which criteria 2 and 3 are read, and nothing else.
+
+=== TABLE -- every statistic with its own null next to it ===
+  criterion 1: |corr| within-duo strictly below mel-8 on >= 26/36  (null 18/36 = 0.500 exact by symmetry, P(X>=26|36,0.5) = 0.005665)
+  criterion 2: gap = mean|corr| within-duo - mean|corr| cross-song floor <= 0.05
+
+  representation  rows    mean  median  signed |   floor     sd    n |     gap  w/floor |  vs mel-8        p | c1  c2  gate
+  mel-8              8  0.2013  0.1571 +0.1772 |  0.0643 0.0563  212 | +0.1370    3.131 |     0/36 1.000000 | n   n   ref
+  flux               1  0.2874  0.2417 +0.2874 |  0.0774 0.0692  212 | +0.2100    3.712 |     8/36 0.999844 | n   n   ref
+  C1 mel-24         24  0.1906  0.1446 +0.1740 |  0.0764 0.0564  212 | +0.1142    2.495 |    18/36 0.566030 | n   n   Exp.13 ref
+  C2 mel-64         64  0.1849  0.1468 +0.1771 |  0.0836 0.0557  212 | +0.1014    2.213 |    18/36 0.566030 | n   n   Exp.13 ref
+  C3 MFCC-13        13  0.0533  0.0430 +0.0445 |  0.0256 0.0232  212 | +0.0277    2.084 |    32/36 0.000001 | Y   Y   Exp.13 ref
+  C4 flux-8band      8  0.1945  0.1399 +0.1912 |  0.0508 0.0470  212 | +0.1437    3.829 |    16/36 0.797484 | n   n   Exp.13 ref
+  C5 flux-24band    24  0.2008  0.1406 +0.2008 |  0.0527 0.0538  212 | +0.1481    3.809 |    16/36 0.797484 | n   n   Exp.13 ref
+  C6 contrast-6      7  0.1021  0.0937 +0.1021 |  0.0335 0.0313  212 | +0.0686    3.050 |    28/36 0.000597 | Y   n   Exp.13 ref
+  N1 noise-512     512  0.0021  0.0015 +0.0004 |  0.0022 0.0016  212 | -0.0002    0.922 |    36/36 0.000000 | Y   Y   NOISE MEETS BOTH
+  C7 CLAP-512      512  0.0581  0.0492 +0.0511 |  0.0151 0.0129  212 | +0.0429    3.837 |    32/36 0.000001 | Y   Y   no
+  (mel-8 vs itself is 0/36 by definition; flux is the second Exp. 9 reference,
+   shown for continuity -- neither is a candidate.)
+
+  READ THE GATE WITH THIS: `w/floor` is the within-duo mean divided by this
+  representation's own floor -- arithmetic on the two columns to its left, NOT a
+  pre-registered criterion and NOT used for the verdict. It is printed because
+  NEITHER pre-registered criterion is invariant to a uniform contraction of the
+  correlation scale: shrinking within-duo AND floor by the same factor lowers the
+  gap toward 0 and wins the paired count against mel-8, without any shared
+  component having been removed. `w/floor` is the part of the comparison that
+  survives such a rescaling. The verdict below applies the criterion AS WRITTEN.
+
+=== EXP. 17 CRITERION -- all three required, written before any CLAP number ===
+  1. |corr| within-duo strictly below mel-8 on >= 26/36 (P = 0.005665) -- unchanged from Exp. 13
+  2. w/floor <= 1.80  (>= 60% of the way from mel-8 to noise)
+  3. w/floor >= 1.20  (margin over noise; BELOW IT THE CANDIDATE IS DECLARED INDISTINGUISHABLE FROM NOISE AND DOES NOT WIN)
+
+  representation  rows  w/floor |   c1: vs mel-8 c2: <=1.80 c3: >=1.20 | verdict
+  N1 noise-512     512    0.922 |     36/36    Y          Y          n | no-structure baseline
+  mel-8              8    3.131 |      0/36    n          n          Y | reference, not a candidate
+  C3 MFCC-13        13    2.084 |     32/36    Y          n          Y | reference, not a candidate
+  C7 CLAP-512      512    3.837 |     32/36    Y          n          Y | FAILS
+  (mel-8 and MFCC-13 are the Exp. 13 frame, judged under THEIR criterion there and
+   NOT re-judged here; the noise row is a control and cannot win anything.)
+
+=== NEGATIVE CONTROL -- what the criterion does with a row that has NOTHING in it ===
+  N1 noise-512: 512 independent white-noise dimensions at 16 Hz, one draw per stem, seed 20260812, no shared structure
+  by construction. criterion 1: 36/36 (needs >= 26) -> MET · criterion 2: gap -0.0002 (needs <= 0.05) -> MET
+  w/floor = 0.922   (mel-8 3.131)
+  ==> THE PRE-REGISTERED CRITERION IS MET BY NOISE. It is therefore NOT
+  sufficient on its own to distinguish 'this representation separates the two
+  stems' from 'this representation has many independent dimensions and a small
+  aggregate correlation'. Exp. 13 SS5.1 declared this weakness in words and
+  left it open; this row is the number. A candidate of the same dimensionality
+  that passes the gate has demonstrated NOTHING until its w/floor is read
+  against this row -- which is why the contract makes that column mandatory.
+  THIS IS WHY EXP. 17 EXISTS. The `gap <= 0.05` criterion is RETIRED IN
+  WRITING as falsified by this row (Comandamenti #12), not relaxed after
+  seeing a CLAP number -- there was none to see. The replacement is read
+  on the two w/floor thresholds above, calibrated on THIS row and mel-8.
+
+=== descriptive ranking of the 1 gaps (contract SS6: the only secondary allowed) ===
+  1. C7 CLAP-512     gap +0.0429   (within 0.0581 vs floor 0.0151)
+
+=== POST-HOC DIAGNOSTIC (descriptive, NOT part of the criterion) ===
+  criterion statistic: |mean_dims r| · diagnostic: mean_dims |r|, same pairs
+  representation  |mean r| w mean |r| w |mean r| fl mean |r| fl  cancel w/floor|r|
+  N1 noise-512        0.0021     0.0457      0.0022      0.0473   22.1x      0.965
+  mel-8               0.2013     0.2187      0.0643      0.0900    1.1x      2.430
+  C3 MFCC-13          0.0533     0.1403      0.0256      0.0695    2.6x      2.018
+  C7 CLAP-512         0.0581     0.1028      0.0151      0.0596    1.8x      1.726
+  `cancel` = how much larger the per-dimension |r| is than the aggregate the
+  criterion reads. A large factor means the aggregate is small because signs cancel
+  across dimensions, NOT because the two stems stopped sharing structure. Noise
+  cancels 22x; that IS the mechanism by which 512 empty dimensions beat the old
+  criterion. CLAP cancels far less, i.e. its 512 dimensions are strongly redundant.
+
+  !! AND THE PART THAT MUST NOT BE BURIED (Comandamenti #5/#6). The last column is
+  !! the same w/floor ratio built on mean|r| instead of |mean r|. On it CLAP reads
+  !! 1.726 -- i.e. under THAT aggregation criterion 2 would be MET and the verdict
+  !! would flip. THE VERDICT ABOVE STANDS AS PRE-REGISTERED: the criterion names the
+  !! Exp. 9 statistic (mean over dims of the SIGNED r, then |.|), and swapping in the
+  !! statistic that flips the answer after seeing the answer is precisely what
+  !! pre-registration exists to prevent. This line is declared, not acted on: it is
+  !! an OPEN QUESTION for a new contract, not a second reading of this one.
+
+=== EXP. 17 VERDICT: NO-GO (contract SS5 branch: FAIL) ===
+  C7 CLAP-512: c1 32/36 -> MET · c2 w/floor 3.837 <= 1.80 -> NOT MET · c3 w/floor >= 1.20 -> MET
+  scale, printed above it: noise-512 0.922 · mel-8 3.131 · MFCC-13 2.084
+  -> The embedding that should capture 'cello' vs 'flute' does NOT separate them
+     better than 8 mel bands. Strong, publishable, and to be written WITHOUT
+     softening it.
+  !! IN EVERY BRANCH, AND NOT NEGOTIABLE: CLAP's design aperture is 10 s, 160x the
+  !! window used here, and below 10 s laion_clap applies `repeatpad`. WE MEASURED
+  !! CLAP OUTSIDE THE REGIME IT WAS TRAINED FOR. A failure here IS NOT EVIDENCE
+  !! AGAINST CLAP AT 10 s. A 10 s window would need a new contract and would push
+  !! the band below 1 Hz, i.e. a different experiment.
+  !! No EEG was read. No second candidate, no second window, in any branch.

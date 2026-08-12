@@ -1,0 +1,870 @@
+HTTP/2 302 
+content-type: text/plain; charset=utf-8
+content-length: 1002
+location: https://us.aws.cdn.hf.co/xet-bridge-us/63fe0fd4a159ef722e8c8c4b/ba1efd11914e0ce90a7ff33455f39c667b2d7630bb69bebaf17941cc5877bf27?X-Xet-Cas-Uid=public&user_id=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%27630k-audioset-best.pt%3B+filename%3D%22630k-audioset-best.pt%22%3B&Expires=1786556392&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly91cy5hd3MuY2RuLmhmLmNvL3hldC1icmlkZ2UtdXMvNjNmZTBmZDRhMTU5ZWY3MjJlOGM4YzRiL2JhMWVmZDExOTE0ZTBjZTkwYTdmZjMzNDU1ZjM5YzY2N2IyZDc2MzBiYjY5YmViYWYxNzk0MWNjNTg3N2JmMjdcXD9YLVhldC1DYXMtVWlkPXB1YmxpYyZ1c2VyX2lkPXB1YmxpYyZyZXNwb25zZS1jb250ZW50LWRpc3Bvc2l0aW9uPWlubGluZSUzQitmaWxlbmFtZSUyQSUzRFVURi04JTI3JTI3NjMway1hdWRpb3NldC1iZXN0LnB0JTNCK2ZpbGVuYW1lJTNEJTIyNjMway1hdWRpb3NldC1iZXN0LnB0JTIyJTNCIiwiQ29uZGl0aW9uIjp7IkRhdGVMZXNzVGhhbiI6eyJFcG9jaFRpbWUiOjE3ODY1NTYzOTJ9fX1dfQ__&Signature=MEUCIQCrek0oiTi8VeoMHw9SgotAM0YSaL3OGLwuJnY8PulelAIgEVIPN4%7EAg4hvxZE0ohG0t322gnJYOf0ccdZFWTKam9Q_&Key-Pair-Id=01KXEF4KZ1B6FV465MAWR4M21F
+date: Wed, 12 Aug 2026 16:39:52 GMT
+x-powered-by: huggingface-moon
+x-request-id: Root=1-6a7ca1d8-74ab633b00caca970ddcc3a1
+ratelimit: "resolvers";r=2999;t=148
+ratelimit-policy: "fixed window";"resolvers";q=3000;w=300
+cross-origin-opener-policy: same-origin
+referrer-policy: strict-origin-when-cross-origin
+access-control-max-age: 86400
+access-control-allow-origin: https://huggingface.co
+vary: Origin, Accept
+access-control-expose-headers: X-Repo-Commit,X-Request-Id,X-Error-Code,X-Error-Message,X-Total-Count,ETag,Link,Accept-Ranges,Content-Range,X-Linked-Size,X-Linked-ETag,X-Xet-Hash
+x-repo-commit: b3708341862f581175dba5c356a4ebf74a9b6651
+accept-ranges: bytes
+x-hf-warning: unauthenticated; Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+x-linked-size: 1863587645
+x-linked-etag: "8053c9775516af2f4902e1e8281e356cc1bf7a85e8b761908170767b77c3f037"
+cache-control: no-store
+x-xet-hash: ba1efd11914e0ce90a7ff33455f39c667b2d7630bb69bebaf17941cc5877bf27
+link: <https://huggingface.co/api/models/lukewys/laion_clap/xet-read-token/b3708341862f581175dba5c356a4ebf74a9b6651>; rel="xet-auth", <https://cas-server.xethub.hf.co/v1/reconstructions/ba1efd11914e0ce90a7f
+--- curl: 1863587645 byte in 32.308802s (57681925 B/s), http 200, redirect 1 ---
+--- fine: 2026-08-12T16:40:33Z ---
+-rw-r--r-- 1 andrea.giampietro local 1863587645 Aug 12 18:40 /home/andrea.giampietro/clap_ckpt/630k-audioset-best.pt
+byte attesi dal contratto §4: 1863587645
+byte effettivi:               1863587645
+--- sha256 (va nel .json di provenienza) ---
+8053c9775516af2f4902e1e8281e356cc1bf7a85e8b761908170767b77c3f037  /home/andrea.giampietro/clap_ckpt/630k-audioset-best.pt
+
+real	0m5.247s
+user	0m4.927s
+sys	0m0.304s
+
+=== 5. ESTRAZIONE — finestra e hop 62.5 ms, serie a 16 Hz, Nyquist 8 Hz ===
+budget dichiarato dal contratto §4: ~9 minuti misurati (8876 finestre)
+output: /home/andrea.giampietro/clap_exp17
+--- inizio: 2026-08-12T16:40:38Z ---
+/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/librosa/util/files.py:10: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  from pkg_resources import resource_filename
+/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/huggingface_hub/file_download.py:949: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.
+  warnings.warn(
+36 duo stim ids · 24 distinct stems
+/home/andrea.giampietro/.conda/envs/eeg_attention/lib/python3.9/site-packages/torch/functional.py:507: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at ../aten/src/ATen/native/TensorShape.cpp:3549.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+Some weights of RobertaModel were not initialized from the model checkpoint at roberta-base and are newly initialized: ['roberta.pooler.dense.bias', 'roberta.pooler.dense.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+Load the specified checkpoint /home/andrea.giampietro/clap_ckpt/630k-audioset-best.pt from users.
+Load Checkpoint...
+logit_scale_a 	 Loaded
+logit_scale_t 	 Loaded
+audio_branch.spectrogram_extractor.stft.conv_real.weight 	 Loaded
+audio_branch.spectrogram_extractor.stft.conv_imag.weight 	 Loaded
+audio_branch.logmel_extractor.melW 	 Loaded
+audio_branch.bn0.weight 	 Loaded
+audio_branch.bn0.bias 	 Loaded
+audio_branch.patch_embed.proj.weight 	 Loaded
+audio_branch.patch_embed.proj.bias 	 Loaded
+audio_branch.patch_embed.norm.weight 	 Loaded
+audio_branch.patch_embed.norm.bias 	 Loaded
+audio_branch.layers.0.blocks.0.norm1.weight 	 Loaded
+audio_branch.layers.0.blocks.0.norm1.bias 	 Loaded
+audio_branch.layers.0.blocks.0.attn.relative_position_bias_table 	 Loaded
+audio_branch.layers.0.blocks.0.attn.qkv.weight 	 Loaded
+audio_branch.layers.0.blocks.0.attn.qkv.bias 	 Loaded
+audio_branch.layers.0.blocks.0.attn.proj.weight 	 Loaded
+audio_branch.layers.0.blocks.0.attn.proj.bias 	 Loaded
+audio_branch.layers.0.blocks.0.norm2.weight 	 Loaded
+audio_branch.layers.0.blocks.0.norm2.bias 	 Loaded
+audio_branch.layers.0.blocks.0.mlp.fc1.weight 	 Loaded
+audio_branch.layers.0.blocks.0.mlp.fc1.bias 	 Loaded
+audio_branch.layers.0.blocks.0.mlp.fc2.weight 	 Loaded
+audio_branch.layers.0.blocks.0.mlp.fc2.bias 	 Loaded
+audio_branch.layers.0.blocks.1.norm1.weight 	 Loaded
+audio_branch.layers.0.blocks.1.norm1.bias 	 Loaded
+audio_branch.layers.0.blocks.1.attn.relative_position_bias_table 	 Loaded
+audio_branch.layers.0.blocks.1.attn.qkv.weight 	 Loaded
+audio_branch.layers.0.blocks.1.attn.qkv.bias 	 Loaded
+audio_branch.layers.0.blocks.1.attn.proj.weight 	 Loaded
+audio_branch.layers.0.blocks.1.attn.proj.bias 	 Loaded
+audio_branch.layers.0.blocks.1.norm2.weight 	 Loaded
+audio_branch.layers.0.blocks.1.norm2.bias 	 Loaded
+audio_branch.layers.0.blocks.1.mlp.fc1.weight 	 Loaded
+audio_branch.layers.0.blocks.1.mlp.fc1.bias 	 Loaded
+audio_branch.layers.0.blocks.1.mlp.fc2.weight 	 Loaded
+audio_branch.layers.0.blocks.1.mlp.fc2.bias 	 Loaded
+audio_branch.layers.0.downsample.reduction.weight 	 Loaded
+audio_branch.layers.0.downsample.norm.weight 	 Loaded
+audio_branch.layers.0.downsample.norm.bias 	 Loaded
+audio_branch.layers.1.blocks.0.norm1.weight 	 Loaded
+audio_branch.layers.1.blocks.0.norm1.bias 	 Loaded
+audio_branch.layers.1.blocks.0.attn.relative_position_bias_table 	 Loaded
+audio_branch.layers.1.blocks.0.attn.qkv.weight 	 Loaded
+audio_branch.layers.1.blocks.0.attn.qkv.bias 	 Loaded
+audio_branch.layers.1.blocks.0.attn.proj.weight 	 Loaded
+audio_branch.layers.1.blocks.0.attn.proj.bias 	 Loaded
+audio_branch.layers.1.blocks.0.norm2.weight 	 Loaded
+audio_branch.layers.1.blocks.0.norm2.bias 	 Loaded
+audio_branch.layers.1.blocks.0.mlp.fc1.weight 	 Loaded
+audio_branch.layers.1.blocks.0.mlp.fc1.bias 	 Loaded
+audio_branch.layers.1.blocks.0.mlp.fc2.weight 	 Loaded
+audio_branch.layers.1.blocks.0.mlp.fc2.bias 	 Loaded
+audio_branch.layers.1.blocks.1.norm1.weight 	 Loaded
+audio_branch.layers.1.blocks.1.norm1.bias 	 Loaded
+audio_branch.layers.1.blocks.1.attn.relative_position_bias_table 	 Loaded
+audio_branch.layers.1.blocks.1.attn.qkv.weight 	 Loaded
+audio_branch.layers.1.blocks.1.attn.qkv.bias 	 Loaded
+audio_branch.layers.1.blocks.1.attn.proj.weight 	 Loaded
+audio_branch.layers.1.blocks.1.attn.proj.bias 	 Loaded
+audio_branch.layers.1.blocks.1.norm2.weight 	 Loaded
+audio_branch.layers.1.blocks.1.norm2.bias 	 Loaded
+audio_branch.layers.1.blocks.1.mlp.fc1.weight 	 Loaded
+audio_branch.layers.1.blocks.1.mlp.fc1.bias 	 Loaded
+audio_branch.layers.1.blocks.1.mlp.fc2.weight 	 Loaded
+audio_branch.layers.1.blocks.1.mlp.fc2.bias 	 Loaded
+audio_branch.layers.1.downsample.reduction.weight 	 Loaded
+audio_branch.layers.1.downsample.norm.weight 	 Loaded
+audio_branch.layers.1.downsample.norm.bias 	 Loaded
+audio_branch.layers.2.blocks.0.norm1.weight 	 Loaded
+audio_branch.layers.2.blocks.0.norm1.bias 	 Loaded
+audio_branch.layers.2.blocks.0.attn.relative_position_bias_table 	 Loaded
+audio_branch.layers.2.blocks.0.attn.qkv.weight 	 Loaded
+audio_branch.layers.2.blocks.0.attn.qkv.bias 	 Loaded
+audio_branch.layers.2.blocks.0.attn.proj.weight 	 Loaded
+audio_branch.layers.2.blocks.0.attn.proj.bias 	 Loaded
+audio_branch.layers.2.blocks.0.norm2.weight 	 Loaded
+audio_branch.layers.2.blocks.0.norm2.bias 	 Loaded
+audio_branch.layers.2.blocks.0.mlp.fc1.weight 	 Loaded
+audio_branch.layers.2.blocks.0.mlp.fc1.bias 	 Loaded
+audio_branch.layers.2.blocks.0.mlp.fc2.weight 	 Loaded
+audio_branch.layers.2.blocks.0.mlp.fc2.bias 	 Loaded
+audio_branch.layers.2.blocks.1.norm1.weight 	 Loaded
+audio_branch.layers.2.blocks.1.norm1.bias 	 Loaded
+audio_branch.layers.2.blocks.1.attn.relative_position_bias_table 	 Loaded
+audio_branch.layers.2.blocks.1.attn.qkv.weight 	 Loaded
+audio_branch.layers.2.blocks.1.attn.qkv.bias 	 Loaded
+audio_branch.layers.2.blocks.1.attn.proj.weight 	 Loaded
+audio_branch.layers.2.blocks.1.attn.proj.bias 	 Loaded
+audio_branch.layers.2.blocks.1.norm2.weight 	 Loaded
+audio_branch.layers.2.blocks.1.norm2.bias 	 Loaded
+audio_branch.layers.2.blocks.1.mlp.fc1.weight 	 Loaded
+audio_branch.layers.2.blocks.1.mlp.fc1.bias 	 Loaded
+audio_branch.layers.2.blocks.1.mlp.fc2.weight 	 Loaded
+audio_branch.layers.2.blocks.1.mlp.fc2.bias 	 Loaded
+audio_branch.layers.2.blocks.2.norm1.weight 	 Loaded
+audio_branch.layers.2.blocks.2.norm1.bias 	 Loaded
+audio_branch.layers.2.blocks.2.attn.relative_position_bias_table 	 Loaded
+audio_branch.layers.2.blocks.2.attn.qkv.weight 	 Loaded
+audio_branch.layers.2.blocks.2.attn.qkv.bias 	 Loaded
+audio_branch.layers.2.blocks.2.attn.proj.weight 	 Loaded
+audio_branch.layers.2.blocks.2.attn.proj.bias 	 Loaded
+audio_branch.layers.2.blocks.2.norm2.weight 	 Loaded
+audio_branch.layers.2.blocks.2.norm2.bias 	 Loaded
+audio_branch.layers.2.blocks.2.mlp.fc1.weight 	 Loaded
+audio_branch.layers.2.blocks.2.mlp.fc1.bias 	 Loaded
+audio_branch.layers.2.blocks.2.mlp.fc2.weight 	 Loaded
+audio_branch.layers.2.blocks.2.mlp.fc2.bias 	 Loaded
+audio_branch.layers.2.blocks.3.norm1.weight 	 Loaded
+audio_branch.layers.2.blocks.3.norm1.bias 	 Loaded
+audio_branch.layers.2.blocks.3.attn.relative_position_bias_table 	 Loaded
+audio_branch.layers.2.blocks.3.attn.qkv.weight 	 Loaded
+audio_branch.layers.2.blocks.3.attn.qkv.bias 	 Loaded
+audio_branch.layers.2.blocks.3.attn.proj.weight 	 Loaded
+audio_branch.layers.2.blocks.3.attn.proj.bias 	 Loaded
+audio_branch.layers.2.blocks.3.norm2.weight 	 Loaded
+audio_branch.layers.2.blocks.3.norm2.bias 	 Loaded
+audio_branch.layers.2.blocks.3.mlp.fc1.weight 	 Loaded
+audio_branch.layers.2.blocks.3.mlp.fc1.bias 	 Loaded
+audio_branch.layers.2.blocks.3.mlp.fc2.weight 	 Loaded
+audio_branch.layers.2.blocks.3.mlp.fc2.bias 	 Loaded
+audio_branch.layers.2.blocks.4.norm1.weight 	 Loaded
+audio_branch.layers.2.blocks.4.norm1.bias 	 Loaded
+audio_branch.layers.2.blocks.4.attn.relative_position_bias_table 	 Loaded
+audio_branch.layers.2.blocks.4.attn.qkv.weight 	 Loaded
+audio_branch.layers.2.blocks.4.attn.qkv.bias 	 Loaded
+audio_branch.layers.2.blocks.4.attn.proj.weight 	 Loaded
+audio_branch.layers.2.blocks.4.attn.proj.bias 	 Loaded
+audio_branch.layers.2.blocks.4.norm2.weight 	 Loaded
+audio_branch.layers.2.blocks.4.norm2.bias 	 Loaded
+audio_branch.layers.2.blocks.4.mlp.fc1.weight 	 Loaded
+audio_branch.layers.2.blocks.4.mlp.fc1.bias 	 Loaded
+audio_branch.layers.2.blocks.4.mlp.fc2.weight 	 Loaded
+audio_branch.layers.2.blocks.4.mlp.fc2.bias 	 Loaded
+audio_branch.layers.2.blocks.5.norm1.weight 	 Loaded
+audio_branch.layers.2.blocks.5.norm1.bias 	 Loaded
+audio_branch.layers.2.blocks.5.attn.relative_position_bias_table 	 Loaded
+audio_branch.layers.2.blocks.5.attn.qkv.weight 	 Loaded
+audio_branch.layers.2.blocks.5.attn.qkv.bias 	 Loaded
+audio_branch.layers.2.blocks.5.attn.proj.weight 	 Loaded
+audio_branch.layers.2.blocks.5.attn.proj.bias 	 Loaded
+audio_branch.layers.2.blocks.5.norm2.weight 	 Loaded
+audio_branch.layers.2.blocks.5.norm2.bias 	 Loaded
+audio_branch.layers.2.blocks.5.mlp.fc1.weight 	 Loaded
+audio_branch.layers.2.blocks.5.mlp.fc1.bias 	 Loaded
+audio_branch.layers.2.blocks.5.mlp.fc2.weight 	 Loaded
+audio_branch.layers.2.blocks.5.mlp.fc2.bias 	 Loaded
+audio_branch.layers.2.downsample.reduction.weight 	 Loaded
+audio_branch.layers.2.downsample.norm.weight 	 Loaded
+audio_branch.layers.2.downsample.norm.bias 	 Loaded
+audio_branch.layers.3.blocks.0.norm1.weight 	 Loaded
+audio_branch.layers.3.blocks.0.norm1.bias 	 Loaded
+audio_branch.layers.3.blocks.0.attn.relative_position_bias_table 	 Loaded
+audio_branch.layers.3.blocks.0.attn.qkv.weight 	 Loaded
+audio_branch.layers.3.blocks.0.attn.qkv.bias 	 Loaded
+audio_branch.layers.3.blocks.0.attn.proj.weight 	 Loaded
+audio_branch.layers.3.blocks.0.attn.proj.bias 	 Loaded
+audio_branch.layers.3.blocks.0.norm2.weight 	 Loaded
+audio_branch.layers.3.blocks.0.norm2.bias 	 Loaded
+audio_branch.layers.3.blocks.0.mlp.fc1.weight 	 Loaded
+audio_branch.layers.3.blocks.0.mlp.fc1.bias 	 Loaded
+audio_branch.layers.3.blocks.0.mlp.fc2.weight 	 Loaded
+audio_branch.layers.3.blocks.0.mlp.fc2.bias 	 Loaded
+audio_branch.layers.3.blocks.1.norm1.weight 	 Loaded
+audio_branch.layers.3.blocks.1.norm1.bias 	 Loaded
+audio_branch.layers.3.blocks.1.attn.relative_position_bias_table 	 Loaded
+audio_branch.layers.3.blocks.1.attn.qkv.weight 	 Loaded
+audio_branch.layers.3.blocks.1.attn.qkv.bias 	 Loaded
+audio_branch.layers.3.blocks.1.attn.proj.weight 	 Loaded
+audio_branch.layers.3.blocks.1.attn.proj.bias 	 Loaded
+audio_branch.layers.3.blocks.1.norm2.weight 	 Loaded
+audio_branch.layers.3.blocks.1.norm2.bias 	 Loaded
+audio_branch.layers.3.blocks.1.mlp.fc1.weight 	 Loaded
+audio_branch.layers.3.blocks.1.mlp.fc1.bias 	 Loaded
+audio_branch.layers.3.blocks.1.mlp.fc2.weight 	 Loaded
+audio_branch.layers.3.blocks.1.mlp.fc2.bias 	 Loaded
+audio_branch.norm.weight 	 Loaded
+audio_branch.norm.bias 	 Loaded
+audio_branch.tscam_conv.weight 	 Loaded
+audio_branch.tscam_conv.bias 	 Loaded
+audio_branch.head.weight 	 Loaded
+audio_branch.head.bias 	 Loaded
+text_branch.embeddings.word_embeddings.weight 	 Loaded
+text_branch.embeddings.position_embeddings.weight 	 Loaded
+text_branch.embeddings.token_type_embeddings.weight 	 Loaded
+text_branch.embeddings.LayerNorm.weight 	 Loaded
+text_branch.embeddings.LayerNorm.bias 	 Loaded
+text_branch.encoder.layer.0.attention.self.query.weight 	 Loaded
+text_branch.encoder.layer.0.attention.self.query.bias 	 Loaded
+text_branch.encoder.layer.0.attention.self.key.weight 	 Loaded
+text_branch.encoder.layer.0.attention.self.key.bias 	 Loaded
+text_branch.encoder.layer.0.attention.self.value.weight 	 Loaded
+text_branch.encoder.layer.0.attention.self.value.bias 	 Loaded
+text_branch.encoder.layer.0.attention.output.dense.weight 	 Loaded
+text_branch.encoder.layer.0.attention.output.dense.bias 	 Loaded
+text_branch.encoder.layer.0.attention.output.LayerNorm.weight 	 Loaded
+text_branch.encoder.layer.0.attention.output.LayerNorm.bias 	 Loaded
+text_branch.encoder.layer.0.intermediate.dense.weight 	 Loaded
+text_branch.encoder.layer.0.intermediate.dense.bias 	 Loaded
+text_branch.encoder.layer.0.output.dense.weight 	 Loaded
+text_branch.encoder.layer.0.output.dense.bias 	 Loaded
+text_branch.encoder.layer.0.output.LayerNorm.weight 	 Loaded
+text_branch.encoder.layer.0.output.LayerNorm.bias 	 Loaded
+text_branch.encoder.layer.1.attention.self.query.weight 	 Loaded
+text_branch.encoder.layer.1.attention.self.query.bias 	 Loaded
+text_branch.encoder.layer.1.attention.self.key.weight 	 Loaded
+text_branch.encoder.layer.1.attention.self.key.bias 	 Loaded
+text_branch.encoder.layer.1.attention.self.value.weight 	 Loaded
+text_branch.encoder.layer.1.attention.self.value.bias 	 Loaded
+text_branch.encoder.layer.1.attention.output.dense.weight 	 Loaded
+text_branch.encoder.layer.1.attention.output.dense.bias 	 Loaded
+text_branch.encoder.layer.1.attention.output.LayerNorm.weight 	 Loaded
+text_branch.encoder.layer.1.attention.output.LayerNorm.bias 	 Loaded
+text_branch.encoder.layer.1.intermediate.dense.weight 	 Loaded
+text_branch.encoder.layer.1.intermediate.dense.bias 	 Loaded
+text_branch.encoder.layer.1.output.dense.weight 	 Loaded
+text_branch.encoder.layer.1.output.dense.bias 	 Loaded
+text_branch.encoder.layer.1.output.LayerNorm.weight 	 Loaded
+text_branch.encoder.layer.1.output.LayerNorm.bias 	 Loaded
+text_branch.encoder.layer.2.attention.self.query.weight 	 Loaded
+text_branch.encoder.layer.2.attention.self.query.bias 	 Loaded
+text_branch.encoder.layer.2.attention.self.key.weight 	 Loaded
+text_branch.encoder.layer.2.attention.self.key.bias 	 Loaded
+text_branch.encoder.layer.2.attention.self.value.weight 	 Loaded
+text_branch.encoder.layer.2.attention.self.value.bias 	 Loaded
+text_branch.encoder.layer.2.attention.output.dense.weight 	 Loaded
+text_branch.encoder.layer.2.attention.output.dense.bias 	 Loaded
+text_branch.encoder.layer.2.attention.output.LayerNorm.weight 	 Loaded
+text_branch.encoder.layer.2.attention.output.LayerNorm.bias 	 Loaded
+text_branch.encoder.layer.2.intermediate.dense.weight 	 Loaded
+text_branch.encoder.layer.2.intermediate.dense.bias 	 Loaded
+text_branch.encoder.layer.2.output.dense.weight 	 Loaded
+text_branch.encoder.layer.2.output.dense.bias 	 Loaded
+text_branch.encoder.layer.2.output.LayerNorm.weight 	 Loaded
+text_branch.encoder.layer.2.output.LayerNorm.bias 	 Loaded
+text_branch.encoder.layer.3.attention.self.query.weight 	 Loaded
+text_branch.encoder.layer.3.attention.self.query.bias 	 Loaded
+text_branch.encoder.layer.3.attention.self.key.weight 	 Loaded
+text_branch.encoder.layer.3.attention.self.key.bias 	 Loaded
+text_branch.encoder.layer.3.attention.self.value.weight 	 Loaded
+text_branch.encoder.layer.3.attention.self.value.bias 	 Loaded
+text_branch.encoder.layer.3.attention.output.dense.weight 	 Loaded
+text_branch.encoder.layer.3.attention.output.dense.bias 	 Loaded
+text_branch.encoder.layer.3.attention.output.LayerNorm.weight 	 Loaded
+text_branch.encoder.layer.3.attention.output.LayerNorm.bias 	 Loaded
+text_branch.encoder.layer.3.intermediate.dense.weight 	 Loaded
+text_branch.encoder.layer.3.intermediate.dense.bias 	 Loaded
+text_branch.encoder.layer.3.output.dense.weight 	 Loaded
+text_branch.encoder.layer.3.output.dense.bias 	 Loaded
+text_branch.encoder.layer.3.output.LayerNorm.weight 	 Loaded
+text_branch.encoder.layer.3.output.LayerNorm.bias 	 Loaded
+text_branch.encoder.layer.4.attention.self.query.weight 	 Loaded
+text_branch.encoder.layer.4.attention.self.query.bias 	 Loaded
+text_branch.encoder.layer.4.attention.self.key.weight 	 Loaded
+text_branch.encoder.layer.4.attention.self.key.bias 	 Loaded
+text_branch.encoder.layer.4.attention.self.value.weight 	 Loaded
+text_branch.encoder.layer.4.attention.self.value.bias 	 Loaded
+text_branch.encoder.layer.4.attention.output.dense.weight 	 Loaded
+text_branch.encoder.layer.4.attention.output.dense.bias 	 Loaded
+text_branch.encoder.layer.4.attention.output.LayerNorm.weight 	 Loaded
+text_branch.encoder.layer.4.attention.output.LayerNorm.bias 	 Loaded
+text_branch.encoder.layer.4.intermediate.dense.weight 	 Loaded
+text_branch.encoder.layer.4.intermediate.dense.bias 	 Loaded
+text_branch.encoder.layer.4.output.dense.weight 	 Loaded
+text_branch.encoder.layer.4.output.dense.bias 	 Loaded
+text_branch.encoder.layer.4.output.LayerNorm.weight 	 Loaded
+text_branch.encoder.layer.4.output.LayerNorm.bias 	 Loaded
+text_branch.encoder.layer.5.attention.self.query.weight 	 Loaded
+text_branch.encoder.layer.5.attention.self.query.bias 	 Loaded
+text_branch.encoder.layer.5.attention.self.key.weight 	 Loaded
+text_branch.encoder.layer.5.attention.self.key.bias 	 Loaded
+text_branch.encoder.layer.5.attention.self.value.weight 	 Loaded
+text_branch.encoder.layer.5.attention.self.value.bias 	 Loaded
+text_branch.encoder.layer.5.attention.output.dense.weight 	 Loaded
+text_branch.encoder.layer.5.attention.output.dense.bias 	 Loaded
+text_branch.encoder.layer.5.attention.output.LayerNorm.weight 	 Loaded
+text_branch.encoder.layer.5.attention.output.LayerNorm.bias 	 Loaded
+text_branch.encoder.layer.5.intermediate.dense.weight 	 Loaded
+text_branch.encoder.layer.5.intermediate.dense.bias 	 Loaded
+text_branch.encoder.layer.5.output.dense.weight 	 Loaded
+text_branch.encoder.layer.5.output.dense.bias 	 Loaded
+text_branch.encoder.layer.5.output.LayerNorm.weight 	 Loaded
+text_branch.encoder.layer.5.output.LayerNorm.bias 	 Loaded
+text_branch.encoder.layer.6.attention.self.query.weight 	 Loaded
+text_branch.encoder.layer.6.attention.self.query.bias 	 Loaded
+text_branch.encoder.layer.6.attention.self.key.weight 	 Loaded
+text_branch.encoder.layer.6.attention.self.key.bias 	 Loaded
+text_branch.encoder.layer.6.attention.self.value.weight 	 Loaded
+text_branch.encoder.layer.6.attention.self.value.bias 	 Loaded
+text_branch.encoder.layer.6.attention.output.dense.weight 	 Loaded
+text_branch.encoder.layer.6.attention.output.dense.bias 	 Loaded
+text_branch.encoder.layer.6.attention.output.LayerNorm.weight 	 Loaded
+text_branch.encoder.layer.6.attention.output.LayerNorm.bias 	 Loaded
+text_branch.encoder.layer.6.intermediate.dense.weight 	 Loaded
+text_branch.encoder.layer.6.intermediate.dense.bias 	 Loaded
+text_branch.encoder.layer.6.output.dense.weight 	 Loaded
+text_branch.encoder.layer.6.output.dense.bias 	 Loaded
+text_branch.encoder.layer.6.output.LayerNorm.weight 	 Loaded
+text_branch.encoder.layer.6.output.LayerNorm.bias 	 Loaded
+text_branch.encoder.layer.7.attention.self.query.weight 	 Loaded
+text_branch.encoder.layer.7.attention.self.query.bias 	 Loaded
+text_branch.encoder.layer.7.attention.self.key.weight 	 Loaded
+text_branch.encoder.layer.7.attention.self.key.bias 	 Loaded
+text_branch.encoder.layer.7.attention.self.value.weight 	 Loaded
+text_branch.encoder.layer.7.attention.self.value.bias 	 Loaded
+text_branch.encoder.layer.7.attention.output.dense.weight 	 Loaded
+text_branch.encoder.layer.7.attention.output.dense.bias 	 Loaded
+text_branch.encoder.layer.7.attention.output.LayerNorm.weight 	 Loaded
+text_branch.encoder.layer.7.attention.output.LayerNorm.bias 	 Loaded
+text_branch.encoder.layer.7.intermediate.dense.weight 	 Loaded
+text_branch.encoder.layer.7.intermediate.dense.bias 	 Loaded
+text_branch.encoder.layer.7.output.dense.weight 	 Loaded
+text_branch.encoder.layer.7.output.dense.bias 	 Loaded
+text_branch.encoder.layer.7.output.LayerNorm.weight 	 Loaded
+text_branch.encoder.layer.7.output.LayerNorm.bias 	 Loaded
+text_branch.encoder.layer.8.attention.self.query.weight 	 Loaded
+text_branch.encoder.layer.8.attention.self.query.bias 	 Loaded
+text_branch.encoder.layer.8.attention.self.key.weight 	 Loaded
+text_branch.encoder.layer.8.attention.self.key.bias 	 Loaded
+text_branch.encoder.layer.8.attention.self.value.weight 	 Loaded
+text_branch.encoder.layer.8.attention.self.value.bias 	 Loaded
+text_branch.encoder.layer.8.attention.output.dense.weight 	 Loaded
+text_branch.encoder.layer.8.attention.output.dense.bias 	 Loaded
+text_branch.encoder.layer.8.attention.output.LayerNorm.weight 	 Loaded
+text_branch.encoder.layer.8.attention.output.LayerNorm.bias 	 Loaded
+text_branch.encoder.layer.8.intermediate.dense.weight 	 Loaded
+text_branch.encoder.layer.8.intermediate.dense.bias 	 Loaded
+text_branch.encoder.layer.8.output.dense.weight 	 Loaded
+text_branch.encoder.layer.8.output.dense.bias 	 Loaded
+text_branch.encoder.layer.8.output.LayerNorm.weight 	 Loaded
+text_branch.encoder.layer.8.output.LayerNorm.bias 	 Loaded
+text_branch.encoder.layer.9.attention.self.query.weight 	 Loaded
+text_branch.encoder.layer.9.attention.self.query.bias 	 Loaded
+text_branch.encoder.layer.9.attention.self.key.weight 	 Loaded
+text_branch.encoder.layer.9.attention.self.key.bias 	 Loaded
+text_branch.encoder.layer.9.attention.self.value.weight 	 Loaded
+text_branch.encoder.layer.9.attention.self.value.bias 	 Loaded
+text_branch.encoder.layer.9.attention.output.dense.weight 	 Loaded
+text_branch.encoder.layer.9.attention.output.dense.bias 	 Loaded
+text_branch.encoder.layer.9.attention.output.LayerNorm.weight 	 Loaded
+text_branch.encoder.layer.9.attention.output.LayerNorm.bias 	 Loaded
+text_branch.encoder.layer.9.intermediate.dense.weight 	 Loaded
+text_branch.encoder.layer.9.intermediate.dense.bias 	 Loaded
+text_branch.encoder.layer.9.output.dense.weight 	 Loaded
+text_branch.encoder.layer.9.output.dense.bias 	 Loaded
+text_branch.encoder.layer.9.output.LayerNorm.weight 	 Loaded
+text_branch.encoder.layer.9.output.LayerNorm.bias 	 Loaded
+text_branch.encoder.layer.10.attention.self.query.weight 	 Loaded
+text_branch.encoder.layer.10.attention.self.query.bias 	 Loaded
+text_branch.encoder.layer.10.attention.self.key.weight 	 Loaded
+text_branch.encoder.layer.10.attention.self.key.bias 	 Loaded
+text_branch.encoder.layer.10.attention.self.value.weight 	 Loaded
+text_branch.encoder.layer.10.attention.self.value.bias 	 Loaded
+text_branch.encoder.layer.10.attention.output.dense.weight 	 Loaded
+text_branch.encoder.layer.10.attention.output.dense.bias 	 Loaded
+text_branch.encoder.layer.10.attention.output.LayerNorm.weight 	 Loaded
+text_branch.encoder.layer.10.attention.output.LayerNorm.bias 	 Loaded
+text_branch.encoder.layer.10.intermediate.dense.weight 	 Loaded
+text_branch.encoder.layer.10.intermediate.dense.bias 	 Loaded
+text_branch.encoder.layer.10.output.dense.weight 	 Loaded
+text_branch.encoder.layer.10.output.dense.bias 	 Loaded
+text_branch.encoder.layer.10.output.LayerNorm.weight 	 Loaded
+text_branch.encoder.layer.10.output.LayerNorm.bias 	 Loaded
+text_branch.encoder.layer.11.attention.self.query.weight 	 Loaded
+text_branch.encoder.layer.11.attention.self.query.bias 	 Loaded
+text_branch.encoder.layer.11.attention.self.key.weight 	 Loaded
+text_branch.encoder.layer.11.attention.self.key.bias 	 Loaded
+text_branch.encoder.layer.11.attention.self.value.weight 	 Loaded
+text_branch.encoder.layer.11.attention.self.value.bias 	 Loaded
+text_branch.encoder.layer.11.attention.output.dense.weight 	 Loaded
+text_branch.encoder.layer.11.attention.output.dense.bias 	 Loaded
+text_branch.encoder.layer.11.attention.output.LayerNorm.weight 	 Loaded
+text_branch.encoder.layer.11.attention.output.LayerNorm.bias 	 Loaded
+text_branch.encoder.layer.11.intermediate.dense.weight 	 Loaded
+text_branch.encoder.layer.11.intermediate.dense.bias 	 Loaded
+text_branch.encoder.layer.11.output.dense.weight 	 Loaded
+text_branch.encoder.layer.11.output.dense.bias 	 Loaded
+text_branch.encoder.layer.11.output.LayerNorm.weight 	 Loaded
+text_branch.encoder.layer.11.output.LayerNorm.bias 	 Loaded
+text_branch.pooler.dense.weight 	 Loaded
+text_branch.pooler.dense.bias 	 Loaded
+text_transform.sequential.0.weight 	 Loaded
+text_transform.sequential.0.bias 	 Loaded
+text_transform.sequential.3.weight 	 Loaded
+text_transform.sequential.3.bias 	 Loaded
+text_projection.0.weight 	 Loaded
+text_projection.0.bias 	 Loaded
+text_projection.2.weight 	 Loaded
+text_projection.2.bias 	 Loaded
+audio_transform.sequential.0.weight 	 Loaded
+audio_transform.sequential.0.bias 	 Loaded
+audio_transform.sequential.3.weight 	 Loaded
+audio_transform.sequential.3.bias 	 Loaded
+audio_projection.0.weight 	 Loaded
+audio_projection.0.bias 	 Loaded
+audio_projection.2.weight 	 Loaded
+audio_projection.2.bias 	 Loaded
+  [ 1/24] 4dedddaa Co            28.01s ->   448 frames  (33s elapsed)
+  [ 2/24] 4f5b0869 Fl            28.01s ->   448 frames  (59s elapsed)
+  [ 3/24] 342b822c Ob            28.01s ->   448 frames  (83s elapsed)
+  [ 4/24] 77345fdd Co            24.01s ->   384 frames  (104s elapsed)
+  [ 5/24] 764f727b Fl            24.01s ->   384 frames  (124s elapsed)
+  [ 6/24] ba26abe7 Ob            24.01s ->   384 frames  (145s elapsed)
+  [ 7/24] cd713c1e Bo            24.01s ->   384 frames  (166s elapsed)
+  [ 8/24] c1911889 Fh            24.01s ->   384 frames  (188s elapsed)
+  [ 9/24] 2ae93da3 Fl            24.01s ->   384 frames  (208s elapsed)
+  [10/24] e8ab20f6 Bo            24.01s ->   384 frames  (230s elapsed)
+  [11/24] 717aaedd Fh            24.01s ->   384 frames  (252s elapsed)
+  [12/24] 1b3c0d1b Fl            24.01s ->   384 frames  (274s elapsed)
+  [13/24] 75be8bc8 Bs            19.73s ->   315 frames  (291s elapsed)
+  [14/24] ede8396b Dr            19.73s ->   315 frames  (308s elapsed)
+  [15/24] 87e5060e Gt            19.73s ->   315 frames  (325s elapsed)
+  [16/24] e3650b18 Vx            19.73s ->   315 frames  (342s elapsed)
+  [17/24] 66f91753 Bs            20.01s ->   320 frames  (359s elapsed)
+  [18/24] 8afd4830 Dr            20.01s ->   320 frames  (376s elapsed)
+  [19/24] c3f2e863 Gt            20.01s ->   320 frames  (393s elapsed)
+  [20/24] a01a35ba Vx            20.01s ->   320 frames  (411s elapsed)
+  [21/24] 0119725d Bs            24.01s ->   384 frames  (433s elapsed)
+  [22/24] e4f2ffc2 Dr            24.01s ->   384 frames  (456s elapsed)
+  [23/24] ab7d3677 Gt            24.01s ->   384 frames  (476s elapsed)
+  [24/24] 53e0d950 Vx            24.01s ->   384 frames  (497s elapsed)
+
+-> /home/andrea.giampietro/clap_exp17/manifest.json  (8876 frames, 497s)
+
+real	9m35.037s
+user	147m53.512s
+sys	26m59.853s
+--- fine: 2026-08-12T16:50:13Z ---
+
+=== 6. COSA C'E' SU DISCO ===
+total 17948
+-rw-r--r-- 1 andrea.giampietro local 786560 Aug 12 18:49 0119725deea72e8ca125a8f09bac408a.npy
+-rw-r--r-- 1 andrea.giampietro local 786560 Aug 12 18:46 1b3c0d1bd00d3f0cb2450f89e7f139eb.npy
+-rw-r--r-- 1 andrea.giampietro local 786560 Aug 12 18:45 2ae93da326e490d26f859c4f5ba0078e.npy
+-rw-r--r-- 1 andrea.giampietro local 917632 Aug 12 18:43 342b822c79ec2a2142edc1836972182d.npy
+-rw-r--r-- 1 andrea.giampietro local 917632 Aug 12 18:42 4dedddaae1fe2f232b14709a3ce8bac4.npy
+-rw-r--r-- 1 andrea.giampietro local 917632 Aug 12 18:42 4f5b0869e00ff1519d63420b1d7a5e02.npy
+-rw-r--r-- 1 andrea.giampietro local 786560 Aug 12 18:50 53e0d950151b47304986057547a28d70.npy
+-rw-r--r-- 1 andrea.giampietro local 655488 Aug 12 18:47 66f917535bad7b596abbf5d1011e3656.npy
+-rw-r--r-- 1 andrea.giampietro local 786560 Aug 12 18:46 717aaedd6e2b35a3b8e95d1a1082a58c.npy
+-rw-r--r-- 1 andrea.giampietro local 645248 Aug 12 18:46 75be8bc8edeb00fdeda7aa62b8be1ab9.npy
+-rw-r--r-- 1 andrea.giampietro local 786560 Aug 12 18:44 764f727bd7fc567dfff60605b6ab9ab8.npy
+-rw-r--r-- 1 andrea.giampietro local 786560 Aug 12 18:43 77345fdd8827336179571513f03cac10.npy
+-rw-r--r-- 1 andrea.giampietro local 645248 Aug 12 18:47 87e5060effbefe0821d188c39e675001.npy
+-rw-r--r-- 1 andrea.giampietro local 655488 Aug 12 18:48 8afd48300584ca21c1991b1493ff1f2c.npy
+-rw-r--r-- 1 andrea.giampietro local 655488 Aug 12 18:48 a01a35baff177dfa1519ae71c5f711ff.npy
+-rw-r--r-- 1 andrea.giampietro local 786560 Aug 12 18:49 ab7d36771872dfa9078660e24b18f5a5.npy
+-rw-r--r-- 1 andrea.giampietro local 786560 Aug 12 18:44 ba26abe746e974771192d96c2660248e.npy
+-rw-r--r-- 1 andrea.giampietro local 786560 Aug 12 18:45 c1911889c73900da7eb3b7a6bc1a47dd.npy
+-rw-r--r-- 1 andrea.giampietro local 655488 Aug 12 18:48 c3f2e863506b369a638141b2dd128917.npy
+-rw-r--r-- 1 andrea.giampietro local 786560 Aug 12 18:44 cd713c1e124a8f456c9369ce618b903b.npy
+-rw-r--r-- 1 andrea.giampietro local 645248 Aug 12 18:47 e3650b18131eb12ec99efd24ba996771.npy
+-rw-r--r-- 1 andrea.giampietro local 786560 Aug 12 18:49 e4f2ffc273457efd61b022677e5cfb61.npy
+-rw-r--r-- 1 andrea.giampietro local 786560 Aug 12 18:45 e8ab20f69a0cb3a4e51cb96e29985bfd.npy
+-rw-r--r-- 1 andrea.giampietro local 645248 Aug 12 18:47 ede8396b8d3ad32fe6a4ef906abeb735.npy
+-rw-r--r-- 1 andrea.giampietro local   8452 Aug 12 18:50 manifest.json
+file .npy: 24   (attesi: 24 stem distinti)
+--- manifest.json integrale ---
+{
+  "experiment": "Exp. 16 arm A stage 1 (extraction only -- no measurement here)",
+  "contract": "Cap. 2 -- Exp. 16 ... criterio pre-registrato (12 ago 2026), SSA",
+  "model": "laion_clap.CLAP_Module(enable_fusion=False, amodel='HTSAT-tiny')",
+  "checkpoint": "/home/andrea.giampietro/clap_ckpt/630k-audioset-best.pt",
+  "checkpoint_bytes": 1863587645,
+  "checkpoint_sha256": "8053c9775516af2f4902e1e8281e356cc1bf7a85e8b761908170767b77c3f037",
+  "audio_sample_rate_in": 44100,
+  "clap_sample_rate": 48000,
+  "resampler": "scipy.signal.resample_poly(x, 160, 147)  # 44100 -> 48000, polyphase",
+  "window_s": 0.0625,
+  "hop_s": 0.0625,
+  "series_rate_hz": 16.0,
+  "nyquist_hz": 8.0,
+  "clap_input_len_s": 10.0,
+  "clap_padding": "repeatpad: the 3000-sample window is repeated 160 times to fill 480000; no zeros are added",
+  "embedding_dim": 512,
+  "l2_normalised_per_frame": {
+    "mean_frame_norm": 1.0,
+    "note": "1.0 means laion_clap L2-normalises every frame, so the series carries DIRECTION only and the per-band z-score of the protocol is applied to a already-unit-norm vector. Measured, not assumed."
+  },
+  "batch": 32,
+  "seed": 20260812,
+  "interpreter": "/home/andrea.giampietro/.conda/envs/eeg_attention/bin/python",
+  "machine": "baldo",
+  "platform": "Linux-5.14.0-570.49.1.el9_6.x86_64-x86_64-with-glibc2.34",
+  "device": "cpu",
+  "versions": {
+    "python": "3.9.25",
+    "torch": "2.2.2+cu121",
+    "numpy": "1.26.4",
+    "scipy": "1.11.4",
+    "laion_clap": "1.1.6"
+  },
+  "caveats": [
+    "EXTRACTION ONLY. No statistic is computed here and no number in this directory is a result. The gate runs in /opt/miniconda3 (Legacy SS4 trap 1).",
+    "CLAP's design aperture is 10 s and the model is time-invariant by design; the pre-registered band forces a 62.5 ms window. The two time scales are 160x apart, and that gap must be reported next to whatever the gate returns.",
+    "ZERO LOOKS SPENT: audio only, no EEG opened, no label read."
+  ],
+  "stems": {
+    "4dedddaae1fe2f232b14709a3ce8bac4": {
+      "key": [
+        "classique",
+        "morceau1",
+        "theme1",
+        "stereo",
+        "Co"
+      ],
+      "n_samples": 1235312,
+      "sr": 44100,
+      "duration_s": 28.011609977324262,
+      "n_frames": 448
+    },
+    "4f5b0869e00ff1519d63420b1d7a5e02": {
+      "key": [
+        "classique",
+        "morceau1",
+        "theme1",
+        "stereo",
+        "Fl"
+      ],
+      "n_samples": 1235312,
+      "sr": 44100,
+      "duration_s": 28.011609977324262,
+      "n_frames": 448
+    },
+    "342b822c79ec2a2142edc1836972182d": {
+      "key": [
+        "classique",
+        "morceau1",
+        "theme1",
+        "stereo",
+        "Ob"
+      ],
+      "n_samples": 1235312,
+      "sr": 44100,
+      "duration_s": 28.011609977324262,
+      "n_frames": 448
+    },
+    "77345fdd8827336179571513f03cac10": {
+      "key": [
+        "classique",
+        "morceau1",
+        "theme2",
+        "stereo",
+        "Co"
+      ],
+      "n_samples": 1058916,
+      "sr": 44100,
+      "duration_s": 24.01170068027211,
+      "n_frames": 384
+    },
+    "764f727bd7fc567dfff60605b6ab9ab8": {
+      "key": [
+        "classique",
+        "morceau1",
+        "theme2",
+        "stereo",
+        "Fl"
+      ],
+      "n_samples": 1058916,
+      "sr": 44100,
+      "duration_s": 24.01170068027211,
+      "n_frames": 384
+    },
+    "ba26abe746e974771192d96c2660248e": {
+      "key": [
+        "classique",
+        "morceau1",
+        "theme2",
+        "stereo",
+        "Ob"
+      ],
+      "n_samples": 1058916,
+      "sr": 44100,
+      "duration_s": 24.01170068027211,
+      "n_frames": 384
+    },
+    "cd713c1e124a8f456c9369ce618b903b": {
+      "key": [
+        "classique",
+        "morceau2",
+        "theme1",
+        "stereo",
+        "Bo"
+      ],
+      "n_samples": 1058916,
+      "sr": 44100,
+      "duration_s": 24.01170068027211,
+      "n_frames": 384
+    },
+    "c1911889c73900da7eb3b7a6bc1a47dd": {
+      "key": [
+        "classique",
+        "morceau2",
+        "theme1",
+        "stereo",
+        "Fh"
+      ],
+      "n_samples": 1058916,
+      "sr": 44100,
+      "duration_s": 24.01170068027211,
+      "n_frames": 384
+    },
+    "2ae93da326e490d26f859c4f5ba0078e": {
+      "key": [
+        "classique",
+        "morceau2",
+        "theme1",
+        "stereo",
+        "Fl"
+      ],
+      "n_samples": 1058916,
+      "sr": 44100,
+      "duration_s": 24.01170068027211,
+      "n_frames": 384
+    },
+    "e8ab20f69a0cb3a4e51cb96e29985bfd": {
+      "key": [
+        "classique",
+        "morceau2",
+        "theme2",
+        "stereo",
+        "Bo"
+      ],
+      "n_samples": 1058916,
+      "sr": 44100,
+      "duration_s": 24.01170068027211,
+      "n_frames": 384
+    },
+    "717aaedd6e2b35a3b8e95d1a1082a58c": {
+      "key": [
+        "classique",
+        "morceau2",
+        "theme2",
+        "stereo",
+        "Fh"
+      ],
+      "n_samples": 1058916,
+      "sr": 44100,
+      "duration_s": 24.01170068027211,
+      "n_frames": 384
+    },
+    "1b3c0d1bd00d3f0cb2450f89e7f139eb": {
+      "key": [
+        "classique",
+        "morceau2",
+        "theme2",
+        "stereo",
+        "Fl"
+      ],
+      "n_samples": 1058916,
+      "sr": 44100,
+      "duration_s": 24.01170068027211,
+      "n_frames": 384
+    },
+    "75be8bc8edeb00fdeda7aa62b8be1ab9": {
+      "key": [
+        "pop",
+        "falldead",
+        "theme1",
+        "stereo",
+        "Bs"
+      ],
+      "n_samples": 870148,
+      "sr": 44100,
+      "duration_s": 19.73124716553288,
+      "n_frames": 315
+    },
+    "ede8396b8d3ad32fe6a4ef906abeb735": {
+      "key": [
+        "pop",
+        "falldead",
+        "theme1",
+        "stereo",
+        "Dr"
+      ],
+      "n_samples": 870148,
+      "sr": 44100,
+      "duration_s": 19.73124716553288,
+      "n_frames": 315
+    },
+    "87e5060effbefe0821d188c39e675001": {
+      "key": [
+        "pop",
+        "falldead",
+        "theme1",
+        "stereo",
+        "Gt"
+      ],
+      "n_samples": 870148,
+      "sr": 44100,
+      "duration_s": 19.73124716553288,
+      "n_frames": 315
+    },
+    "e3650b18131eb12ec99efd24ba996771": {
+      "key": [
+        "pop",
+        "falldead",
+        "theme1",
+        "stereo",
+        "Vx"
+      ],
+      "n_samples": 870148,
+      "sr": 44100,
+      "duration_s": 19.73124716553288,
+      "n_frames": 315
+    },
+    "66f917535bad7b596abbf5d1011e3656": {
+      "key": [
+        "pop",
+        "mixtape",
+        "theme1",
+        "stereo",
+        "Bs"
+      ],
+      "n_samples": 882516,
+      "sr": 44100,
+      "duration_s": 20.01170068027211,
+      "n_frames": 320
+    },
+    "8afd48300584ca21c1991b1493ff1f2c": {
+      "key": [
+        "pop",
+        "mixtape",
+        "theme1",
+        "stereo",
+        "Dr"
+      ],
+      "n_samples": 882516,
+      "sr": 44100,
+      "duration_s": 20.01170068027211,
+      "n_frames": 320
+    },
+    "c3f2e863506b369a638141b2dd128917": {
+      "key": [
+        "pop",
+        "mixtape",
+        "theme1",
+        "stereo",
+        "Gt"
+      ],
+      "n_samples": 882516,
+      "sr": 44100,
+      "duration_s": 20.01170068027211,
+      "n_frames": 320
+    },
+    "a01a35baff177dfa1519ae71c5f711ff": {
+      "key": [
+        "pop",
+        "mixtape",
+        "theme1",
+        "stereo",
+        "Vx"
+      ],
+      "n_samples": 882516,
+      "sr": 44100,
+      "duration_s": 20.01170068027211,
+      "n_frames": 320
+    },
+    "0119725deea72e8ca125a8f09bac408a": {
+      "key": [
+        "pop",
+        "mixtape",
+        "theme2",
+        "stereo",
+        "Bs"
+      ],
+      "n_samples": 1058916,
+      "sr": 44100,
+      "duration_s": 24.01170068027211,
+      "n_frames": 384
+    },
+    "e4f2ffc273457efd61b022677e5cfb61": {
+      "key": [
+        "pop",
+        "mixtape",
+        "theme2",
+        "stereo",
+        "Dr"
+      ],
+      "n_samples": 1058916,
+      "sr": 44100,
+      "duration_s": 24.01170068027211,
+      "n_frames": 384
+    },
+    "ab7d36771872dfa9078660e24b18f5a5": {
+      "key": [
+        "pop",
+        "mixtape",
+        "theme2",
+        "stereo",
+        "Gt"
+      ],
+      "n_samples": 1058916,
+      "sr": 44100,
+      "duration_s": 24.01170068027211,
+      "n_frames": 384
+    },
+    "53e0d950151b47304986057547a28d70": {
+      "key": [
+        "pop",
+        "mixtape",
+        "theme2",
+        "stereo",
+        "Vx"
+      ],
+      "n_samples": 1058916,
+      "sr": 44100,
+      "duration_s": 24.01170068027211,
+      "n_frames": 384
+    }
+  },
+  "extraction_seconds": 496.6,
+  "total_frames": 8876
+}
+=== 7. RIPRISTINO DELL'ALBERO DI GIT SU BALDO ===
+--- git status (dopo) ---
+7e0f01c new experiments folder
+
+fine (UTC): 2026-08-12T16:50:24Z
+############ STADIO 1 COMPLETATO ############

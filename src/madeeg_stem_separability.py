@@ -95,6 +95,48 @@ NEG_CAVEAT = [
     "!! Read it as the number a real 512-dimensional candidate has to beat before its own",
     "!! PASS means anything: the `w/floor` column of this row is the no-structure baseline.",
 ]
+# ---- EXP. 17, contract "Cap. 2 -- Exp. 17: CLAP nel gate di separabilita', criterio RIFATTO
+#      invariante alla dimensionalita' (12 ago 2026)". Reached ONLY with --exp17, which also
+#      requires --clap_dir. Written here BEFORE any CLAP number existed anywhere: the criterion
+#      below replaces Exp. 13's `gap <= 0.05` because that one was FALSIFIED by the negative
+#      control of 12/8 (512 noise dims meet it), NOT because anybody disliked a result. No CLAP
+#      number has ever been computed at the time these three constants were written. ----
+EXP17_CRIT1_MIN = 26           # /36, unchanged from Exp. 13. P(X>=26|36,0.5) = 0.005665
+EXP17_CRIT2_MAX = 1.80         # w/floor <= 1.80: cover >= 60% of the mel-8 (3.131) -> noise
+                               # (0.922) distance. Stricter than mel-64 (41.6%) and MFCC-13
+                               # (47.4%), so "passes" cannot mean "as good as what we have".
+EXP17_CRIT3_MIN = 1.20         # w/floor >= 1.20: at least 0.28 above the noise floor. Below
+                               # this the candidate is DECLARED INDISTINGUISHABLE FROM NOISE
+                               # at its own dimensionality and does NOT win. This is the clause
+                               # the old criterion did not have.
+EXP17_NOISE_LO = 0.85          # the negative control re-run at CLAP's EXACT dimensionality must
+EXP17_NOISE_HI = 1.05          # land here, or the wiring moved -> hard exit, no CLAP computed.
+EXP17_CAVEAT = [
+    "!! EXP. 17 -- the Exp. 13 gate with a criterion REMADE to be invariant to dimensionality.",
+    "!! WHY THE OLD CRITERION IS RETIRED, AND WHY THIS IS NOT MOVING A GOALPOST: Comandamenti",
+    "!! #5 forbids changing a threshold AFTER SEEING THE NUMBER THAT MUST BEAT IT. There is no",
+    "!! CLAP number here to protect -- none has ever been computed. What exists is a NEGATIVE",
+    "!! CONTROL (12/8, docs/provenance/2026-08-12_exp16A_negative_control.txt) showing that 512",
+    "!! dimensions of WHITE NOISE satisfy BOTH old criteria: 36/36 against mel-8 and gap",
+    "!! -0.0002. CLAP has exactly 512 dimensions. Under the old criterion a GO would have been",
+    "!! INDISTINGUISHABLE FROM NOISE, i.e. the test could not be LOST -- the mirror image of",
+    "!! the error for which Exp. 10 was retired pre-run and the CCA gate on inner_val_r was",
+    "!! declared unwinnable. A falsified criterion is retired in writing (Comandamenti #12);",
+    "!! it is not quietly relaxed. Exp. 13's own verdict is NOT touched retroactively.",
+    "!! THE NEW CRITERION, all three required, written before this file could read a .npy:",
+    "!!   1. |corr| within-duo strictly below mel-8 on >= 26/36 (unchanged from Exp. 13),",
+    "!!   2. w/floor <= 1.80  -- dimensionality-invariant, >= 60% of the way from mel-8 (3.131)",
+    "!!      to noise (0.922); stricter than BOTH best known candidates,",
+    "!!   3. w/floor >= 1.20  -- MANDATORY MARGIN OVER NOISE. Below it the candidate is declared",
+    "!!      indistinguishable from noise at its dimensionality and DOES NOT WIN.",
+    "!! The negative control is RE-RUN IN THIS RUN at CLAP's exact dimensionality, its row is",
+    "!! printed ABOVE CLAP's, and if its w/floor leaves [0.85, 1.05] this script EXITS before",
+    "!! CLAP is even computed (Comandamenti #3: the control is crossed BEFORE the real number).",
+    "!! !! AND THE LIMIT THAT BELONGS IN EVERY BRANCH OF THE OUTCOME: CLAP's design aperture is",
+    "!! 10 s, 160x the window used here, and below 10 s laion_clap applies `repeatpad`. WE ARE",
+    "!! MEASURING CLAP OUTSIDE THE REGIME IT WAS TRAINED FOR. A failure here is NOT evidence",
+    "!! against CLAP at 10 s; it is a statement about this window.",
+]
 CLAP_CAVEAT = [
     "!! EXP. 16 ARM A. The K=1 candidate of this run is CLAP, the thesis's own premise, which",
     "!! Registro SS2.5 records as NEVER having been tested as a reconstruction target. The six",
@@ -227,12 +269,18 @@ def represent(x, sr, spec):
     raise ValueError(f"unknown representation kind {kind!r}")
 
 
-def corr(A, B):
+def corr(A, B, absolute=False):
     """The Exp. 9 statistic: mean over bands of the per-band Pearson r, signed. Pairs of
     different length (cross-song only -- within-duo stems are same-length by
-    construction) are truncated to the shorter one."""
+    construction) are truncated to the shorter one.
+
+    absolute=True averages |r| instead, which is a DIFFERENT quantity and is used only by
+    the Exp. 17 post-hoc diagnostic: it separates 'each dimension is less correlated' from
+    'the per-dimension correlations cancel in sign when averaged'. The criterion never
+    calls it; the default path never reaches it."""
     T = min(A.shape[1], B.shape[1])
-    return float(np.mean([pearson(A[b, :T], B[b, :T]) for b in range(A.shape[0])]))
+    r = [pearson(A[b, :T], B[b, :T]) for b in range(A.shape[0])]
+    return float(np.mean(np.abs(r) if absolute else r))
 
 
 def load_stems(md):
@@ -281,12 +329,12 @@ def check_post_matches_source_repr(stems):
     return float(np.max(np.abs(mine - theirs)))
 
 
-def stats(units, stems, spec):
+def stats(units, stems, spec, absolute=False):
     """Within-duo statistics + the cross-song floor for ONE representation."""
     reps = {sk: represent(x, sr, spec) for sk, (x, sr) in stems.items()}
-    within = np.array([corr(reps[a], reps[b]) for _, (a, b) in units])
+    within = np.array([corr(reps[a], reps[b], absolute) for _, (a, b) in units])
     keys = sorted(reps)
-    floor = np.array([corr(reps[keys[i]], reps[keys[j]])
+    floor = np.array([corr(reps[keys[i]], reps[keys[j]], absolute)
                       for i in range(len(keys)) for j in range(i + 1, len(keys))
                       if keys[i][:2] != keys[j][:2]])          # different (genre, song)
     return within, floor, next(iter(reps.values())).shape[0]
@@ -311,23 +359,41 @@ def main():
                          "the other way round: the answer is known to be 'nothing', so what "
                          "the gate returns is a statement about the CRITERION. Writes to its "
                          "own provenance file and cannot be confused with a result")
+    ap.add_argument("--exp17", action="store_true",
+                    help="EXP. 17: the remade, dimensionality-invariant criterion. Requires "
+                         "--clap_dir. Runs the negative control AT CLAP'S EXACT DIMENSIONALITY "
+                         "IN THE SAME RUN, prints its row ABOVE CLAP's, hard-exits if its "
+                         f"w/floor leaves [{EXP17_NOISE_LO}, {EXP17_NOISE_HI}], and judges the "
+                         f"candidate on all three of: >= {EXP17_CRIT1_MIN}/36 below mel-8, "
+                         f"w/floor <= {EXP17_CRIT2_MAX}, w/floor >= {EXP17_CRIT3_MIN}. Writes "
+                         "to its own provenance file (Comandamenti #9)")
     args = ap.parse_args()
     assert not (args.clap_dir and args.negative_control), (
         "--clap_dir and --negative_control are two different runs and must not be mixed: one "
         "measures a candidate, the other measures the criterion")
+    assert not (args.exp17 and not args.clap_dir), (
+        "--exp17 is the Exp. 17 criterion applied to the CLAP row: it needs --clap_dir. "
+        "Its own negative control is internal and does NOT come from --negative_control")
     md = os.path.expanduser(args.madeeg_dir)
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    default_out = ("2026-08-12_exp16A_negative_control.txt" if args.negative_control else
+    default_out = ("2026-08-12_exp17_clap_separability.txt" if args.exp17 else
+                   "2026-08-12_exp16A_negative_control.txt" if args.negative_control else
                    "2026-08-12_exp16A_clap_separability.txt" if args.clap_dir else
                    "2026-08-12_exp13_stem_separability.txt")
     out_path = args.out or os.path.join(root, "docs", "provenance", default_out)
 
     candidates = list(CANDIDATES)
     L = list(CAVEAT)
+    if args.exp17:
+        # ORDER IS LOAD-BEARING: the negative control is computed and CROSSED first, and its row
+        # is printed ABOVE CLAP's, as the contract SS2 requires.
+        candidates.append((f"N1 noise-{CLAP_DIM}", ("noise", CLAP_DIM)))
     if args.clap_dir:
         name, kind = CLAP_CANDIDATE
         candidates.append((name, (kind, args.clap_dir)))
         L = CLAP_CAVEAT + L
+    if args.exp17:
+        L = EXP17_CAVEAT + L
     if args.negative_control:
         candidates.append((f"N1 noise-{CLAP_DIM}", ("noise", CLAP_DIM)))
         L = NEG_CAVEAT + L
@@ -362,6 +428,21 @@ def main():
             os.path.join(os.path.expanduser(args.clap_dir), h + ".npy"))]
         say(f"  stems with a series on disk: {len(man['stems']) - len(miss)}/{len(stems)} "
             f"(missing: {miss if miss else 'none'})")
+        if args.exp17:
+            # ---- GATE 3 OF THE CONTRACT SS3: without a COMPLETE provenance the measurement
+            # does not start. Missing or empty -> hard exit, before the canary. ----
+            need = ["checkpoint", "checkpoint_bytes", "checkpoint_sha256", "versions",
+                    "audio_sample_rate_in", "clap_sample_rate", "window_s", "hop_s", "machine"]
+            bad = [k for k in need if not man.get(k)]
+            bad += ["versions." + k for k in ("laion_clap", "torch")
+                    if not man.get("versions", {}).get(k)]
+            say(f"  GATE 3 -- provenance complete: {'FAILED, missing ' + str(bad) if bad else 'PASSED'}")
+            if bad:
+                say("  The measurement does NOT start without it (contract SS3).")
+                os.makedirs(os.path.dirname(out_path), exist_ok=True)
+                open(out_path, "w").write("\n".join(L) + "\n")
+                sys.exit(1)
+            say(f"  sha256 of the checkpoint actually loaded: {man['checkpoint_sha256']}")
         say("  The criterion, the canary, the floor and the 26/36 threshold are the Exp. 13")
         say("  ones, applied UNCHANGED as the contract requires (K=1 for this arm; the")
         say("  threshold is deliberately NOT re-derived for a smaller K -- that would be")
@@ -406,11 +487,35 @@ def main():
         aw, af = np.abs(w), np.abs(fl)
         k = int((aw < mel8).sum())
         gap = aw.mean() - af.mean()
+        wf = float(aw.mean() / af.mean())
         c1 = k >= CRIT1_MIN
         c2 = gap <= CRIT2_GAP
+        # EXP. 17 columns: arithmetic on the two columns already computed, no new statistic.
+        e1, e2, e3 = c1, wf <= EXP17_CRIT2_MAX, wf >= EXP17_CRIT3_MIN
+        # In an Exp. 17 run the ONLY candidate is CLAP (K=1). The six Exp. 13 rows are the
+        # reference frame and are NOT re-judged under the new criterion: Exp. 13's verdict is
+        # not touched retroactively (contract SS1).
+        is_cand = name == CLAP_CANDIDATE[0] if args.exp17 else name.startswith("C")
+        passed = (bool(e1 and e2 and e3) if args.exp17 else bool(c1 and c2)) and is_cand
         rows.append(dict(name=name, nb=nb, mean=aw.mean(), med=float(np.median(aw)), signed=w.mean(),
-                         fmean=af.mean(), fsd=af.std(ddof=1), fn=len(af), k=k, gap=gap,
-                         c1=c1, c2=c2, passed=bool(c1 and c2) and name.startswith("C")))
+                         fmean=af.mean(), fsd=af.std(ddof=1), fn=len(af), k=k, gap=gap, wf=wf,
+                         c1=c1, c2=c2, e1=e1, e2=e2, e3=e3, is_cand=is_cand, passed=passed))
+        # ---- GATE 2 OF THE CONTRACT, CROSSED BEFORE THE CLAP ROW EXISTS. The noise row is
+        # computed first (see the candidate order above); if the wiring moved, this exits here
+        # and no CLAP number is ever produced, let alone looked at (Comandamenti #3). ----
+        if args.exp17 and name.startswith("N"):
+            say()
+            say("=== GATE 2 -- negative control RE-RUN at CLAP's exact dimensionality ===")
+            say(f"  {name}: w/floor = {wf:.3f}   must land in "
+                f"[{EXP17_NOISE_LO:.2f}, {EXP17_NOISE_HI:.2f}] (12/8 reference: 0.922)")
+            if not (EXP17_NOISE_LO <= wf <= EXP17_NOISE_HI):
+                say("  -> [FAILED] the wiring is not the one the criterion was calibrated on.")
+                say("  NO CLAP NUMBER IS COMPUTED (Comandamenti #3).")
+                os.makedirs(os.path.dirname(out_path), exist_ok=True)
+                open(out_path, "w").write("\n".join(L) + "\n")
+                sys.exit(1)
+            say("  -> [PASSED] the no-structure baseline reproduces. It licenses the scale on")
+            say("     which criteria 2 and 3 are read, and nothing else.")
 
     say()
     say("=== TABLE -- every statistic with its own null next to it ===")
@@ -427,7 +532,9 @@ def main():
         # the whole point is what the CRITERION does with a row that has nothing in it.
         tag = ("ref" if r["name"] in ("mel-8", "flux")
                else ("NOISE MEETS BOTH" if r["c1"] and r["c2"] else "noise, fails")
-               if r["name"].startswith("N") else ("PASS" if r["passed"] else "no"))
+               if r["name"].startswith("N")
+               else "Exp.13 ref" if not r["is_cand"]
+               else ("PASS" if r["passed"] else "no"))
         say(f"  {r['name']:15s} {r['nb']:4d} {r['mean']:7.4f} {r['med']:7.4f} {r['signed']:+7.4f} | "
             f"{r['fmean']:7.4f} {r['fsd']:6.4f} {r['fn']:4d} | {r['gap']:+7.4f} "
             f"{r['mean'] / r['fmean']:8.3f} | "
@@ -445,7 +552,33 @@ def main():
     say("  component having been removed. `w/floor` is the part of the comparison that")
     say("  survives such a rescaling. The verdict below applies the criterion AS WRITTEN.")
 
-    cand = [r for r in rows if r["name"].startswith("C")]
+    if args.exp17:
+        by = {r["name"]: r for r in rows}
+        say()
+        say("=== EXP. 17 CRITERION -- all three required, written before any CLAP number ===")
+        say(f"  1. |corr| within-duo strictly below mel-8 on >= {EXP17_CRIT1_MIN}/{len(units)} "
+            f"(P = {exact_p(EXP17_CRIT1_MIN, len(units)):.6f}) -- unchanged from Exp. 13")
+        say(f"  2. w/floor <= {EXP17_CRIT2_MAX:.2f}  (>= 60% of the way from mel-8 to noise)")
+        say(f"  3. w/floor >= {EXP17_CRIT3_MIN:.2f}  (margin over noise; BELOW IT THE CANDIDATE "
+            "IS DECLARED INDISTINGUISHABLE FROM NOISE AND DOES NOT WIN)")
+        say()
+        say(f"  {'representation':15s} {'rows':>4s} {'w/floor':>8s} | {'c1: vs mel-8':>14s} "
+            f"{'c2: <=1.80':>10s} {'c3: >=1.20':>10s} | verdict")
+        order = [f"N1 noise-{CLAP_DIM}", "mel-8", "C3 MFCC-13", CLAP_CANDIDATE[0]]
+        for n in order:                       # the noise row is printed FIRST, contract SS2
+            r = by[n]
+            v = ("no-structure baseline" if r["name"].startswith("N") else
+                 "reference, not a candidate" if not r["is_cand"] else
+                 "PASSES ALL THREE" if r["passed"] else
+                 "INDISTINGUISHABLE FROM NOISE" if not r["e3"] else "FAILS")
+            cnt = "%d/%d" % (r["k"], len(units))
+            say(f"  {r['name']:15s} {r['nb']:4d} {r['wf']:8.3f} | "
+                f"{cnt:>9s} {'Y' if r['e1'] else 'n':>4s} "
+                f"{'Y' if r['e2'] else 'n':>10s} {'Y' if r['e3'] else 'n':>10s} | {v}")
+        say("  (mel-8 and MFCC-13 are the Exp. 13 frame, judged under THEIR criterion there and")
+        say("   NOT re-judged here; the noise row is a control and cannot win anything.)")
+
+    cand = [r for r in rows if r["is_cand"]]
     winners = [r["name"] for r in cand if r["passed"]]
     for r in [r for r in rows if r["name"].startswith("N")]:
         say()
@@ -465,10 +598,16 @@ def main():
             say("  left it open; this row is the number. A candidate of the same dimensionality")
             say("  that passes the gate has demonstrated NOTHING until its w/floor is read")
             say("  against this row -- which is why the contract makes that column mandatory.")
-            say("  NOT DONE HERE: the criterion is NOT changed. Changing a pre-registered")
-            say("  threshold after seeing what it admits is exactly what pre-registration")
-            say("  exists to prevent (Comandamenti #5/#6). This is a control, reported next")
-            say("  to the criterion, not a replacement for it.")
+            if args.exp17:
+                say("  THIS IS WHY EXP. 17 EXISTS. The `gap <= 0.05` criterion is RETIRED IN")
+                say("  WRITING as falsified by this row (Comandamenti #12), not relaxed after")
+                say("  seeing a CLAP number -- there was none to see. The replacement is read")
+                say("  on the two w/floor thresholds above, calibrated on THIS row and mel-8.")
+            else:
+                say("  NOT DONE HERE: the criterion is NOT changed. Changing a pre-registered")
+                say("  threshold after seeing what it admits is exactly what pre-registration")
+                say("  exists to prevent (Comandamenti #5/#6). This is a control, reported next")
+                say("  to the criterion, not a replacement for it.")
         else:
             say("  ==> the criterion rejects a structureless row, which is the outcome a")
             say("  criterion should have. It says nothing about any real candidate.")
@@ -478,6 +617,78 @@ def main():
     for i, r in enumerate(sorted(cand, key=lambda r: r["gap"]), 1):
         say(f"  {i}. {r['name']:15s} gap {r['gap']:+.4f}   "
             f"(within {r['mean']:.4f} vs floor {r['fmean']:.4f})")
+    if args.exp17:
+        # ---- POST-HOC DIAGNOSTIC, DECLARED AS SUCH (Comandamenti #5: a second look is
+        # exploratory by construction, even when it is only descriptive). It is computed AFTER
+        # the verdict above, it enters NO criterion, and the verdict does not depend on it.
+        # WHAT IT SEPARATES: the criterion statistic is |mean over dims of the signed r|, so a
+        # small value has two possible causes -- each dimension really is less correlated, or
+        # the per-dimension correlations CANCEL in sign. mean|r| per dim tells them apart. ----
+        say()
+        say("=== POST-HOC DIAGNOSTIC (descriptive, NOT part of the criterion) ===")
+        say("  criterion statistic: |mean_dims r| · diagnostic: mean_dims |r|, same pairs")
+        say(f"  {'representation':15s} {'|mean r| w':>10s} {'mean |r| w':>10s} "
+            f"{'|mean r| fl':>11s} {'mean |r| fl':>11s} {'cancel':>7s} {'w/floor|r|':>10s}")
+        alt = {}
+        for n, spec in [(f"N1 noise-{CLAP_DIM}", ("noise", CLAP_DIM)), ("mel-8", ("mel", 8)),
+                        ("C3 MFCC-13", ("mfcc", 13)),
+                        (CLAP_CANDIDATE[0], ("clap", args.clap_dir))]:
+            aw, af, _ = stats(units, stems, spec, absolute=True)
+            r = by[n]
+            alt[n] = float(aw.mean() / af.mean())
+            say(f"  {n:15s} {r['mean']:10.4f} {aw.mean():10.4f} {r['fmean']:11.4f} "
+                f"{af.mean():11.4f} {aw.mean() / r['mean']:6.1f}x {alt[n]:10.3f}")
+        say("  `cancel` = how much larger the per-dimension |r| is than the aggregate the")
+        say("  criterion reads. A large factor means the aggregate is small because signs cancel")
+        say("  across dimensions, NOT because the two stems stopped sharing structure. Noise")
+        say("  cancels 22x; that IS the mechanism by which 512 empty dimensions beat the old")
+        say("  criterion. CLAP cancels far less, i.e. its 512 dimensions are strongly redundant.")
+        say()
+        say("  !! AND THE PART THAT MUST NOT BE BURIED (Comandamenti #5/#6). The last column is")
+        say("  !! the same w/floor ratio built on mean|r| instead of |mean r|. On it CLAP reads")
+        say(f"  !! {alt[CLAP_CANDIDATE[0]]:.3f} -- i.e. under THAT aggregation criterion 2 would be "
+            f"{'MET' if alt[CLAP_CANDIDATE[0]] <= EXP17_CRIT2_MAX else 'NOT met'} and the verdict")
+        say("  !! would flip. THE VERDICT ABOVE STANDS AS PRE-REGISTERED: the criterion names the")
+        say("  !! Exp. 9 statistic (mean over dims of the SIGNED r, then |.|), and swapping in the")
+        say("  !! statistic that flips the answer after seeing the answer is precisely what")
+        say("  !! pre-registration exists to prevent. This line is declared, not acted on: it is")
+        say("  !! an OPEN QUESTION for a new contract, not a second reading of this one.")
+
+        r = by[CLAP_CANDIDATE[0]]
+        branch = ("PASS" if r["passed"] else "NOISE" if not r["e3"] else "FAIL")
+        say()
+        say(f"=== EXP. 17 VERDICT: {'GO' if branch == 'PASS' else 'NO-GO'} "
+            f"(contract SS5 branch: {branch}) ===")
+        say(f"  C7 CLAP-512: c1 {r['k']}/{len(units)} -> {'MET' if r['e1'] else 'NOT MET'} · "
+            f"c2 w/floor {r['wf']:.3f} <= {EXP17_CRIT2_MAX:.2f} -> "
+            f"{'MET' if r['e2'] else 'NOT MET'} · c3 w/floor >= {EXP17_CRIT3_MIN:.2f} -> "
+            f"{'MET' if r['e3'] else 'NOT MET'}")
+        say(f"  scale, printed above it: noise-{CLAP_DIM} {by[f'N1 noise-{CLAP_DIM}']['wf']:.3f} "
+            f"· mel-8 {by['mel-8']['wf']:.3f} · MFCC-13 {by['C3 MFCC-13']['wf']:.3f}")
+        if branch == "PASS":
+            say("  -> The semantic premise of the thesis HOLDS ON THIS AXIS, against a threshold")
+            say("     stricter than both best known candidates. It stays a HYPOTHESIS about the")
+            say("     real task: MFCC won this gate and then got WORSE (Exp. 15). CLAP as a")
+            say("     target on own-vs-other needs a NEW pre-registration.")
+        elif branch == "FAIL":
+            say("  -> The embedding that should capture 'cello' vs 'flute' does NOT separate them")
+            say("     better than 8 mel bands. Strong, publishable, and to be written WITHOUT")
+            say("     softening it.")
+        else:
+            say("  -> CLAP AT THIS WINDOW IS INDISTINGUISHABLE FROM NOISE at its own")
+            say("     dimensionality. The reading is about the METHOD, not about CLAP: 62.5 ms")
+            say("     is outside its regime.")
+        say("  !! IN EVERY BRANCH, AND NOT NEGOTIABLE: CLAP's design aperture is 10 s, 160x the")
+        say("  !! window used here, and below 10 s laion_clap applies `repeatpad`. WE MEASURED")
+        say("  !! CLAP OUTSIDE THE REGIME IT WAS TRAINED FOR. A failure here IS NOT EVIDENCE")
+        say("  !! AGAINST CLAP AT 10 s. A 10 s window would need a new contract and would push")
+        say("  !! the band below 1 Hz, i.e. a different experiment.")
+        say("  !! No EEG was read. No second candidate, no second window, in any branch.")
+        os.makedirs(os.path.dirname(out_path), exist_ok=True)
+        open(out_path, "w").write("\n".join(L) + "\n")
+        print(f"\n-> {out_path}")
+        return
+
     say()
     say(f"=== VERDICT: {'GO' if winners else 'NO-GO'} ===")
     if args.negative_control:
