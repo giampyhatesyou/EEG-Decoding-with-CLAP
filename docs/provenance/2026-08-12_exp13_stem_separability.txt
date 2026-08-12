@@ -1,0 +1,70 @@
+!! AUDIO ONLY, ZERO LOOKS SPENT: no EEG was read. This file opens the preprocessed
+!! HDF5 for its `soli` datasets and metadata only -- never ['response'], never a
+!! trial, never a label. Nothing here is a statement about EEG.
+!! GATE, not a result: a GO is a NECESSARY condition for arm C's fixed-target route,
+!! not evidence that the EEG tracks the winning representation. A NO-GO says the
+!! ceiling is a property of ensemble music under the whole family tested.
+!! Criterion, thresholds and the K=6 candidate list were written in the vault
+!! contract of 12/8/2026 BEFORE this file existed, and are not editable after.
+!! The 36 units are 18 distinct duo mixtures x 2 attended targets. The two stim ids
+!! of a mixture carry the SAME audio, so the paired counts are exactly 2x the count
+!! over 18 mixtures and the binomial on 36 treats duplicated units as independent.
+!! Applied as pre-registered; the effective independent n is 18, stated as a limit.
+
+units: 36 unique duo stim ids from 18 distinct mixtures · 24 distinct stems
+protocol: representation at 64 Hz -> band-pass 1.0-8.0 Hz -> z-score per band -> mean over bands of the per-band Pearson r (signed),
+          identical to the Exp. 9 audio-only diagnostic; the criterion then takes |corr|.
+_post/source_repr equivalence on real audio: max abs diff 0.000e+00 (must be 0 to fp)
+
+=== CANARY (contract SS2, tolerance +-0.0010) -- crossed BEFORE anything else ===
+  mel-8  mean 0.1772 (expected 0.1772)  median 0.1442 (expected 0.1442)  -> [PASSED]
+  flux   mean 0.2874 (expected 0.2874)  median 0.2417 (expected 0.2417)  -> [PASSED]
+  flux more similar than mel-8 on 30/36 (expected 30) mean diff +0.1103  -> [PASSED]
+  CANARY PASSED: the shared feature path reproduces Exp. 9. It licenses the wiring
+  and nothing else.
+
+=== CROSS-SONG FLOOR (the null, computed from the data -- Comandamenti #4) ===
+  all stem pairs from different (genre, song): n = 212 pairs, deterministic, no seed. Unequal-length pairs truncated to the shorter stem.
+
+=== TABLE -- every statistic with its own null next to it ===
+  criterion 1: |corr| within-duo strictly below mel-8 on >= 26/36  (null 18/36 = 0.500 exact by symmetry, P(X>=26|36,0.5) = 0.005665)
+  criterion 2: gap = mean|corr| within-duo - mean|corr| cross-song floor <= 0.05
+
+  representation  rows    mean  median  signed |   floor     sd    n |     gap  w/floor |  vs mel-8        p | c1  c2  gate
+  mel-8              8  0.2013  0.1571 +0.1772 |  0.0643 0.0563  212 | +0.1370    3.131 |     0/36 1.000000 | n   n   ref
+  flux               1  0.2874  0.2417 +0.2874 |  0.0774 0.0692  212 | +0.2100    3.712 |     8/36 0.999844 | n   n   ref
+  C1 mel-24         24  0.1906  0.1446 +0.1740 |  0.0764 0.0564  212 | +0.1142    2.495 |    18/36 0.566030 | n   n   no
+  C2 mel-64         64  0.1849  0.1468 +0.1771 |  0.0836 0.0557  212 | +0.1014    2.213 |    18/36 0.566030 | n   n   no
+  C3 MFCC-13        13  0.0533  0.0430 +0.0445 |  0.0256 0.0232  212 | +0.0277    2.084 |    32/36 0.000001 | Y   Y   PASS
+  C4 flux-8band      8  0.1945  0.1399 +0.1912 |  0.0508 0.0470  212 | +0.1437    3.829 |    16/36 0.797484 | n   n   no
+  C5 flux-24band    24  0.2008  0.1406 +0.2008 |  0.0527 0.0538  212 | +0.1481    3.809 |    16/36 0.797484 | n   n   no
+  C6 contrast-6      7  0.1021  0.0937 +0.1021 |  0.0335 0.0313  212 | +0.0686    3.050 |    28/36 0.000597 | Y   n   no
+  (mel-8 vs itself is 0/36 by definition; flux is the second Exp. 9 reference,
+   shown for continuity -- neither is a candidate.)
+
+  READ THE GATE WITH THIS: `w/floor` is the within-duo mean divided by this
+  representation's own floor -- arithmetic on the two columns to its left, NOT a
+  pre-registered criterion and NOT used for the verdict. It is printed because
+  NEITHER pre-registered criterion is invariant to a uniform contraction of the
+  correlation scale: shrinking within-duo AND floor by the same factor lowers the
+  gap toward 0 and wins the paired count against mel-8, without any shared
+  component having been removed. `w/floor` is the part of the comparison that
+  survives such a rescaling. The verdict below applies the criterion AS WRITTEN.
+
+=== descriptive ranking of the 6 gaps (contract SS6: the only secondary allowed) ===
+  1. C3 MFCC-13      gap +0.0277   (within 0.0533 vs floor 0.0256)
+  2. C6 contrast-6   gap +0.0686   (within 0.1021 vs floor 0.0335)
+  3. C2 mel-64       gap +0.1014   (within 0.1849 vs floor 0.0836)
+  4. C1 mel-24       gap +0.1142   (within 0.1906 vs floor 0.0764)
+  5. C4 flux-8band   gap +0.1437   (within 0.1945 vs floor 0.0508)
+  6. C5 flux-24band  gap +0.1481   (within 0.2008 vs floor 0.0527)
+
+=== VERDICT: GO ===
+  candidates passing BOTH criteria: C3 MFCC-13
+  Pre-declared reading (contract SS6): arm C has a named target, and the
+  SparrKULee download + baseline reproduction + MAD-EEG adaptation with the
+  winning representation as candidate target are justified. Any EEG use stays
+  behind a NEW pre-registration.
+  What this GO does NOT say: nothing about the EEG (none was read), and nothing
+  about WHY the winner wins -- see the `w/floor` note above, which is the first
+  thing to settle before spending 18.4 GiB and GPU time on it.
