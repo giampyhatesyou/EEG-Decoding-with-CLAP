@@ -41,8 +41,16 @@ from torch.utils.data import DataLoader, Subset
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from datasets.madeeg_contrastive_dataset import MadeegContrastiveDataset  # noqa: E402
 from madeeg_diagnose import trial_decision  # noqa: E402
-from models import CLAPEncoder, SampleCNN2DEEG  # noqa: E402
+from models import SampleCNN2DEEG  # noqa: E402
 from modules.clip_loss import CLIP_Loss  # noqa: E402
+
+# CHANGED(baseline): Exp. 18. The two match-mismatch stages are two more values of the
+# EXISTING --loss flag, not a second program. What they change is where the wrong candidate
+# comes from -- which is a property of the SAMPLER, not of the arithmetic: with two
+# candidates and the positive in slot 0 the objective is the step-D one, unchanged
+# (`CLIP_Loss` is not edited by this experiment, and its Chapter 1 canaries are untouched
+# by construction). See src/datasets/madeeg_solo_matchmismatch.py.
+MATCH_MISMATCH = ("temporal_offset", "cross_instrument")
 
 
 def split_by_trial(dataset, valid_frac=0.2, seed=42):
@@ -134,7 +142,44 @@ def decide_per_trial(dataset, test_trials, encoder_eeg, encoder_audio, device, b
     return {k: [sum(col) / len(col) for col in zip(*v)] for k, v in per_window.items()}
 
 
-def build_model(device, clap_hidden=256, clap_pretrained=""):
+class _FrozenRandomAudio(torch.nn.Module):
+    """CHANGED(baseline): CPU stand-in for the FROZEN CLAP tower. Wiring checks ONLY.
+
+    The LAION-CLAP checkpoint is 1.74 GiB and is not on the CPU box (fetching it is A.'s
+    decision -- Exp. 16A), and that box has no torchaudio either, so `CLAPEncoder` cannot be
+    constructed there at all. What the optimisation-sanity check of Exp. 18 §4.3 has to
+    exercise is sampler -> loss -> optimizer -> decision rule; CLAP contributes no gradient
+    to any of it, because it is frozen. So the tower is replaced by a FIXED (seeded, never
+    updated) projection of a coarse envelope of the waveform to the same 512 dims, and the
+    trainable head is byte-for-byte the same module CLAPEncoder carries.
+
+    Anything this produces is a statement about the wiring and never about CLAP's features
+    or about the data -- which is why `--clap_stub` writes that sentence into the summary
+    FILE and not only onto the terminal.
+    """
+
+    CLAP_EMBED_DIM = 512
+
+    def __init__(self, out_dim=100, hidden_dim=256, seed=0):
+        super().__init__()
+        g = torch.Generator().manual_seed(seed)
+        self.register_buffer("mix", torch.randn(self.CLAP_EMBED_DIM, self.CLAP_EMBED_DIM,
+                                                generator=g) / self.CLAP_EMBED_DIM ** 0.5)
+        self.proj = torch.nn.Sequential(
+            torch.nn.Linear(self.CLAP_EMBED_DIM, hidden_dim),
+            torch.nn.GELU(),
+            torch.nn.Linear(hidden_dim, out_dim),
+        )
+
+    def forward(self, x):
+        if x.size(1) > 1:
+            x = x.mean(dim=1, keepdim=True)
+        env = torch.nn.functional.adaptive_avg_pool1d(x.abs(), self.CLAP_EMBED_DIM).squeeze(1)
+        env = (env - env.mean(dim=1, keepdim=True)) / (env.std(dim=1, keepdim=True) + 1e-8)
+        return self.proj(torch.tanh(env @ self.mix))
+
+
+def build_model(device, clap_hidden=256, clap_pretrained="", clap_stub=False):
     """EEG encoder + a single shared CLAP head, both emitting 100-d embeddings.
 
     One shared audio encoder, as `main.py` does for audio_repr=clap: the stems are the same
@@ -143,8 +188,14 @@ def build_model(device, clap_hidden=256, clap_pretrained=""):
     projector is fixed at 100 -- which is why the two sides meet without any adapter.
     """
     encoder_eeg = SampleCNN2DEEG(out_dim=100, kernal_size=3).to(device)
-    encoder_audio = CLAPEncoder(out_dim=100, hidden_dim=clap_hidden,
-                                pretrained=clap_pretrained).to(device)
+    if clap_stub:
+        encoder_audio = _FrozenRandomAudio(out_dim=100, hidden_dim=clap_hidden).to(device)
+    else:
+        # Imported here, not at module load: the import pulls torchaudio, and every
+        # EEG-side check on a CPU box would otherwise fail for a reason unrelated to it.
+        from models import CLAPEncoder
+        encoder_audio = CLAPEncoder(out_dim=100, hidden_dim=clap_hidden,
+                                    pretrained=clap_pretrained).to(device)
     return encoder_eeg, encoder_audio
 
 
@@ -206,7 +257,7 @@ def run_kfold(ds, args, device):
         train_idx = [i for i, (t, _) in enumerate(ds.index) if t not in set(test_trials)]
         loader = DataLoader(Subset(ds, train_idx), batch_size=args.batch_size,
                             shuffle=True, drop_last=True, num_workers=args.workers)
-        encoder_eeg, encoder_audio = build_model(device)
+        encoder_eeg, encoder_audio = build_model(device, clap_pretrained=args.clap_pretrained)
         trainable = [p for p in list(encoder_eeg.parameters()) + list(encoder_audio.parameters())
                      if p.requires_grad]
         criterion = CLIP_Loss(args.batch_size, args.temperature, world_size=1,
@@ -321,6 +372,170 @@ def run_kfold(ds, args, device):
     return records
 
 
+@torch.no_grad()
+def match_mismatch_records(subset, encoder_eeg, encoder_audio, device, batch_size):
+    """One decision per pair: is the matched candidate the more similar of the two?
+
+    The rule is the step-D margin with the competing stem replaced by the mismatched
+    candidate -- sim(matched) - sim(mismatched) -- so training and evaluation optimise the
+    same function, exactly as they do for the duo (see `compute_task_loss`). Slot 0 is
+    always the matched one, which is not a shortcut: both rows go through the SAME audio
+    encoder and are compared by cosine, so slot position carries no parameter.
+    """
+    encoder_eeg.eval()
+    encoder_audio.eval()
+    cos = torch.nn.CosineSimilarity(dim=1)
+    records = []
+    for batch in DataLoader(subset, batch_size=batch_size, shuffle=False):
+        z_eeg = encoder_eeg(batch["eeg"].to(device))
+        stems = batch["stems"].to(device)
+        margin = cos(z_eeg, encoder_audio(stems[:, 0])) - cos(z_eeg, encoder_audio(stems[:, 1]))
+        for i in range(margin.size(0)):
+            records.append({"subject": batch["subject"][i], "stim": batch["stim"][i],
+                            "rep": int(batch["rep"][i]),
+                            "pos_instrument": batch["pos_instrument"][i],
+                            "neg_instrument": batch["neg_instrument"][i],
+                            "pos_start_s": float(batch["pos_start_s"][i]),
+                            "neg_start_s": float(batch["neg_start_s"][i]),
+                            "margin": float(margin[i]), "correct": int(float(margin[i]) > 0)})
+    return records
+
+
+def run_matchmismatch(ds, args, device):
+    """Exp. 18, stages S1/S2: train on solo match-mismatch pairs, score held-out recordings.
+
+    The gate was written in the vault BEFORE this function existed (Exp. 18 §4.2): held-out
+    accuracy >= 0.70 against a chance of 0.500. Below it the encoder learned nothing and the
+    contract stops -- no own-vs-other gauge, no claim, no second look.
+
+    Two properties this function will not let itself get wrong:
+
+    * The held-out unit is the RECORDING -- one (subject, solo key), with all four of its
+      presented repetitions travelling together. The four repetitions are the SAME six
+      seconds of audio played four times, so splitting between them would put a near-copy
+      of a training item in the test set. `split_by_trial` already holds out whole trials
+      and is reused unchanged; the solo dataset just declares its recordings as `trials`.
+    * The null is PRINTED, never assumed (Comandamenti §4). For `temporal_offset` the index
+      carries every (start, start) pair in both directions, so the best rule that ignores
+      the EEG scores exactly 0.500 -- and the number is computed rather than asserted. For
+      `cross_instrument` the subjects did not all hear the same solos, so it is NOT 0.500
+      and the measured value is what the accuracy has to be read against.
+    """
+    from scipy import stats
+
+    train_ds, valid_ds, n_valid = split_by_trial(ds, valid_frac=args.valid_frac, seed=args.seed)
+    if args.overfit:
+        # Sanity of the optimisation (Exp. 18 §4.3), NOT a result: memorise a tiny subset.
+        # Spread across the index so the subset spans several recordings -- memorising one
+        # recording's windows would be a weaker check than the contract asks for.
+        step = max(1, len(ds) // args.overfit)
+        ids = list(range(0, len(ds), step))[:args.overfit]
+        train_ds = valid_ds = Subset(ds, ids)
+        print(f"[overfit] {len(ids)} items drawn every {step}th from {len(ds)}: "
+              f"a WIRING check, never a result")
+
+    loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True,
+                        drop_last=True, num_workers=args.workers)
+    torch.manual_seed(args.seed)
+    encoder_eeg, encoder_audio = build_model(device, clap_pretrained=args.clap_pretrained,
+                                             clap_stub=args.clap_stub)
+    trainable = [p for p in list(encoder_eeg.parameters()) + list(encoder_audio.parameters())
+                 if p.requires_grad]
+    # Two candidates, positive in slot 0: that IS the within-mixture objective. The negative
+    # construction moved into the sampler; the arithmetic did not move at all.
+    criterion = CLIP_Loss(args.batch_size, args.temperature, world_size=1,
+                          negatives="within_mixture")
+    optimizer = torch.optim.Adam(trainable, lr=args.learning_rate)
+
+    print(f"[{args.loss}] train pairs={len(train_ds)} held-out pairs={len(valid_ds)} "
+          f"({n_valid} of {len(ds.trials)} recordings held out)  "
+          f"trainable params: {sum(p.numel() for p in trainable):,}")
+    print(f"\n{'epoch':>6}{'train_loss':>12}{'held_out_acc':>14}{'sec':>8}")
+    for ep in range(args.epochs):
+        t0 = time.time()
+        tr = run_epoch(loader, encoder_eeg, encoder_audio, criterion, optimizer,
+                       device, args.max_batches or None)
+        records = match_mismatch_records(valid_ds, encoder_eeg, encoder_audio,
+                                         device, args.batch_size)
+        acc = sum(r["correct"] for r in records) / len(records)
+        print(f"{ep:>6}{tr:>12.4f}{acc:>14.4f}{time.time() - t0:>8.1f}")
+
+    n = len(records)
+    k = sum(r["correct"] for r in records)
+    null, n_null = ds.pairwise_prior_null(valid_ds.indices)
+    test = stats.binomtest(k, n, 0.5, alternative="greater")
+
+    # The honest independent unit. Pairs inside one recording reuse the same EEG windows,
+    # so the binomial over pairs is anti-conservative and is printed as a descriptor only.
+    by_rec = {}
+    for r in records:
+        by_rec.setdefault((r["subject"], r["stim"]), []).append(r["correct"])
+    rec_acc = [sum(v) / len(v) for v in by_rec.values()]
+
+    print(f"\n{'=' * 62}")
+    if args.clap_stub:
+        print("!! --clap_stub: the frozen CLAP tower is a RANDOM PROJECTION. This number is\n"
+              "!! a wiring check, NOT a result, and says nothing about CLAP or about EEG.\n")
+    if args.overfit:
+        print(f"!! --overfit {args.overfit}: trained and scored on the SAME items. This is the\n"
+              "!! optimisation-sanity check of Exp. 18 §4.3; ~1.0 means the wiring can learn,\n"
+              "!! and nothing else. It is NOT held-out accuracy.\n")
+    if args.max_batches:
+        print(f"!! --max_batches={args.max_batches}: UNDERTRAINED, this accuracy is NOT a result\n")
+    print(f"[Exp.18 {args.loss}] {k}/{n} = {k / n:.4f}   "
+          f"null {null:.4f} (best rule that ignores the EEG, measured on these {n_null} pairs)")
+    print(f"  one-sided binomial vs 0.500 p = {test.pvalue:.4g}  "
+          f"(descriptive: pairs inside a recording share EEG windows)")
+    print(f"  per held-out recording: {len(rec_acc)} recordings, mean {np.mean(rec_acc):.4f}, "
+          f"{sum(a > 0.5 for a in rec_acc)}/{len(rec_acc)} above 0.5")
+    gate = 0.70                      # Exp. 18 §4.2, written in the vault before this code
+    # A control never writes over a result (Comandamenti §9): an overfit run is scored on
+    # its own training items, so it has no held-out accuracy and the gate does not apply to
+    # it. Printing "PASSED" there would leave a line waiting to be quoted by mistake.
+    verdict = ("not applicable -- this run has no held-out set" if args.overfit else
+               "PASSED" if k / n >= gate else "NOT PASSED -- the contract stops here")
+    print(f"  pre-registered gate: {gate:.2f}  -->  {verdict}")
+
+    out_dir = os.path.join(_runs_dir(), args.training_date)
+    os.makedirs(out_dir, exist_ok=True)
+    import csv
+    with open(os.path.join(out_dir, "madeeg_matchmismatch_records.csv"), "w", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=list(records[0]))
+        w.writeheader()
+        w.writerows(records)
+    caveat = ""
+    if args.clap_stub:
+        caveat += ("!! --clap_stub -- the FROZEN CLAP tower was replaced by a fixed random\n"
+                   "!! projection because the checkpoint is not on this machine. Every number\n"
+                   "!! below is a check on the WIRING, not a result, and not a statement\n"
+                   "!! about CLAP features or about EEG.\n\n")
+    if args.overfit:
+        caveat += (f"!! --overfit {args.overfit} -- trained and scored on the SAME {args.overfit}\n"
+                   "!! items. This is the optimisation-sanity check (Exp. 18 §4.3). ~1.0 means\n"
+                   "!! the wiring can learn. It is NOT held-out accuracy and NOT a result.\n\n")
+    if args.max_batches:
+        caveat += (f"!! --max_batches={args.max_batches}: UNDERTRAINED by construction.\n"
+                   f"!! This accuracy is not a result.\n\n")
+    with open(os.path.join(out_dir, "madeeg_matchmismatch_summary.txt"), "w") as fh:
+        fh.write(caveat)
+        fh.write(f"== MAD-EEG solo match-mismatch, Exp. 18, negatives={args.loss} ==\n"
+                 f"epochs={args.epochs} lr={args.learning_rate} batch={args.batch_size} "
+                 f"seed={args.seed} temperature={args.temperature} valid_frac={args.valid_frac}\n"
+                 f"window={ds.eeg_length / 256:.1f}s stride={ds.stride / 256:.1f}s "
+                 f"min_offset={ds.min_offset_s:.1f}s band={ds.band} Hz\n"
+                 f"recordings={len(ds.trials)} repetitions={len(ds.reps)} pairs={len(ds)} "
+                 f"held_out_recordings={n_valid}\n"
+                 f"accuracy: {k}/{n} = {k / n:.4f}\n"
+                 f"null (best EEG-free rule, measured on the held-out pairs): {null:.4f}\n"
+                 f"one-sided binomial vs 0.500 p={test.pvalue:.4g} "
+                 f"(descriptive: pairs share EEG windows)\n"
+                 f"per-recording mean over {len(rec_acc)} held-out recordings: "
+                 f"{np.mean(rec_acc):.4f}\n"
+                 f"pre-registered gate {gate:.2f} -> {verdict}\n")
+    print(f"\n  written to {out_dir}")
+    return records
+
+
 def _runs_dir():
     import importlib.util
     repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -361,11 +576,37 @@ def main():
                          "Its accuracy is a control, never a result")
     ap.add_argument("--self_test_snr", type=float, default=4.0,
                     help="--self_test only: signal/noise std ratio of the synthetic EEG")
-    ap.add_argument("--loss", default="batch", choices=["batch", "within_mixture"],
-                    help="which columns are negatives. 'batch' is step C and stays the "
+    ap.add_argument("--loss", default="batch",
+                    choices=["batch", "within_mixture", *MATCH_MISMATCH],
+                    help="where the negatives come from. 'batch' is step C and stays the "
                          "default so no reported number moves. 'within_mixture' is step D: "
-                         "the only negatives are the competing stems of the SAME trial")
+                         "the only negatives are the competing stems of the SAME trial. "
+                         "'temporal_offset' and 'cross_instrument' are Exp. 18 on the SOLOS "
+                         "(match-mismatch): same recording at a declared offset, and a "
+                         "different instrument playing the same piece")
+    # CHANGED(baseline): Exp. 18 -- the three flags the two new --loss values need.
+    ap.add_argument("--valid_frac", type=float, default=0.2,
+                    help="Exp. 18 only: fraction of solo RECORDINGS held out (all four "
+                         "repetitions of a recording travel together)")
+    ap.add_argument("--overfit", type=int, default=0,
+                    help="Exp. 18 §4.3 sanity: train AND score on this many items. ~1.0 "
+                         "means the wiring can learn; it is never a result")
+    ap.add_argument("--clap_pretrained", default="",
+                    help="path to a local LAION-CLAP .pt. Empty (the default) is what steps "
+                         "C and D used -- laion_clap's own bundled checkpoint -- so passing "
+                         "nothing changes nothing; on a cluster, pointing at the file that "
+                         "is already on disk saves a 1.74 GiB download at run time")
+    ap.add_argument("--clap_stub", action="store_true",
+                    help="replace the FROZEN CLAP tower with a fixed random projection. For "
+                         "CPU wiring checks where the 1.74 GiB checkpoint is absent. Every "
+                         "number it produces is marked as a check inside the summary file")
     args = ap.parse_args()
+
+    # Comandamenti §8: a value that is not one of the four must BREAK. argparse already
+    # rejects a typo; this second gate is here because the failure mode that cost us a
+    # write-up was a mode silently behaving like the previous one, and it is cheap.
+    assert args.loss in ("batch", "within_mixture", *MATCH_MISMATCH), \
+        f"unknown --loss {args.loss!r}"
 
     torch.manual_seed(args.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -379,6 +620,29 @@ def main():
             args.training_date = "madeeg_clap_selftest"
         if args.loss == "within_mixture":
             args.training_date += "_within"
+        if args.loss in MATCH_MISMATCH:
+            args.training_date = f"madeeg_exp18_{args.loss}"
+            if args.overfit:
+                args.training_date += "_overfit"
+            if args.clap_stub:
+                args.training_date += "_clapstub"
+
+    # CHANGED(baseline): Exp. 18. A different dataset (the solos live only in the RAW
+    # release) feeding the SAME encoders, the SAME loss and the SAME training loop. Nothing
+    # above this branch is reachable with these two --loss values, and nothing below it is
+    # reachable with the other two -- so `--loss batch` is bit-for-bit what it was.
+    if args.loss in MATCH_MISMATCH:
+        assert not args.kfold and not args.self_test, (
+            "--kfold and --self_test are the duo k-fold of steps C/D; Exp. 18 trains on the "
+            "SOLOS and holds out recordings. Drop them.")
+        assert args.ensemble == "duo", (
+            "--ensemble has no meaning on the solos and the contract forbids opening duos "
+            "or trios here; leave it at its default")
+        from datasets.madeeg_solo_matchmismatch import MadeegSoloMatchMismatch
+        ds = MadeegSoloMatchMismatch(args.madeeg_dir, negative=args.loss)
+        print(f"[madeeg-contrastive] device={device} Exp.18 negatives={args.loss}")
+        run_matchmismatch(ds, args, device)
+        return
 
     # preload=True for the k-fold run: it is what makes shuffling affordable, and without
     # shuffling almost every batch comes from one trial -- so the InfoNCE batch negatives
@@ -407,7 +671,7 @@ def main():
     valid_loader = DataLoader(valid_ds, batch_size=args.batch_size, shuffle=False,
                               drop_last=True, num_workers=args.workers)
 
-    encoder_eeg, encoder_audio = build_model(device)
+    encoder_eeg, encoder_audio = build_model(device, clap_pretrained=args.clap_pretrained)
     trainable = [p for p in list(encoder_eeg.parameters()) + list(encoder_audio.parameters())
                  if p.requires_grad]
     frozen = sum(p.numel() for p in encoder_audio.parameters() if not p.requires_grad)

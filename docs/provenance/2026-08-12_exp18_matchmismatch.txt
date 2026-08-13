@@ -1,0 +1,214 @@
+!! EXP. 18 -- PREPARAZIONE del match-mismatch sui SOLO di MAD-EEG. NESSUN RISULTATO.
+!! =========================================================================================
+!! COSA C'E' QUI DENTRO: i cancelli CPU del contratto (vault, "Cap. 2 -- Exp. 18:
+!! match-mismatch sui solo di MAD-EEG, criterio pre-registrato (12 ago 2026)"), attraversati
+!! il 12/8/2026 PRIMA che esista un solo numero di training. Il training e' un passo GPU e
+!! lo lancia A. ([[Comandamenti]] §11): il comando ▶️ e' in coda a questo file e in
+!! scripts/replicate/exp18_matchmismatch.sh.
+!!
+!! COSA NON C'E': nessuna accuratezza su dati veri, nessuna decisione di attenzione, nessun
+!! duo, nessun trio, nessun own-vs-other. ZERO SGUARDI SPESI: si aprono soltanto i 105 trial
+!! `solo`, che il registro degli sguardi (30/7) dichiara materiale di training gratuito.
+!!
+!! !! IL CAVEAT PIU' GRANDE, E VALE PER OGNI 1.0000 DI QUESTO FILE: la sanita'
+!! !! dell'ottimizzazione (§4.3) e' girata con --clap_stub, cioe' con la torre CLAP
+!! !! CONGELATA SOSTITUITA da una proiezione casuale fissa. Il checkpoint da 1.74 GiB non e'
+!! !! sul Mac (scaricarlo e' decisione di A., Exp. 16A) e il Mac non ha torchaudio. CLAP e'
+!! !! congelata e non produce gradiente, quindi cio' che il controllo mette alla prova --
+!! !! campionatore -> loss -> ottimizzatore -> regola di decisione -- e' esattamente cio' che
+!! !! gira; ma NIENTE qui dice qualcosa sulle feature di CLAP ne' sull'EEG. Lo stesso
+!! !! controllo va ri-attraversato su baldo con la torre vera: e' il passo (1) del comando ▶️.
+!!
+!! !! E IL NUMERO CHE VA DECISO PRIMA DI LANCIARE S2. Il contratto §4.2 dichiara "caso
+!! !! 0.500". Per S1 e' vero ed e' MISURATO: 0.5000 esatto, perche' l'indice contiene ogni
+!! !! coppia di istanti in ENTRAMBE le direzioni, quindi nessuna regola posizionale batte il
+!! !! caso. Per S2 NON e' vero: i soggetti non hanno sentito tutti gli stessi solo, e la
+!! !! miglior regola che ignora l'EEG vale 0.5063 sull'insieme intero, 0.5307 sul training e
+!! !! 0.6061 sulle 21 registrazioni tenute fuori con seed 42. Contro 0.6061 la soglia 0.70
+!! !! vale +0.094, non +0.20. E' un fatto di metadati (nessun modello, nessuno sguardo) e
+!! !! [[Comandamenti]] §4 dice di stamparlo accanto alla statistica, non di assumerlo.
+!!
+!! !! COSA E' DIVERSO DAL PASSO C/D, e va detto ogni volta che i due si confrontano:
+!! !! (a) l'EEG viene dalla release RAW, non da quella preprocessed -- la preprocessed NON
+!! !!     contiene nessun solo. La release raw non e' notch+ICA come quella degli autori;
+!! !!     al suo posto c'e' un solo band-pass largo 1-45 Hz, dichiarato in
+!! !!     src/datasets/madeeg_solo_matchmismatch.py::SOLO_BAND, che toglie deriva e rete
+!! !!     senza imporre la banda d'analisi 1-8 Hz del Cap. 2.
+!! !! (b) la finestra e' 2.0 s, non 3.0 s come nel passo C/D. Ragione strutturale, non
+!! !!     gusto: i quattro solo `pop_falldead` durano 4.89 s e a 3.0 s con offset >= 3.0 s
+!! !!     darebbero ZERO coppie, cioe' 112 delle 420 ripetizioni sparirebbero in silenzio.
+!! !! (c) l'unita' tenuta fuori e' la REGISTRAZIONE (soggetto x chiave solo), con tutte e
+!! !!     quattro le sue ripetizioni insieme: le 4 ripetizioni sono lo STESSO audio suonato
+!! !!     quattro volte (corr 0.99998 a uno scarto di 8 campioni, misurato), quindi
+!! !!     dividerle metterebbe una quasi-copia del training nel test.
+!!
+!! IL DEFAULT NON SI E' MOSSO ([[Comandamenti]] §8): `--loss batch` e `--loss within_mixture`
+!! passano per lo stesso codice di prima; `CLIP_Loss` NON e' stato toccato da questo
+!! esperimento. I due cancelli di regressione sono i primi due blocchi qui sotto e sono stati
+!! attraversati PRIMA e DOPO il diff, con lo stesso output.
+!!
+!! AMBIENTE: /opt/anaconda3/bin/python (torch 2.11.0, h5py 3.15.1, soundfile 0.13.1,
+!! sklearn 1.7.2, numpy 1.26.4, scipy 1.16.3), Darwin 25.5.0, device=cpu.
+!! ⚠️ NON /opt/miniconda3: li' torch non c'e'. Non e' la trappola n.1 del Legacy §4 --
+!! quella riguarda i cancelli md5 di madeeg_reconstruction.py, e qui non ce n'e' nessuno.
+!! Il cancello 2 (regressione del passo C) gira comunque in /opt/miniconda3, perche' quello
+!! e' un percorso madeeg_* puro senza torch.
+!!
+!! COMANDO CHE HA PRODOTTO TUTTO CIO' CHE SEGUE (2 min 22 s misurati):
+!!   bash scripts/replicate/exp18_matchmismatch.sh
+!! I null per-split (blocco in fondo) vengono da:
+!!   /opt/anaconda3/bin/python -c "import sys; sys.path.insert(0,'src'); ..."  -- lo snippet
+!!   e' riportato per intero nel report 2026-08-12 (6) del vault; li stampa comunque ogni run.
+!! =========================================================================================
+
+=== CANCELLO 1 — canarino del Cap. 1 (sintetico, nessun dato) ===
+[clip_loss self-check] PASS  duo InfoNCE matches hand computation (0.628491); aligned 1.2994 < anti-aligned 4.8198
+[clip_loss self-check] PASS  within-mixture duo matches hand computation (0.951610 vs batch mode 2.160834); a window's loss is independent of its batch-mates
+
+=== CANCELLO 2 — regressione del passo C sui record archiviati ===
+[check_rule] 58/154 = 0.3766 -- the argmax rule reproduces step C exactly, and every one of the 154 stored decisions
+[check_rule] and on 2000 random duo trials the step-C rule (mean of the margins) and the step-D rule (argmax of the per-stem means) never disagree
+
+=== CANCELLO 3 — test del campionamento, temporal_offset ===
+[solo-matchmismatch] negative=temporal_offset  recordings=105  repetitions=420  pairs=3346
+  window=2.0s stride=1.0s min_offset=2.0s band=(1.0, 45.0) Hz
+  EEG behind it: 39.4 min over 420 repetitions; 96 distinct stimulus wavs (7 piece/theme groups)
+  recordings per subject: {'0001': 14, '0002': 14, '0003': 14, '0004': 14, '0005': 14, '0007': 7, '0008': 14, '0009': 14}
+[check_sampling] PASS  3346 pairs, mode temporal_offset
+  negative from the SAME wav file: 3346/3346   smallest offset seen: 2.000s (declared floor 2.0s)   offset 0 (same instant): 0/3346
+  audio content verified against the declared span on 210 items (every 16th)
+  null WITHOUT the EEG (best candidate-identity-only rule): 0.5000 on n=3346
+
+=== CANCELLO 3 — test del campionamento, cross_instrument ===
+[solo-matchmismatch] negative=cross_instrument  recordings=105  repetitions=420  pairs=4414
+  window=2.0s stride=1.0s min_offset=2.0s band=(1.0, 45.0) Hz
+  EEG behind it: 39.4 min over 420 repetitions; 96 distinct stimulus wavs (7 piece/theme groups)
+  recordings per subject: {'0001': 14, '0002': 14, '0003': 14, '0004': 14, '0005': 14, '0007': 7, '0008': 14, '0009': 14}
+[check_sampling] PASS  4414 pairs, mode cross_instrument
+  negative from the same piece+theme and a DIFFERENT instrument: 4414/4414   same instant on both sides: 4414/4414
+  audio content verified against the declared span on 201 items (every 22th)
+  null WITHOUT the EEG (best candidate-identity-only rule): 0.5063 on n=4414
+
+=== CANCELLO 4 — sanita' dell'ottimizzazione (contratto §4.3), temporal_offset ===
+    20 esempi, CPU, torre CLAP SOSTITUITA: e' un controllo, mai un risultato.
+[solo-matchmismatch] negative=temporal_offset  recordings=105  repetitions=420  pairs=3346
+[overfit] 20 items drawn every 167th from 3346: a WIRING check, never a result
+[Exp.18 temporal_offset] 20/20 = 1.0000   null 0.7500 (best rule that ignores the EEG, measured on these 20 pairs)
+  one-sided binomial vs 0.500 p = 9.537e-07  (descriptive: pairs inside a recording share EEG windows)
+  per held-out recording: 20 recordings, mean 1.0000, 20/20 above 0.5
+  pre-registered gate: 0.70  -->  not applicable -- this run has no held-out set
+  written to /Users/andrea/Library/Mobile Documents/com~apple~CloudDocs/Tesi/akami/runs/results/repl_exp18_overfit_temporal_offset
+
+=== CANCELLO 4 — sanita' dell'ottimizzazione (contratto §4.3), cross_instrument ===
+    20 esempi, CPU, torre CLAP SOSTITUITA: e' un controllo, mai un risultato.
+[solo-matchmismatch] negative=cross_instrument  recordings=105  repetitions=420  pairs=4414
+[overfit] 20 items drawn every 220th from 4414: a WIRING check, never a result
+[Exp.18 cross_instrument] 20/20 = 1.0000   null 0.8000 (best rule that ignores the EEG, measured on these 20 pairs)
+  one-sided binomial vs 0.500 p = 9.537e-07  (descriptive: pairs inside a recording share EEG windows)
+  per held-out recording: 20 recordings, mean 1.0000, 20/20 above 0.5
+  pre-registered gate: 0.70  -->  not applicable -- this run has no held-out set
+  written to /Users/andrea/Library/Mobile Documents/com~apple~CloudDocs/Tesi/akami/runs/results/repl_exp18_overfit_cross_instrument
+
+===============================================================================
+▶️  IL TRAINING — LO LANCIA A., SU baldo. [[Comandamenti]] §11.
+===============================================================================
+# (0) prerequisiti su baldo, da verificare UNA VOLTA prima di lanciare:
+#     - la release RAW: madeeg_raw.hdf5, madeeg_raw.yaml, madeeg_sequences_raw.yaml
+#       e la cartella stimuli/ (scompattata) dentro /home/andrea.giampietro/madeeg.
+#       ⚠️ Il passo C/D usava solo madeeg_preprocessed.*: la release preprocessed
+#       NON contiene nessun solo, quindi questi quattro file servono davvero.
+#     - il checkpoint CLAP gia' su disco (Exp. 17):
+#       /home/andrea.giampietro/clap_ckpt/630k-audioset-best.pt
+#       sha256 8053c9775516af2f4902e1e8281e356cc1bf7a85e8b761908170767b77c3f037
+#     - torchaudio nell'env (CLAPEncoder ricampiona 44.1 -> 48 kHz al suo interno).
+
+# (1) PRE-VOLO, 2 minuti, obbligatorio: gli stessi cancelli girati qui ma con la
+#     torre CLAP VERA. Se questo non fa 20/20, il cablaggio su baldo e' rotto e il
+#     training vero non va lanciato (contratto §4.3).
+cd ~/akami && git pull
+/home/andrea.giampietro/.conda/envs/eeg_attention/bin/python src/datasets/madeeg_solo_matchmismatch.py \
+    --madeeg_dir /home/andrea.giampietro/madeeg --check_sampling
+/home/andrea.giampietro/.conda/envs/eeg_attention/bin/python src/madeeg_contrastive.py \
+    --madeeg_dir /home/andrea.giampietro/madeeg --loss temporal_offset \
+    --clap_pretrained /home/andrea.giampietro/clap_ckpt/630k-audioset-best.pt \
+    --overfit 20 --epochs 60 --batch_size 4
+
+# (2) S1 — il negativo e' lo STESSO brano a un offset temporale dichiarato.
+/home/andrea.giampietro/.conda/envs/eeg_attention/bin/python src/madeeg_contrastive.py \
+    --madeeg_dir /home/andrea.giampietro/madeeg --loss temporal_offset \
+    --clap_pretrained /home/andrea.giampietro/clap_ckpt/630k-audioset-best.pt \
+    --epochs 10 --batch_size 8 --learning_rate 0.003 --temperature 0.5 --seed 42 \
+    2>&1 | tee ~/akami/runs/logs/exp18_S1_temporal_offset.log
+
+# (3) S2 — SOLO SE S1 attraversa il cancello §4.2 (>= 0.70). Altrimenti il
+#     contratto si ferma: nessun misuratore, nessuna affermazione.
+/home/andrea.giampietro/.conda/envs/eeg_attention/bin/python src/madeeg_contrastive.py \
+    --madeeg_dir /home/andrea.giampietro/madeeg --loss cross_instrument \
+    --clap_pretrained /home/andrea.giampietro/clap_ckpt/630k-audioset-best.pt \
+    --epochs 10 --batch_size 8 --learning_rate 0.003 --temperature 0.5 --seed 42 \
+    2>&1 | tee ~/akami/runs/logs/exp18_S2_cross_instrument.log
+
+# DOVE FINISCE TUTTO (nessun percorso da inventare: e' resolve_log_dir()):
+#   ~/akami/runs/results/madeeg_exp18_temporal_offset/madeeg_matchmismatch_{records.csv,summary.txt}
+#   ~/akami/runs/results/madeeg_exp18_cross_instrument/madeeg_matchmismatch_{records.csv,summary.txt}
+#   ~/akami/runs/logs/exp18_S{1,2}_*.log
+#   Nessun checkpoint viene salvato: il contratto chiede un'accuratezza held-out,
+#   non un modello da riusare. Se A. vuole i pesi, va chiesto e aggiunto.
+#
+# QUANTO DURA — stima, con la sua ancora MISURATA e il suo "da confermare":
+#   ancora misurata: l'estrazione dell'Exp. 17 su baldo ha fatto 8876 forward CLAP
+#   in 496.6 s = 17.9 clip/s SU CPU (HTSAT-tiny, ingresso 10 s, batch 32).
+#   Questa run chiede 2 candidati per item:
+#     S1  (2810 train + 536 held-out) x 2 x 10 epoche = 66 920 forward CLAP
+#     S2  (3561 train + 853 held-out) x 2 x 10 epoche = 88 280 forward CLAP
+#   -> SU CPU: S1 ~62 min, S2 ~82 min (aritmetica sull'ancora misurata).
+#   -> SU GPU: 🔶 DA CONFERMARE ALLA PRIMA RUN. Nessuna misura di CLAP su GPU esiste
+#      in questo progetto. A 100-300 clip/s si va sui 4-11 min (S1) e 5-15 min (S2);
+#      la costruzione del dataset (lettura del raw + band-pass + 96 wav) costa ~15 s
+#      misurati sul Mac e va aggiunta una volta per run.
+#   ⚠️ SE LA RUN E' PIU' LENTA DEL PREVISTO, la leva ovvia e' gratis e non e' stata
+#      implementata di proposito: CLAP e' CONGELATO e le finestre audio distinte sono
+#      ~400 in tutto, quindi i suoi embedding si calcolerebbero UNA VOLTA invece che a
+#      ogni epoca. Non l'ho fatto perche' e' codice in piu' che il contratto non chiede;
+#      va aggiunto solo se il tempo misurato lo giustifica.
+===============================================================================
+
+=== IL NULL PER OGNI SPLIT, MISURATO SENZA MODELLO (metadati soltanto) ===
+La quantita' e' "la miglior accuratezza raggiungibile SENZA guardare l'EEG": per ogni coppia
+di candidati si risponde quello che piu' spesso e' il positivo. La decisione e' per coppia,
+quindi questo limite e' esatto, non una stima. Split: split_by_trial(valid_frac=0.2, seed=42),
+identico a quello che usera' la run.
+
+  temporal_offset   105 registrazioni, 21 tenute fuori · 2810 coppie train · 536 held-out
+                    null  tutto 0.5000 (n=3346) · train 0.5000 (n=2810) · HELD-OUT 0.5000 (n=536)
+                    -> il caso e' 0.500 ESATTO, per costruzione dell'indice. Contro 0.5000 la
+                       soglia 0.70 del contratto §4.2 e' quella che il contratto intendeva.
+
+  cross_instrument  105 registrazioni, 21 tenute fuori · 3561 coppie train · 853 held-out
+                    null  tutto 0.5063 (n=4414) · train 0.5307 (n=3561) · HELD-OUT 0.6061 (n=853)
+                    -> il caso NON e' 0.500. 🔶 DECISIONE PER A. PRIMA DELLA RUN S2:
+                       (i) leggere il cancello 0.70 contro 0.6061 e dichiararlo (+0.094), oppure
+                       (ii) ri-pre-registrare la soglia di S2 con il null corretto.
+                       Non l'ho scelto io: cambiare una soglia e' esattamente la mossa che
+                       [[Comandamenti]] §5 riserva a chi la scrive PRIMA, e S2 non e' ancora
+                       girato, quindi la finestra per farlo pulitamente e' adesso.
+
+=== CENSIMENTO DEI SOLO, contato e non assunto ([[Comandamenti]] §7) ===
+  105 registrazioni (soggetto x chiave solo) su 8 soggetti -- 14 ciascuno tranne 0007 con 7
+  420 ripetizioni presentate (4 per registrazione), 39.4 min di EEG in totale
+  24 chiavi solo distinte, 96 file wav distinti, 9 strumenti, 7 gruppi brano+tema
+  durata degli estratti: 4.888 - 7.000 s (le 4 ripetizioni sono LO STESSO audio)
+  gruppi brano+tema e strumenti che li abitano (base dei negativi S2):
+    classique_morceau1 theme1 : Co Fl Ob      classique_morceau1 theme2 : Co Fl Ob
+    classique_morceau2 theme1 : Bo Fh Fl      classique_morceau2 theme2 : Bo Fh Fl
+    pop_falldead       theme1 : Bs Dr Gt Vx   pop_mixtape       theme1 : Bs Dr Gt Vx
+    pop_mixtape        theme2 : Bs Dr Gt Vx
+  -> ogni chiave ha almeno due fratelli nello stesso gruppo: NESSUNA registrazione viene
+     scartata da S2 per mancanza di un negativo cross-strumento (0 scarti, contato).
+
+=== COSA QUESTO FILE NON DIMOSTRA ===
+  * che il modello impari qualcosa: nessun training su dati veri e' stato eseguito;
+  * niente su CLAP: la torre e' stata sostituita in ogni controllo di questo file;
+  * niente sull'attenzione: own-vs-other e la decisione sui duo non sono stati toccati, e
+    il contratto §5 ricorda che superare own-vs-other sarebbe comunque NECESSARIO E NON
+    SUFFICIENTE (il flux lo supero' di gran lunga e poi non trasferi').
