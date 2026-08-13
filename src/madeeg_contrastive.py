@@ -52,6 +52,62 @@ from modules.clip_loss import CLIP_Loss  # noqa: E402
 # by construction). See src/datasets/madeeg_solo_matchmismatch.py.
 MATCH_MISMATCH = ("temporal_offset", "cross_instrument")
 
+# CHANGED(baseline): Exp. 19. Three numbers declared HERE, in the code, before the run
+# (Comandamenti §3, §5). They come from the vault contract of 13 Aug 2026 and none of them
+# is tunable from the command line, precisely so that a run cannot quietly move one.
+MM_GATE = 0.70              # §1 and §2.2 -- the SAME bar as Exp. 18. The budget changed;
+#                             the criterion did not, and lowering it after seeing a number
+#                             would be the move pre-registration exists to prevent.
+NULL_CEILING = 0.52         # §2.1 -- above this the sampler's null is "dirty" and the gate
+#                             stops meaning what it was written to mean, so it switches to
+#                             "beat the MEASURED null with an exact one-sided binomial".
+CONVERGED_TRAIN_LOSS = 0.50  # §1 -- the boundary between the contract's first two readings.
+#                             Not a taste: 0.50 is the loss the contract's own arithmetic
+#                             uses to size the 120-epoch budget (Exp. 18's measured slope of
+#                             0.00166/epoch from 0.6962 reaches it in ~110 epochs). A run
+#                             that early-stops still ABOVE it never fitted its training data
+#                             -- "the optimiser finished and there was nothing to find". One
+#                             that early-stops BELOW it did fit and failed to generalise --
+#                             "273k parameters memorised 2700 pairs". Same stop, opposite
+#                             cause, and the number that separates them is written first.
+
+
+# The one sentence that has to survive the terminal (Comandamenti §9), so it is written
+# into the summary FILE above the numbers and not only printed.
+EPOCH_RULE = (
+    "!! THE REPORTED NUMBER IS THE ONE AT THE STOPPING EPOCH, and the stopping epoch is\n"
+    "!! defined by the TRAIN loss alone. It is NOT the best held-out accuracy seen along\n"
+    "!! the way, and the best held-out accuracy is not a result of this run at any epoch:\n"
+    "!! picking the epoch by looking at the held-out set is selecting on the test set.\n"
+    "!! The full curve below is printed for readability only -- every row of it except\n"
+    "!! the last is a diagnostic, never a number to quote.")
+
+
+def branch_of_contract(args, stopped_early, final_loss, acc, passed):
+    """Which of the four readings the Exp. 19 contract §1 declared in advance has fired.
+
+    Written as a table in the vault before this code existed, and the boundary between the
+    first two is `CONVERGED_TRAIN_LOSS`, declared above for the reason given there.
+    """
+    if passed:
+        return (f"🟢 held-out {acc:.4f} clears the gate: Exp. 18 was UNDER-TRAINED. "
+                "The own-vs-other gauge follows, under a NEW pre-registration.")
+    if not stopped_early:
+        return (f"🟡 NOT CONCLUSIVE -- the train loss was still improving by more than "
+                f"{args.early_stop_min_delta} when the {args.epochs}-epoch cap was reached "
+                f"(last {final_loss:.4f}). The budget was not enough. No third run without "
+                "a new contract.")
+    if final_loss < CONVERGED_TRAIN_LOSS:
+        return (f"🔴 PURE OVERFITTING -- the train loss converged well below "
+                f"{CONVERGED_TRAIN_LOSS} ({final_loss:.4f}) and the held-out set stayed at "
+                f"{acc:.4f}. The limit is the amount of data, now demonstrated instead of "
+                "inferred.")
+    return (f"🔴 THE QUESTION IS CLOSED: it was not the epochs. The optimiser stopped "
+            f"improving at a train loss of {final_loss:.4f}, still at or above "
+            f"{CONVERGED_TRAIN_LOSS} (chance = log 2 = 0.6931), and the held-out set is "
+            f"{acc:.4f}. Exp. 18's negative becomes definitive and stronger, because it now "
+            "carries the proof that the optimiser had finished.")
+
 
 def split_by_trial(dataset, valid_frac=0.2, seed=42):
     """Hold out whole TRIALS, never windows.
@@ -420,10 +476,33 @@ def run_matchmismatch(ds, args, device):
       the EEG scores exactly 0.500 -- and the number is computed rather than asserted. For
       `cross_instrument` the subjects did not all hear the same solos, so it is NOT 0.500
       and the measured value is what the accuracy has to be read against.
+
+    CHANGED(baseline): Exp. 19 (vault contract, 13 Aug 2026) adds two things and only two,
+    both behind flags that default to off so an Exp. 18 command still reproduces Exp. 18:
+
+    * `--early_stop_patience` / `--early_stop_min_delta` (§1): a 120-epoch cap with early
+      stopping on the TRAIN loss. This changes the compute budget, NOT the criterion --
+      the bar is still 0.70. The reported number is the one at the stopping epoch.
+    * `--balance_pairs` (§2.1): the repair of S2's null, which Exp. 18 measured at 0.6061 on
+      the held-out pairs, i.e. a "gate" a model that never looks at the EEG could nearly
+      walk through. Nothing about learning rate, architecture or temperature moves: one
+      variable at a time, and here the variable is the budget plus that repair.
     """
     from scipy import stats
 
     train_ds, valid_ds, n_valid = split_by_trial(ds, valid_frac=args.valid_frac, seed=args.seed)
+    # CHANGED(baseline): Exp. 19 §2.1 -- repair the null BEFORE training, per split.
+    # Per split and not once over the whole index, because the two are different numbers:
+    # Exp. 18 measured 0.5063 over all of S2 and 0.6061 on the held-out side of the very
+    # same index, and it is the held-out one the gate reads. Off by default (Comandamenti
+    # §8), and a provable no-op on S1 anyway -- see `balanced_indices`.
+    if args.balance_pairs:
+        tr_ids, va_ids = ds.balanced_indices(train_ds.indices), ds.balanced_indices(valid_ds.indices)
+        print(f"[balance] train {len(train_ds)} -> {len(tr_ids)} pairs, "
+              f"held-out {len(valid_ds)} -> {len(va_ids)} pairs "
+              f"({len({ds.pairs[j]['rec'] for j in va_ids})} of {n_valid} held-out "
+              "recordings still represented)")
+        train_ds, valid_ds = Subset(ds, tr_ids), Subset(ds, va_ids)
     if args.overfit:
         # Sanity of the optimisation (Exp. 18 §4.3), NOT a result: memorise a tiny subset.
         # Spread across the index so the subset spans several recordings -- memorising one
@@ -450,7 +529,18 @@ def run_matchmismatch(ds, args, device):
     print(f"[{args.loss}] train pairs={len(train_ds)} held-out pairs={len(valid_ds)} "
           f"({n_valid} of {len(ds.trials)} recordings held out)  "
           f"trainable params: {sum(p.numel() for p in trainable):,}")
+
+    # Gate 3 of the Exp. 19 contract: the null is re-measured and printed BEFORE a single
+    # gradient step, so it cannot be quietly read off after the accuracy is known.
+    null, n_null = ds.pairwise_prior_null(valid_ds.indices)
+    null_subj, _ = ds.pairwise_prior_null(valid_ds.indices, by_subject=True)
+    print(f"[null] best EEG-free rule on these {n_null} held-out pairs: {null:.4f} "
+          f"(candidate identity)   {null_subj:.4f} (subject + candidate identity)"
+          + ("" if null <= NULL_CEILING else
+             f"   !! above the {NULL_CEILING} ceiling: the gate becomes 'beat {null:.4f}'"))
+
     print(f"\n{'epoch':>6}{'train_loss':>12}{'held_out_acc':>14}{'sec':>8}")
+    curve, best_loss, stale, stopped_early = [], float("inf"), 0, False
     for ep in range(args.epochs):
         t0 = time.time()
         tr = run_epoch(loader, encoder_eeg, encoder_audio, criterion, optimizer,
@@ -458,12 +548,28 @@ def run_matchmismatch(ds, args, device):
         records = match_mismatch_records(valid_ds, encoder_eeg, encoder_audio,
                                          device, args.batch_size)
         acc = sum(r["correct"] for r in records) / len(records)
+        curve.append((ep, tr, acc))
         print(f"{ep:>6}{tr:>12.4f}{acc:>14.4f}{time.time() - t0:>8.1f}")
+        # CHANGED(baseline): Exp. 19 §1 -- early stop on the TRAIN loss, never on the
+        # held-out accuracy. Stopping on held-out would be choosing the reported epoch by
+        # looking at the test set, which is the same class of error as flipping the sign;
+        # the train loss is a property of the optimiser alone and knows nothing about the
+        # number being gated. Off by default, so an Exp. 18 command still runs Exp. 18.
+        if args.early_stop_patience:
+            if best_loss - tr > args.early_stop_min_delta:
+                best_loss, stale = tr, 0
+            else:
+                stale += 1
+                if stale >= args.early_stop_patience:
+                    stopped_early = True
+                    print(f"[early stop] no train-loss improvement > "
+                          f"{args.early_stop_min_delta} for {args.early_stop_patience} "
+                          f"epochs; stopping at epoch {ep} of a {args.epochs}-epoch cap")
+                    break
 
     n = len(records)
     k = sum(r["correct"] for r in records)
-    null, n_null = ds.pairwise_prior_null(valid_ds.indices)
-    test = stats.binomtest(k, n, 0.5, alternative="greater")
+    test = stats.binomtest(k, n, null, alternative="greater")
 
     # The honest independent unit. Pairs inside one recording reuse the same EEG windows,
     # so the binomial over pairs is anti-conservative and is printed as a descriptor only.
@@ -482,19 +588,42 @@ def run_matchmismatch(ds, args, device):
               "!! and nothing else. It is NOT held-out accuracy.\n")
     if args.max_batches:
         print(f"!! --max_batches={args.max_batches}: UNDERTRAINED, this accuracy is NOT a result\n")
-    print(f"[Exp.18 {args.loss}] {k}/{n} = {k / n:.4f}   "
-          f"null {null:.4f} (best rule that ignores the EEG, measured on these {n_null} pairs)")
-    print(f"  one-sided binomial vs 0.500 p = {test.pvalue:.4g}  "
+    if args.early_stop_patience:
+        print(EPOCH_RULE + "\n")
+    print(f"[{args.loss}] {k}/{n} = {k / n:.4f}   "
+          f"null {null:.4f} (best rule that ignores the EEG, measured on these {n_null} pairs)"
+          f"   {null_subj:.4f} (same, allowed to condition on the subject)")
+    print(f"  one-sided binomial vs the measured null {null:.4f}: p = {test.pvalue:.4g}  "
           f"(descriptive: pairs inside a recording share EEG windows)")
     print(f"  per held-out recording: {len(rec_acc)} recordings, mean {np.mean(rec_acc):.4f}, "
           f"{sum(a > 0.5 for a in rec_acc)}/{len(rec_acc)} above 0.5")
-    gate = 0.70                      # Exp. 18 §4.2, written in the vault before this code
+    print(f"  reported at epoch {curve[-1][0]} of {len(curve)} run "
+          f"(cap {args.epochs}); train loss {curve[0][1]:.4f} -> {curve[-1][1]:.4f}"
+          + ("  [early stop fired]" if stopped_early else ""))
+
+    # The gate. Which of the two forms applies is decided by the MEASURED null, exactly as
+    # contract §2.1 writes it -- never by which one the accuracy would pass.
+    if null <= NULL_CEILING:
+        gate_text = (f"held-out accuracy >= {MM_GATE:.2f}, against a measured null of "
+                     f"{null:.4f} <= {NULL_CEILING}")
+        passed = k / n >= MM_GATE
+    else:
+        gate_text = (f"null {null:.4f} is ABOVE the {NULL_CEILING} ceiling, so the gate is "
+                     f"'beat it, exact one-sided binomial p <= 0.05' (p = {test.pvalue:.4g})"
+                     f"; the absolute {MM_GATE:.2f} bar is reported alongside, not instead")
+        passed = test.pvalue <= 0.05
     # A control never writes over a result (Comandamenti §9): an overfit run is scored on
     # its own training items, so it has no held-out accuracy and the gate does not apply to
     # it. Printing "PASSED" there would leave a line waiting to be quoted by mistake.
     verdict = ("not applicable -- this run has no held-out set" if args.overfit else
-               "PASSED" if k / n >= gate else "NOT PASSED -- the contract stops here")
-    print(f"  pre-registered gate: {gate:.2f}  -->  {verdict}")
+               "PASSED" if passed else "NOT PASSED -- the contract stops here")
+    print(f"  pre-registered gate: {gate_text}\n  -->  {verdict}")
+
+    # CHANGED(baseline): Exp. 19 §1 -- say WHICH of the four declared readings fired, so the
+    # log cannot be read as any of the other three later on.
+    reading = branch_of_contract(args, stopped_early, curve[-1][1], k / n, passed)
+    if args.early_stop_patience and not args.overfit:
+        print(f"\n  [Exp. 19 §1] {reading}")
 
     out_dir = os.path.join(_runs_dir(), args.training_date)
     os.makedirs(out_dir, exist_ok=True)
@@ -516,22 +645,48 @@ def run_matchmismatch(ds, args, device):
     if args.max_batches:
         caveat += (f"!! --max_batches={args.max_batches}: UNDERTRAINED by construction.\n"
                    f"!! This accuracy is not a result.\n\n")
+    # CHANGED(baseline): Exp. 19. Two caveats that have to be INSIDE the file, above the
+    # numbers, because the file outlives the terminal (Comandamenti §9).
+    if args.early_stop_patience:
+        caveat += EPOCH_RULE + "\n\n"
+    if args.loss == "cross_instrument":
+        caveat += ("!! STAGE S2 IS EXPLORATORY BY CONSTRUCTION. Exp. 18 §3 subordinated it\n"
+                   "!! to S1; the decision to run it anyway was taken AFTER S1's number was\n"
+                   "!! known (Exp. 19 §0). Nothing in this file can support a confirmatory\n"
+                   "!! claim, whatever it says. A success here would need a fresh\n"
+                   "!! pre-registered replication on material not yet looked at.\n\n")
     with open(os.path.join(out_dir, "madeeg_matchmismatch_summary.txt"), "w") as fh:
         fh.write(caveat)
-        fh.write(f"== MAD-EEG solo match-mismatch, Exp. 18, negatives={args.loss} ==\n"
-                 f"epochs={args.epochs} lr={args.learning_rate} batch={args.batch_size} "
+        fh.write(f"== MAD-EEG solo match-mismatch, negatives={args.loss} ==\n"
+                 f"epoch_cap={args.epochs} lr={args.learning_rate} batch={args.batch_size} "
                  f"seed={args.seed} temperature={args.temperature} valid_frac={args.valid_frac}\n"
+                 f"early_stop: patience={args.early_stop_patience} "
+                 f"min_delta={args.early_stop_min_delta} on the TRAIN loss "
+                 f"-> {'fired' if stopped_early else 'did not fire'}\n"
+                 f"balance_pairs={args.balance_pairs} "
+                 f"(Exp. 19 §2.1 null repair; a no-op on temporal_offset)\n"
                  f"window={ds.eeg_length / 256:.1f}s stride={ds.stride / 256:.1f}s "
                  f"min_offset={ds.min_offset_s:.1f}s band={ds.band} Hz\n"
                  f"recordings={len(ds.trials)} repetitions={len(ds.reps)} pairs={len(ds)} "
                  f"held_out_recordings={n_valid}\n"
-                 f"accuracy: {k}/{n} = {k / n:.4f}\n"
-                 f"null (best EEG-free rule, measured on the held-out pairs): {null:.4f}\n"
-                 f"one-sided binomial vs 0.500 p={test.pvalue:.4g} "
+                 f"\nSTOPPING EPOCH {curve[-1][0]} of {len(curve)} run, cap {args.epochs}\n"
+                 f"accuracy AT THE STOPPING EPOCH: {k}/{n} = {k / n:.4f}\n"
+                 f"null (best EEG-free rule, measured on the held-out pairs): {null:.4f} "
+                 f"by candidate identity, {null_subj:.4f} conditioning on the subject too\n"
+                 f"one-sided binomial vs the measured null {null:.4f}: p={test.pvalue:.4g} "
                  f"(descriptive: pairs share EEG windows)\n"
                  f"per-recording mean over {len(rec_acc)} held-out recordings: "
                  f"{np.mean(rec_acc):.4f}\n"
-                 f"pre-registered gate {gate:.2f} -> {verdict}\n")
+                 f"train loss {curve[0][1]:.4f} -> {curve[-1][1]:.4f}\n"
+                 f"pre-registered gate: {gate_text}\n  -> {verdict}\n")
+        if args.early_stop_patience and not args.overfit:
+            fh.write(f"Exp. 19 §1 reading: {reading}\n")
+        # The full curve, in the file: it is what tells a later reader whether the loss had
+        # flattened or was still falling, and it is the evidence behind the reading above.
+        fh.write("\nfull curve (diagnostic only -- the result is the LAST row):\n"
+                 " epoch  train_loss  held_out_acc\n")
+        for e, t, a in curve:
+            fh.write(f"{e:>6}{t:>12.4f}{a:>14.4f}\n")
     print(f"\n  written to {out_dir}")
     return records
 
@@ -596,6 +751,21 @@ def main():
                          "C and D used -- laion_clap's own bundled checkpoint -- so passing "
                          "nothing changes nothing; on a cluster, pointing at the file that "
                          "is already on disk saves a 1.74 GiB download at run time")
+    # CHANGED(baseline): Exp. 19 -- the epoch budget and the null repair. Both default to
+    # OFF, so every Exp. 18 command still runs Exp. 18 (Comandamenti §8).
+    ap.add_argument("--early_stop_patience", type=int, default=0,
+                    help="Exp. 19 §1: stop after this many epochs without a TRAIN-loss "
+                         "improvement greater than --early_stop_min_delta. 0 (the default) "
+                         "means no early stopping, i.e. exactly the Exp. 18 behaviour. The "
+                         "reported number is always the one at the stopping epoch, never "
+                         "the best held-out accuracy seen along the way")
+    ap.add_argument("--early_stop_min_delta", type=float, default=0.002,
+                    help="Exp. 19 §1: the smallest TRAIN-loss drop that counts as progress")
+    ap.add_argument("--balance_pairs", action="store_true",
+                    help="Exp. 19 §2.1: keep every candidate pair in both directions the "
+                         "same number of times, per subject, so the best rule that ignores "
+                         "the EEG scores exactly 0.500. A repair of the null, not a "
+                         "hyperparameter; provably a no-op on --loss temporal_offset")
     ap.add_argument("--clap_stub", action="store_true",
                     help="replace the FROZEN CLAP tower with a fixed random projection. For "
                          "CPU wiring checks where the 1.74 GiB checkpoint is absent. Every "
@@ -621,7 +791,10 @@ def main():
         if args.loss == "within_mixture":
             args.training_date += "_within"
         if args.loss in MATCH_MISMATCH:
-            args.training_date = f"madeeg_exp18_{args.loss}"
+            # A control never writes over a result, and neither does a different budget
+            # (Comandamenti §9): the Exp. 19 run lands beside the Exp. 18 one, not on it.
+            exp = "exp19" if (args.early_stop_patience or args.balance_pairs) else "exp18"
+            args.training_date = f"madeeg_{exp}_{args.loss}"
             if args.overfit:
                 args.training_date += "_overfit"
             if args.clap_stub:

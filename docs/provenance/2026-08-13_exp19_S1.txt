@@ -1,0 +1,193 @@
+!! EXP. 19 — S1 A CONVERGENZA. PREPARAZIONE. NESSUN RISULTATO IN QUESTO FILE.
+!! =========================================================================================
+!! COSA C'E' QUI DENTRO: i cancelli CPU del contratto (vault, "Cap. 2 -- Exp. 19:
+!! match-mismatch a convergenza (S1) e lo stadio strumento (S2, ESPLORATIVO), criterio
+!! pre-registrato (13 ago 2026)"), attraversati il 13/8/2026 PRIMA che esista un solo
+!! numero di training. Il training e' un passo GPU e lo lancia A. ([[Comandamenti]] §11):
+!! il comando ▶️ e' in coda a questo file e in scripts/replicate/exp19_matchmismatch.sh.
+!!
+!! COSA CAMBIA RISPETTO ALL'EXP. 18, E SOLO QUESTO (contratto §0):
+!! 🟢 CAMBIA IL BUDGET DI CALCOLO, NON IL CRITERIO. La barra dell'held-out resta 0.70,
+!!    identica all'Exp. 18. Cap 120 epoche, arresto anticipato sulla TRAIN loss (pazienza
+!!    15, miglioramento minimo 0.002). Dare a un ottimizzatore abbastanza epoche per
+!!    convergere rimuove un artefatto di misura; abbassare la soglia dopo aver visto il
+!!    numero sarebbe barare, e questo file fa solo la prima cosa.
+!!    Learning rate 0.003, batch 8, temperatura 0.5, seed 42, architettura ed encoder EEG
+!!    sono INVARIATI (contratto §5: una variabile per volta).
+!!
+!! !! 🔑 LA REGOLA CHE VALE PIU' DI OGNI NUMERO DI QUESTA RUN, E CHE E' SCRITTA ANCHE
+!! !! DENTRO IL SUMMARY DELLA RUN: il numero che si riporta e' quello ALL'EPOCA DI
+!! !! ARRESTO, e l'epoca di arresto e' definita dalla TRAIN loss soltanto. NON e' il
+!! !! miglior held-out visto lungo il percorso, e il miglior held-out non e' un risultato
+!! !! a nessuna epoca: scegliere l'epoca guardando l'held-out e' selezionare sul test set,
+!! !! ed e' la stessa classe d'errore del girare il segno ([[Comandamenti]] §6).
+!! !! La curva completa si stampa comunque, dentro il summary, ed e' un diagnostico.
+!!
+!! !! IL CAVEAT CHE VALE PER OGNI 1.0000 DI QUESTO FILE: la sanita' dell'ottimizzazione
+!! !! (cancello §3.4) e' girata con --clap_stub, cioe' con la torre CLAP CONGELATA
+!! !! SOSTITUITA da una proiezione casuale fissa. Il checkpoint da 1.74 GiB non e' sul Mac
+!! !! e il Mac non ha torchaudio. CLAP e' congelata e non produce gradiente, quindi cio'
+!! !! che il controllo mette alla prova -- campionatore -> loss -> ottimizzatore -> regola
+!! !! di decisione -- e' esattamente cio' che gira; ma NIENTE qui dice qualcosa sulle
+!! !! feature di CLAP ne' sull'EEG. Lo stesso controllo va ri-attraversato sul nodo GPU con
+!! !! la torre vera: e' il passo (1) del comando ▶️.
+!!
+!! COSA NON C'E': nessuna accuratezza su dati veri, nessuna decisione di attenzione,
+!! nessun duo, nessun trio, nessun own-vs-other. ZERO SGUARDI SPESI: si aprono soltanto i
+!! 105 trial `solo`, materiale di training gratuito per il registro degli sguardi (30/7).
+!!
+!! AMBIENTE: /opt/anaconda3/bin/python (torch 2.11.0), Darwin 25.5.0, device=cpu.
+!! ⚠️ NON /opt/miniconda3: li' torch non c'e'.
+!!
+!! COMANDO CHE HA PRODOTTO TUTTO CIO' CHE SEGUE (2 min 20 s misurati):
+!!   bash scripts/replicate/exp19_matchmismatch.sh
+!! =========================================================================================
+
+=== CANCELLO §3.1 — canarino del Cap. 1, PRIMA del diff ===
+[clip_loss self-check] PASS  duo InfoNCE matches hand computation (0.628491); aligned 1.2994 < anti-aligned 4.8198
+[clip_loss self-check] PASS  within-mixture duo matches hand computation (0.951610 vs batch mode 2.160834); a window's loss is independent of its batch-mates
+
+=== CANCELLO §3.1 — canarino del Cap. 1, DOPO il diff — IDENTICO ALLA CIFRA ===
+[clip_loss self-check] PASS  duo InfoNCE matches hand computation (0.628491); aligned 1.2994 < anti-aligned 4.8198
+[clip_loss self-check] PASS  within-mixture duo matches hand computation (0.951610 vs batch mode 2.160834); a window's loss is independent of its batch-mates
+
+  `clip_loss.py` NON e' stato toccato da questo esperimento, ne' dall'Exp. 18. Il default
+  `--loss batch` resta bit-per-bit quello del passo C ([[Comandamenti]] §8): entrambi i
+  flag nuovi (--early_stop_patience, --balance_pairs) sono spenti per default e nessuno
+  dei due e' raggiungibile dal percorso k-fold del passo C/D.
+
+=== CANCELLO §3.2 — CAMPIONAMENTO S1 INVARIATO (la prova che il diff non l'ha toccato) ===
+[solo-matchmismatch] negative=temporal_offset  recordings=105  repetitions=420  pairs=3346
+  window=2.0s stride=1.0s min_offset=2.0s band=(1.0, 45.0) Hz
+  EEG behind it: 39.4 min over 420 repetitions; 96 distinct stimulus wavs (7 piece/theme groups)
+  recordings per subject: {'0001': 14, '0002': 14, '0003': 14, '0004': 14, '0005': 14, '0007': 7, '0008': 14, '0009': 14}
+[check_sampling] PASS  3346 pairs, mode temporal_offset
+  negative from the SAME wav file: 3346/3346   smallest offset seen: 2.000s (declared floor 2.0s)   offset 0 (same instant): 0/3346
+  audio content verified against the declared span on 210 items (every 16th)
+  null WITHOUT the EEG (best candidate-identity-only rule): 0.5000 on n=3346
+  null WITHOUT the EEG, subject-conditional rule: 0.5000 on n=3346
+
+[null-by-split] valid_frac=0.2 seed=42: 21 of 105 recordings held out
+     split       n   null(pair)   null(subj+pair)  balancing
+     whole    3346       0.5000            0.5000  raw
+     whole    3346       0.5000            0.5000  balanced
+     train    2810       0.5000            0.5000  raw
+     train    2810       0.5000            0.5000  balanced
+  held-out     536       0.5000            0.5000  raw
+  held-out     536       0.5000            0.5000  balanced  <-- the gate reads this line
+  contract §2.1 ceiling 0.52: balanced held-out null 0.5000 -> OK, the 0.70 gate means what it was written to mean
+
+  ⟹ IDENTICO ALL'EXP. 18, cifra per cifra: 3346 coppie, negativo dallo stesso wav
+    3346/3346, offset minimo 2.000 s contro pavimento 2.0, 0/3346 allo stesso istante,
+    null 0.5000. Il diff dell'Exp. 19 NON ha toccato il campionatore di S1.
+  ⟹ E il bilanciamento dell'Exp. 19 §2.1 e' su S1 un NO-OP PROVATO, non argomentato:
+    3346 -> 3346, 2810 -> 2810, 536 -> 536, e la lista restituita e' identica elemento per
+    elemento. La ragione e' strutturale: l'indice di S1 enumera le coppie di istanti
+    ORDINATE, quindi ogni gruppo ha gia' le due direzioni nella stessa quantita', dentro la
+    stessa ripetizione e quindi lo stesso soggetto. Per questo il comando ▶️ di S1 NON
+    passa --balance_pairs: sarebbe rumore, non una differenza.
+
+  ⚠️ RIGA NUOVA rispetto all'Exp. 18: "subject-conditional rule". E' la miglior regola
+    senza EEG che ha il permesso di condizionare anche sul SOGGETTO -- il soggetto si legge
+    gratis dall'EEG (anatomia e impedenze diverse), quindi e' una famiglia di regole piu'
+    grande e piu' onesta di quella misurata ieri. Su S1 vale 0.5000 anche lei, su ogni
+    split: il null di S1 regge al controllo piu' severo, non solo a quello dichiarato.
+
+=== CANCELLO §3.4 — sanita' dell'ottimizzazione, temporal_offset, col budget nuovo ===
+    20 esempi, CPU, torre CLAP SOSTITUITA: e' un controllo, mai un risultato.
+[overfit] 20 items drawn every 167th from 3346: a WIRING check, never a result
+[temporal_offset] train pairs=20 held-out pairs=20 (21 of 105 recordings held out)  trainable params: 273,148
+[null] best EEG-free rule on these 20 held-out pairs: 0.7500 (candidate identity)   0.9500 (subject + candidate identity)   !! above the 0.52 ceiling: the gate becomes 'beat 0.7500'
+[early stop] no train-loss improvement > 0.002 for 15 epochs; stopping at epoch 51 of a 120-epoch cap
+[temporal_offset] 20/20 = 1.0000   null 0.7500 (best rule that ignores the EEG, measured on these 20 pairs)   0.9500 (same, allowed to condition on the subject)
+  one-sided binomial vs the measured null 0.7500: p = 0.003171  (descriptive: pairs inside a recording share EEG windows)
+  per held-out recording: 20 recordings, mean 1.0000, 20/20 above 0.5
+  reported at epoch 51 of 52 run (cap 120); train loss 0.7444 -> 0.0405  [early stop fired]
+  pre-registered gate: null 0.7500 is ABOVE the 0.52 ceiling, so the gate is 'beat it, exact one-sided binomial p <= 0.05' (p = 0.003171); the absolute 0.70 bar is reported alongside, not instead
+  --> not applicable -- this run has no held-out set
+
+  ⟹ 20/20 = 1.0000, come nell'Exp. 18, e in piu' L'ARRESTO ANTICIPATO SCATTA e si vede:
+    epoca 51 di un cap 120, loss 0.7444 -> 0.0405. E' il controllo del meccanismo nuovo:
+    su un compito che si puo' risolvere, il criterio d'arresto si accorge che la loss ha
+    smesso di scendere e ferma la run senza guardare l'held-out.
+  ⚠️ Il null 0.7500 di questo blocco e' quello delle 20 coppie del controllo, NON quello
+    dell'esperimento (0.5000 su 536): 20 coppie sono troppo poche perche' la simmetria
+    dell'indice si veda. Il verdetto e' correttamente "not applicable": un controllo non
+    scrive mai sopra un risultato ([[Comandamenti]] §9).
+
+===============================================================================
+▶️  COMANDO 1 — S1 A CONVERGENZA. LO LANCIA A., SUL NODO GPU (L40S).
+    [[Comandamenti]] §11. Su baldo NON c'e' tmux: si usa nohup.
+===============================================================================
+# (0) una volta sola. ⚠️ La directory del repo: l'Exp. 18 la documentava come ~/akami,
+#     il prompt del 13/8 dice ~/EEG-Attention-decoding-with-CLAP. Qui si usa la seconda:
+#     se il nome sul nodo e' l'altro, si cambia SOLO questa riga.
+REPO=$HOME/EEG-Attention-decoding-with-CLAP
+PY=$HOME/.conda/envs/eeg_attention/bin/python
+CKPT=$HOME/clap_ckpt/630k-audioset-best.pt
+MAD=$HOME/madeeg
+
+cd $REPO && git pull && mkdir -p runs/logs
+
+# (1) PRE-VOLO, ~3 min, OBBLIGATORIO: gli stessi cancelli girati sul Mac ma con la
+#     torre CLAP VERA. Se l'ultimo non fa 20/20, NIENTE va lanciato.
+$PY src/modules/clip_loss.py
+$PY src/datasets/madeeg_solo_matchmismatch.py --madeeg_dir $MAD \
+    --negative temporal_offset --check_sampling --check_null_by_split
+$PY src/madeeg_contrastive.py --madeeg_dir $MAD --loss temporal_offset \
+    --clap_pretrained $CKPT --overfit 20 --epochs 60 --batch_size 4
+
+# (2) ▶️ S1 — copiare e incollare.
+cd $REPO && nohup $PY src/madeeg_contrastive.py \
+    --madeeg_dir $MAD --loss temporal_offset --clap_pretrained $CKPT \
+    --epochs 120 --early_stop_patience 15 --early_stop_min_delta 0.002 \
+    --batch_size 8 --learning_rate 0.003 --temperature 0.5 --seed 42 \
+    > runs/logs/exp19_S1_temporal_offset.log 2>&1 &
+
+# per seguirla:  tail -f $REPO/runs/logs/exp19_S1_temporal_offset.log
+
+# DOVE FINISCE (nessun percorso inventato: e' resolve_log_dir()):
+#   runs/results/madeeg_exp19_temporal_offset/madeeg_matchmismatch_{records.csv,summary.txt}
+#   runs/logs/exp19_S1_temporal_offset.log
+#   ⚠️ exp19, NON exp18: la run nuova si scrive ACCANTO a quella vecchia, mai sopra.
+#   Nessun checkpoint viene salvato: il contratto chiede un'accuratezza held-out, non un
+#   modello da riusare. Se A. vuole i pesi, va chiesto e aggiunto.
+#
+# QUANTO DURA — INFERITO, ancorato al dato MISURATO (40 s/epoca su 3346 coppie, L40S,
+#   run S1 dell'Exp. 18):
+#     3346 coppie/epoca x 40 s x 120 epoche = 4800 s = 80 min.
+#   E' un TETTO: l'arresto anticipato puo' scattare molto prima, ed e' probabile che lo
+#   faccia (contratto §4). Piu' ~15 s di costruzione del dataset (misurati sul Mac).
+===============================================================================
+
+=== DOVE VANNO I NUMERI DELLA RUN, QUANDO CI SARANNO ===
+Il summary della run scrive gia', DENTRO IL FILE e sopra le cifre: la regola dell'epoca di
+arresto, l'epoca di arresto, l'accuratezza a quell'epoca, il null accanto (in entrambe le
+famiglie di regole), la curva completa e quale dei quattro rami del contratto §1 e'
+scattato. Si incolla qui sotto senza riscriverlo.
+
+  [ da riempire con runs/results/madeeg_exp19_temporal_offset/madeeg_matchmismatch_summary.txt ]
+
+=== I QUATTRO RAMI DEL CONTRATTO §1, DICHIARATI PRIMA DEL NUMERO ===
+  arresto anticipato SCATTA e held-out < 0.70, train loss >= 0.50
+    -> 🔴 LA DOMANDA E' CHIUSA: non erano le epoche. Il negativo dell'Exp. 18 diventa
+       definitivo e piu' forte, perche' ora ha la prova che l'ottimizzatore aveva finito.
+  arresto anticipato SCATTA con train loss < 0.50 e held-out al caso
+    -> 🔴 SOVRADATTAMENTO PURO: 273.148 parametri memorizzano le coppie di training.
+       Il limite e' la quantita' di dati, dimostrato invece che inferito.
+  cap 120 raggiunto con la train loss ANCORA IN DISCESA
+    -> 🟡 NON CONCLUSIVO, e si scrive cosi'. Nessun terzo giro senza un contratto nuovo.
+  held-out >= 0.70
+    -> 🟢 l'Exp. 18 era sotto-addestrato. Si procede al misuratore own-vs-other, con una
+       pre-registrazione NUOVA.
+  La soglia 0.50 che separa i primi due e' dichiarata nel codice
+  (src/madeeg_contrastive.py::CONVERGED_TRAIN_LOSS) prima della run, e non e' a occhio:
+  e' la loss che l'aritmetica del contratto usa per dimensionare il budget di 120 epoche
+  (pendenza misurata 0.00166/epoca dall'Exp. 18, da 0.6962, ci arriva in ~110 epoche).
+  Il caso della loss e' log(2) = 0.6931.
+
+=== COSA QUESTO FILE NON DIMOSTRA ===
+  * che il modello impari qualcosa: nessun training su dati veri e' stato eseguito qui;
+  * niente su CLAP: la torre e' stata sostituita in ogni controllo di questo file;
+  * niente sull'attenzione: own-vs-other non e' stato toccato, e il contratto dell'Exp. 18
+    §5 ricorda che superarlo sarebbe comunque NECESSARIO E NON SUFFICIENTE.

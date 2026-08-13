@@ -60,7 +60,7 @@ Runnable checks (CPU, no training, writes nothing):
 
     python src/datasets/madeeg_solo_matchmismatch.py --madeeg_dir ~/madeeg --check_sampling
     python src/datasets/madeeg_solo_matchmismatch.py --madeeg_dir ~/madeeg \\
-        --negative cross_instrument --check_sampling
+        --negative cross_instrument --check_sampling --check_null_by_split
 """
 import os
 import sys
@@ -307,7 +307,20 @@ class MadeegSoloMatchMismatch(Dataset):
         if dropped and any(dropped.values()):
             print(f"  dropped (counted, never padded): {dropped}")
 
-    def pairwise_prior_null(self, item_ids=None):
+    def _null_key(self, j, by_subject):
+        """(group the rule may condition on, which side is the positive) for pair `j`."""
+        p = self.pairs[j]
+        rep = self.reps[p["pos_rep"]]
+        if self.negative == "temporal_offset":
+            a, b = p["pos_start"], p["neg_start"]
+        else:
+            a, b = rep["instrument"], p["neg_instrument"]
+        group = (tuple(sorted((a, b))),)
+        if by_subject:
+            group = (rep["subject"],) + group
+        return group, a
+
+    def pairwise_prior_null(self, item_ids=None, by_subject=False):
         """The best accuracy reachable WITHOUT the EEG, by candidate identity alone.
 
         For each unordered candidate pair the best identity-only rule is "always answer the
@@ -318,23 +331,81 @@ class MadeegSoloMatchMismatch(Dataset):
         the construction did what it claims. For `cross_instrument` the identity is the
         instrument, and this is the honest null to print next to the accuracy: the subjects
         did not all hear the same solos, so it is NOT 0.500 a priori (Comandamenti §4).
+
+        CHANGED(baseline): Exp. 19 §2.1 adds `by_subject`. The subject is readable off the
+        EEG for free -- different anatomy, different impedances -- so a rule of the form
+        "for THIS subject, on this candidate pair, always answer i" needs no auditory
+        decoding at all, and it is a strictly larger family than the one Exp. 18 measured.
+        Measured on the Exp. 18 held-out split it reaches 0.8898, so it is not hypothetical;
+        `balanced_indices` below is keyed on it for that reason, and both numbers get
+        printed side by side rather than the smaller one alone.
         """
         import collections
         ids = range(len(self.pairs)) if item_ids is None else item_ids
         wins = collections.Counter()
         for j in ids:
-            p = self.pairs[j]
-            if self.negative == "temporal_offset":
-                a, b = p["pos_start"], p["neg_start"]
-            else:
-                a, b = self.reps[p["pos_rep"]]["instrument"], p["neg_instrument"]
-            wins[(tuple(sorted((a, b))), a)] += 1
+            wins[self._null_key(j, by_subject)] += 1
         best = total = 0
-        for pair in {k[0] for k in wins}:
-            counts = [wins[(pair, side)] for side in pair]
+        for group in {k[0] for k in wins}:
+            counts = [wins[(group, side)] for side in group[-1]]
             best += max(counts)
             total += sum(counts)
         return best / total, total
+
+    def balanced_indices(self, item_ids=None):
+        """The largest subset of `item_ids` on which `pairwise_prior_null` is exactly 0.500.
+
+        Exp. 19 §2.1, and it is a REPAIR OF THE NULL, not a hyperparameter: on the Exp. 18
+        split the best EEG-free rule scored 0.6061 on the held-out pairs of S2, so a gate at
+        0.70 was worth +0.094 instead of the +0.20 it was written to be. Every candidate
+        pair here is kept in BOTH directions the same number of times, so answering by
+        candidate identity -- or by subject and candidate identity -- scores exactly chance
+        by construction, the same way S1's ordered-pair index already did.
+
+        Two properties this deliberately has:
+
+        * The key includes the SUBJECT (see `pairwise_prior_null`). Balancing on the
+          instrument pair alone leaves the subject-conditional rule at 0.8884 on the Exp. 18
+          held-out split -- i.e. "recognise whose EEG this is, then answer that subject's
+          usual instrument", which is the same class of shortcut ("recognise the trial")
+          that Chapter 1 won by and that the whole match-mismatch design exists to close.
+        * It is deterministic and takes the surplus side evenly across the block rather than
+          its first n items, so the survivors still span every recording rather than
+          clustering on whichever one the index happens to list first.
+
+        Applied to `temporal_offset` it is a provable no-op -- every (a, b) start pair is in
+        the index together with (b, a), within the same repetition and so the same subject,
+        so no group has a surplus side. Verified on the real index: 3346 -> 3346, 2810 ->
+        2810, 536 -> 536, the returned list identical element by element. That is what keeps
+        the S1 sampler of Exp. 18 bit-for-bit reproducible under this change.
+        """
+        import collections
+        ids = sorted(range(len(self.pairs)) if item_ids is None else item_ids)
+        sides = collections.defaultdict(list)
+        for j in ids:
+            group, positive = self._null_key(j, by_subject=True)
+            sides[(group, positive)].append(j)
+        keep = []
+        for group in sorted({g for g, _ in sides}):
+            # A missing side gives [] -> n = 0 -> the whole group is dropped, which is the
+            # only honest option: there is no EEG for the direction that does not exist, so
+            # it cannot be mirrored, only removed.
+            blocks = [sides[(group, side)] for side in group[-1]]
+            n = min(len(b) for b in blocks)
+            for b in blocks:
+                keep += [b[int(i * len(b) / n)] for i in range(n)]
+        keep = sorted(keep)
+        # The postcondition, checked rather than argued: if this does not come out at 0.500
+        # the repair did not happen and every number downstream would be read against the
+        # wrong chance level (Comandamenti §4).
+        if not keep:
+            raise ValueError("balancing removed every pair -- no candidate pair of this "
+                             "index exists in both directions")
+        for by_subject in (False, True):
+            got, _ = self.pairwise_prior_null(keep, by_subject=by_subject)
+            assert abs(got - 0.5) < 1e-12, (
+                f"balanced null is {got:.6f}, not 0.5 (by_subject={by_subject})")
+        return keep
 
 
 # --- checks -------------------------------------------------------------------------
@@ -385,6 +456,7 @@ def check_sampling(ds, n_content=200):
         checked += 1
 
     null, n = ds.pairwise_prior_null()
+    null_s, _ = ds.pairwise_prior_null(by_subject=True)
     print(f"[check_sampling] PASS  {len(ds.pairs)} pairs, mode {ds.negative}")
     if ds.negative == "temporal_offset":
         print(f"  negative from the SAME wav file: {same_file}/{len(ds.pairs)}   "
@@ -397,8 +469,42 @@ def check_sampling(ds, n_content=200):
     print(f"  audio content verified against the declared span on {checked} items "
           f"(every {step}th)")
     print(f"  null WITHOUT the EEG (best candidate-identity-only rule): {null:.4f} on n={n}")
-    return {"pairs": len(ds.pairs), "checked": checked, "null": null,
+    print(f"  null WITHOUT the EEG, subject-conditional rule: {null_s:.4f} on n={n}")
+    return {"pairs": len(ds.pairs), "checked": checked, "null": null, "null_subject": null_s,
             "min_offset_s": None if min_off == float("inf") else min_off}
+
+
+def check_null_by_split(ds, valid_frac=0.2, seed=42, ceiling=0.52):
+    """Exp. 19 gate 3: the null RE-MEASURED per split, raw and balanced, before any training.
+
+    The number that matters is the HELD-OUT one -- that is the set the gate reads -- and it
+    is not implied by the whole-set null: Exp. 18 measured 0.5063 over all of S2's pairs and
+    0.6061 on the 21 held-out recordings of the very same index. So the split is rebuilt
+    here exactly as the run rebuilds it, and both rule families are printed for each side.
+    """
+    from madeeg_contrastive import split_by_trial      # lazy: it imports torch and models
+
+    train_ds, valid_ds, n_valid = split_by_trial(ds, valid_frac=valid_frac, seed=seed)
+    print(f"\n[null-by-split] valid_frac={valid_frac} seed={seed}: "
+          f"{n_valid} of {len(ds.trials)} recordings held out")
+    print(f"{'split':>10}{'n':>8}{'null(pair)':>13}{'null(subj+pair)':>18}  balancing")
+    out = {}
+    for name, ids in (("whole", list(range(len(ds)))), ("train", list(train_ds.indices)),
+                      ("held-out", list(valid_ds.indices))):
+        for tag, sub in (("raw", ids), ("balanced", ds.balanced_indices(ids))):
+            a, n = ds.pairwise_prior_null(sub)
+            b, _ = ds.pairwise_prior_null(sub, by_subject=True)
+            print(f"{name:>10}{n:>8}{a:>13.4f}{b:>18.4f}  {tag}"
+                  + ("  <-- the gate reads this line" if name == "held-out"
+                     and tag == "balanced" else ""))
+            out[(name, tag)] = (a, b, n)
+    held = out[("held-out", "balanced")]
+    print(f"  contract §2.1 ceiling {ceiling}: balanced held-out null {held[0]:.4f} -> "
+          + ("OK, the 0.70 gate means what it was written to mean"
+             if held[0] <= ceiling else
+             f"STILL ABOVE -- the gate becomes 'beat {held[0]:.4f}, exact one-sided "
+             "binomial p <= 0.05'"))
+    return out
 
 
 if __name__ == "__main__":
@@ -408,9 +514,16 @@ if __name__ == "__main__":
     ap.add_argument("--madeeg_dir", required=True)
     ap.add_argument("--negative", default="temporal_offset", choices=list(NEGATIVE_MODES))
     ap.add_argument("--check_sampling", action="store_true")
+    ap.add_argument("--check_null_by_split", action="store_true",
+                    help="Exp. 19 gate 3: re-measure the null per split, raw and balanced, "
+                         "before any training")
+    ap.add_argument("--valid_frac", type=float, default=0.2)
+    ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--subjects", nargs="*", default=None)
     args = ap.parse_args()
 
     ds = MadeegSoloMatchMismatch(args.madeeg_dir, args.negative, subjects=args.subjects)
     if args.check_sampling:
         check_sampling(ds)
+    if args.check_null_by_split:
+        check_null_by_split(ds, valid_frac=args.valid_frac, seed=args.seed)
