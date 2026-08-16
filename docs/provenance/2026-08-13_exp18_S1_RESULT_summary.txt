@@ -1,0 +1,9 @@
+== MAD-EEG solo match-mismatch, Exp. 18, negatives=temporal_offset ==
+epochs=10 lr=0.003 batch=8 seed=42 temperature=0.5 valid_frac=0.2
+window=2.0s stride=1.0s min_offset=2.0s band=(1.0, 45.0) Hz
+recordings=105 repetitions=420 pairs=3346 held_out_recordings=21
+accuracy: 278/536 = 0.5187
+null (best EEG-free rule, measured on the held-out pairs): 0.5000
+one-sided binomial vs 0.500 p=0.2059 (descriptive: pairs share EEG windows)
+per-recording mean over 21 held-out recordings: 0.4938
+pre-registered gate 0.70 -> NOT PASSED -- the contract stops here
