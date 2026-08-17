@@ -1,0 +1,12 @@
+!! ARM A -- PROTOCOL-PARITY PROBE (declared 2026-08-11 night, plan 'Piano -- la svolta' par.4A). EXPLORATORY BY CONSTRUCTION: the duos are spent. No gate, no pre-registered claim: this measures how close the FULL published package gets to the paper's duets F1 = 79 (WASPAA 2019 Table 1, MEL). Package replicated here: per-subject PER-INSTRUMENT decoders, shrinkage lambda=0.1, 24 mel bands @ 256 Hz, lags 250 ms, trained on solos, whole-trial (~24 s) decisions, F1 printed below. n = 150 (4 stereo trials drop under per_instrument: subject 0007 lacks solos Bo/Fh -- known, declared). Interpreter /opt/miniconda3/bin/python.
+!! ARM A CONCLUSION ACROSS THE THREE BAND PROBES (1-8 / 1-40 / 0.2-40 Hz): F1 micro 0.5267 / 0.4800 / 0.5400, r_att 0.016-0.025 in all cases vs the paper's median r = 0.119. The published number does not reproduce under any faithful package constructible from the paper's stated methods; the residual factor ~5 on the correlations must live in unstated normalization / correlation semantics. The paper's own same-melody advantage (79 same vs 60 diff) is a further candidate and is not separated here (open).
+== MAD-EEG stimulus-reconstruction AAD ==
+train_on=raw_solos ensemble=duo target=mel n_bands=24 target_fs=256.0 lags=64 band=(0.2, 40.0) folds=5 estimator=shrinkage(lambda=0.1) filters=per_instrument eeg_clean=none test_eeg=raw spatial=stereo
+PROVENANCE: the 0.2-40.0 Hz analysis band is OUR choice, not the paper's -- Cantisani et al. (WASPAA 2019) do not band-pass the EEG anywhere. lags 0-250 ms and shrinkage lambda are the paper's; n_mels and target_fs are ours unless set to the published 24 / 256.
+n_trials=150  chance=0.500
+OVERALL AAD accuracy: 0.5400
+per-subject: 0001=0.40 0002=0.60 0003=0.70 0004=0.55 0005=0.50 0007=0.40 0008=0.65 0009=0.45
+F1 over the attended-instrument label: micro=0.5400 (= accuracy) macro=0.5452 weighted=0.5348
+  ^ the paper (WASPAA 2019 Table 1) reports F1 without naming the averaging; its duets column is AE 58 / MAG 74 / MEL 79
+mean r(attended)=0.0249  mean r(best unattended)=0.0183
+mean inner_val_r (in-distribution reconstruction)=0.0381

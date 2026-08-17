@@ -1,0 +1,24 @@
+!! EXPLORATORY BY CONSTRUCTION: the duos are spent material (ledger of looks).
+!! Unit = the PAIR (same mixture, two attended instruments); null = 0.500 EXACT by
+!! symmetry, not assumed. Criterion, thresholds and secondaries were written in the
+!! vault contract BEFORE this file existed and are not editable after the fact.
+features = log Morlet power, 25 log-spaced freqs 1-40 Hz, 3-12 cycles,
+           20 channels -> 500 features/trial; z-scored within subject
+classifier = shrinkage LDA (lsqr, Ledoit-Wolf)   CV = leave-one-subject-out
+
+PRIMARY  attended register: 24/47 = 0.5106  (null 0.500 exact by symmetry, p = 0.5000)
+declared threshold 30/47 = 0.6383 -> [NOT PASSED]
+declared power: 0.35 @0.60 · 0.63 @0.65 · 0.86 @0.70
+
+NEGATIVE CONTROL (training labels permuted, 20 seeds): 0.4968  declared band [0.4, 0.6] -> [OK]
+
+SECONDARY (pre-declared, direction predicted far > near; descriptive, no formal
+test of the difference -- n too small):
+  far  (delta > 1188.3 Hz, n=22): acc: 11/22 = 0.5000  (null 0.500 exact by symmetry, p = 0.5841)
+  near (delta <= 1188.3 Hz, n=25): acc: 13/25 = 0.5200  (null 0.500 exact by symmetry, p = 0.5000)
+
+SECONDARY (descriptive, underpowered): pairs where the LOUDER source is the LOWER
+  register, n=13: acc: 3/13 = 0.2308  (null 0.500 exact by symmetry, p = 0.9888)
+
+positive control a=1.0: 47/47 (PASSED before this was computed)
+positive control a=0.5: 47/47

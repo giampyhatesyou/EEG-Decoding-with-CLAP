@@ -1,0 +1,11 @@
+== ARM D -- window-CV leakage audit on MAD-EEG stereo duos ==
+!! EXPLORATORY BY CONSTRUCTION: the duos are spent (ledger of looks). This is a
+!! METHODS claim about a protocol, not an attention claim about the EEG.
+!! The pseudo-label arm is the audit's positive control: its labels are random per
+!! trial, so any window-CV accuracy above its null measures pure trial-fingerprint
+!! leakage. Interpretation rule (declared in code BEFORE the run): leakage is
+!! demonstrated if pseudo window-CV > 0.60 while pseudo trial-CV is in [0.40,0.60].
+subjects=8  features=log-var, 5 bands x 20 ch  classifier=LDA  windows=1 s
+TRUE labels  : window-CV 0.3803  vs trial-CV 0.0895   (mean majority-class null 0.2277)
+PSEUDO labels: window-CV 0.6817  vs trial-CV 0.5661   (null 0.6436 by construction)
+[LEAKAGE DEMONSTRATED] a plain LDA decodes a label with ZERO attention content at 68% from 1-s windows when windows of the same trial cross the train/test split, and falls to chance when they do not. Any window-CV accuracy on this dataset -- including a 92.6% -- is dominated by trial fingerprints.

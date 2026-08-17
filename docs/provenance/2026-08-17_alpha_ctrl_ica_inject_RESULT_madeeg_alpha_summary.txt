@@ -1,0 +1,11 @@
+== MAD-EEG alpha laterality, TWIN-PAIR sign test ==
+🔴 CAVEAT, INSIDE THE FILE AND ABOVE THE NUMBERS: this is the POSITIVE CONTROL. A lateralized alpha modulation of amplitude 1.0 was INJECTED into the real EEG with the side taken from the true panning. These numbers say the index and the pairing are wired correctly and say NOTHING about the real data. Not a result.
+spatial=stereo eeg_clean=notch_ica band=alpha (8.0, 14.0) pairs=(('F3', 'F4'), ('C3', 'C4'), ('P3', 'P4'), ('O1', 'O2')) seed=42
+RULE, fixed before the run and NOT flipped afterwards: alpha desynchronization is CONTRALATERAL, so attending on the right raises log P(right)-log P(left). A pair is correct when sign(LI_a - LI_b) == sign(side_a - side_b).
+🔴 NULL = 0.5 and it is EXACT, not estimated: under H0 the two twins are EXCHANGEABLE -- same subject, same mixture, same audio, same session, only the attended source differs -- so the sign of their LI difference is equally likely either way. No constant of subject, channel or impedance can survive: it cancels in the difference, algebraically.
+trials with an LI: 154   twin pairs with a predicted sign: 44   (excluded: 3 with a CENTRED target -- panning 0.5, no side, excluded a priori by the 9/8 contract -- and 0 with both targets on the same side)
+PAIRED ACCURACY: 44/44 = 1.0000   null 0.500   one-sided exact binomial p=0.0000
+pre-registered threshold at n=44: 28/44 = 0.6364 (p=0.0481; 27 would give 0.0871)
+-> ABOVE the pre-registered threshold
+per-subject: 0001=1.00 0002=1.00 0003=1.00 0004=1.00 0005=1.00 0007=1.00 0008=1.00 0009=1.00
+⚠️ EXPLORATORY BY CONSTRUCTION: the 154 stereo and 155 mono duos are already spent (vault: ledger of looks). No threshold written beforehand makes this confirmatory, and the thesis section must say so in its title, not in a footnote.

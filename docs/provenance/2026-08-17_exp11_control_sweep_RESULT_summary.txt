@@ -1,0 +1,15 @@
+!! EXPLORATORY BY CONSTRUCTION: the duos are spent material (ledger of looks).
+!! Unit = the PAIR (same mixture, two attended instruments); null = 0.500 EXACT by
+!! symmetry, not assumed. Criterion, thresholds and secondaries were written in the
+!! vault contract BEFORE this file existed and are not editable after the fact.
+!! CONTROLS ONLY, NOT A RESULT. Injected synthetic 8-13 Hz power modulation at
+!! decreasing amplitude, to bound what effect size this design could have seen.
+!! Run BECAUSE the a=1.0 and a=0.5 controls both saturated at 47/47: by the
+!! contract's own rule, a control that does not degrade bounds nothing.
+  a=0.40: 47/47 = 1.0000  p=0.0000
+  a=0.20: 47/47 = 1.0000  p=0.0000
+  a=0.10: 38/47 = 0.8085  p=0.0000
+  a=0.05: 26/47 = 0.5532  p=0.2800
+  a=0.02: 23/47 = 0.4894  p=0.6146
+  a=0.01: 22/47 = 0.4681  p=0.7200
+sensitivity floor: the first amplitude that falls BELOW the primary threshold (30/47) is a = 0.05

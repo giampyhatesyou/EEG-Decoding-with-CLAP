@@ -1,0 +1,25 @@
+!! EXPLORATORY BY CONSTRUCTION: the duos are spent material (ledger of looks).
+!! Unit = the PAIR (same mixture, two attended instruments); null = 0.500 EXACT by
+!! symmetry, not assumed. Criterion, thresholds and secondaries were written in the
+!! vault contract BEFORE this file existed and are not editable after the fact.
+source = RAW release, notch + ICA, segmentation inherited from build_solo_trials;
+alignment canary in the contract: correlation vs the preprocessed trials peaks at
+offset 0 and collapses at +-0.12 s. Both renders go through THIS pipeline, so they
+are comparable to each other; comparison with Exp. 11 is indicative, not paired.
+
+PRIMARY   mono (fresh material for this variable): 22/42 = 0.5238  (null 0.500 exact by symmetry, p = 0.4388)
+declared threshold 27/42 = 0.6429 -> [NOT PASSED]
+
+SECONDARY (declared, does not promote anything to confirmatory):
+  stereo from raw (pipeline comparability vs Exp. 11's 24/47): 24/47 = 0.5106  (null 0.500 exact by symmetry, p = 0.5000)  threshold 30/47
+  pooled 89: 46/89 = 0.5169  (null 0.500 exact by symmetry, p = 0.4161)  threshold 53/89
+
+SECONDARY dose-response on register (direction predicted far > near), median 1188.3 Hz:
+  far  (n=20): acc: 10/20 = 0.5000  (null 0.500 exact by symmetry, p = 0.5881)
+  near (n=22): acc: 12/22 = 0.5455  (null 0.500 exact by symmetry, p = 0.4159)
+
+DESCRIPTIVE, no threshold: pairs with BOTH trials at concentration 5 (n=16): acc: 10/16 = 0.6250  (null 0.500 exact by symmetry, p = 0.2272)
+
+NEGATIVE CONTROL (training labels permuted, 20 seeds): 0.5226  band [0.4, 0.6] -> [OK]
+SENSITIVITY FLOOR (controls only): a=0.20: 38/42 · a=0.10: 28/42 · a=0.05: 24/42
+positive control a=1.0: 42/42 (PASSED before the above)

@@ -1,0 +1,10 @@
+== MAD-EEG alpha laterality, TWIN-PAIR sign test ==
+spatial=mono eeg_clean=notch_ica band=alpha (8.0, 14.0) pairs=(('F3', 'F4'), ('C3', 'C4'), ('P3', 'P4'), ('O1', 'O2')) seed=42
+RULE, fixed before the run and NOT flipped afterwards: alpha desynchronization is CONTRALATERAL, so attending on the right raises log P(right)-log P(left). A pair is correct when sign(LI_a - LI_b) == sign(side_a - side_b).
+🔴 NULL = 0.5 and it is EXACT, not estimated: under H0 the two twins are EXCHANGEABLE -- same subject, same mixture, same audio, same session, only the attended source differs -- so the sign of their LI difference is equally likely either way. No constant of subject, channel or impedance can survive: it cancels in the difference, algebraically.
+trials with an LI: 155   twin pairs with a predicted sign: 42   (excluded: 0 with a CENTRED target -- panning 0.5, no side, excluded a priori by the 9/8 contract -- and 0 with both targets on the same side)
+PAIRED ACCURACY: 24/42 = 0.5714   null 0.500   one-sided exact binomial p=0.2204
+pre-registered threshold at n=42: 27/42 = 0.6429 (p=0.0442; 26 would give 0.0821)
+-> BELOW the pre-registered threshold
+per-subject: 0001=0.60 0002=0.50 0003=0.17 0004=0.80 0005=0.75 0007=0.75 0008=0.80 0009=0.43
+📌 THIS IS THE CONTROL ARM. In mono there is no side physically present, so the same nominal panning of the mixture is used and the rule is identical: only the spatial separation is removed. The mono arm must stay AT CHANCE. If it matches or beats stereo, the spatial reading is FALSIFIED even if stereo passes.

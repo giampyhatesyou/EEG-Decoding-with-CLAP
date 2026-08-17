@@ -1,0 +1,8 @@
+!! EXPLORATORY BY CONSTRUCTION: the duos are spent material (ledger of looks).
+!! Unit = the PAIR (same mixture, two attended instruments); null = 0.500 EXACT by
+!! symmetry, not assumed. Criterion, thresholds and secondaries were written in the
+!! vault contract BEFORE this file existed and are not editable after the fact.
+!! POSITIVE CONTROL at HALF amplitude, NOT A RESULT. Declared before the run: a
+!! control that passes at full amplitude but does not degrade at half amplitude
+!! is not measuring what it claims to measure.
+positive control a=0.5: 47/47 = 1.0000  (null 0.500 exact by symmetry, p = 0.0000)

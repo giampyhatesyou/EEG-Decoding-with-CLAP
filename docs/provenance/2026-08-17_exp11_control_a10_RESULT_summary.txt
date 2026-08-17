@@ -1,0 +1,11 @@
+!! EXPLORATORY BY CONSTRUCTION: the duos are spent material (ledger of looks).
+!! Unit = the PAIR (same mixture, two attended instruments); null = 0.500 EXACT by
+!! symmetry, not assumed. Criterion, thresholds and secondaries were written in the
+!! vault contract BEFORE this file existed and are not editable after the fact.
+!! POSITIVE CONTROL, NOT A RESULT: a synthetic 8-13 Hz power modulation tied to
+!! the true label was ADDED to the real EEG on posterior channels. It says the
+!! wiring recovers a signal that is present by construction. It says NOTHING
+!! about the real data.
+channels=P3,P1,Pz,P2,P4,POz,O1,Oz,O2  band=8.0-13.0 Hz  amplitude=1.0
+positive control a=1.0: 47/47 = 1.0000  (null 0.500 exact by symmetry, p = 0.0000)
+declared threshold >= 0.90 -> [PASSED]
