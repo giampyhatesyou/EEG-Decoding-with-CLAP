@@ -1,4 +1,6 @@
-# Method rules
+# 7 · Method rules
+
+*Reading path: [1 README](../README.md) → [2 REPO_MAP](02_REPO_MAP.md) → [3 OVERVIEW](03_OVERVIEW.md) → [4 CODE_TOUR](04_CODE_TOUR.md) → [5 replicate](../scripts/replicate/README.md) → [6 provenance](provenance/README.md) → **7 you are here**. Read it when a comment cites `method rule N`, or once, straight through, before changing anything.*
 
 Twelve rules the code enforces. They are not generic good practice: each one is
 here because it went wrong at least once in this project, and the incident is

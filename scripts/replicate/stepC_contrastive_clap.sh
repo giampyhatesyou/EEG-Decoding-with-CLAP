@@ -56,7 +56,7 @@
 #    band does not touch it.
 #
 # CANARY     : (1) `src/modules/clip_loss.py` - the InfoNCE arithmetic is THE SAME
-#              as Chapter 1's: if it moves, 0.865 and 0.943 move too.
+#              as Chapter 1's: if it moves, every Chapter 1 number moves with it.
 #              (2) `--loss` is ASSERTED: a mistyped value BREAKS, it does not
 #              silently fall back to the default (`batch`).
 #              (3) `_self_check` and `_check_soli_row_order` inside the dataset adapter.

@@ -22,7 +22,12 @@
 #   "at chance" and "far below the 0.865 headline", never as exact figures. The `within`
 #   row (shuffle_test_mode=none) IS deterministic and reproduces 0.8650 exactly.
 #   raw_loso_sub7 (0.408) — conflicts with repro_loso_sub7 (0.875) for the same fold;
-#   the latter is what the committed scripts/replicate.sh produces.
+#   repro_loso_sub7 is the pinned one. CORRECTED 2026-08-27: this line used to claim
+#   repro_loso_sub{N} is what the committed scripts/replicate.sh produces, and that is
+#   FALSE — phase `loso` writes akama_loso_sub{3,7,2}, so re-running replicate.sh
+#   builds a PARALLEL series and does NOT refresh these three pins. The two ways to
+#   close it are in scripts/replicate/cap1_leave_subject_out.sh ("TAG DISCREPANCY");
+#   neither is taken, because either would move a number.
 #   results/baseline_sanity_* — the May run of the same three controls. The 18/07 re-run
 #   (sanity_*) is pinned instead: identical numbers (0.8650 / 0.2250 / 0.3825) from the
 #   same model-all0.ckpt, but current code AND the exact tags scripts/replicate.sh writes,

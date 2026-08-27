@@ -1,14 +1,17 @@
-# MAD-EEG arm (positive / identifiable AAD)
+# MAD-EEG — the identifiable arm
 
-The original (Akama) dataset cannot support attention decoding: song == target (1:1,
-identical across subjects), so "which instrument is attended" is aliased with "which
-song", and the 4-channel Muse EEG carries no decodable envelope tracking (linear
-reconstruction r ≈ 0 even within the training distribution; CNN under test). That arm is
-the **negative / methodological** chapter.
+"Identifiable" is a property of the **design**, not a verdict on the results — this arm
+is where the negatives are measured, and they are in `../scripts/replicate/README.md`.
 
-MAD-EEG is the **positive** arm: the same mixture is attended with **different** target
-instruments across trials, so attention is **identifiable** and the within-trial decision
-(reconstruction vs the sources of the *same* mixture) cannot be won by stimulus identity.
+The original (Akama) dataset cannot support attention decoding at all: song == target
+(1:1, identical across subjects), so "which instrument is attended" is aliased with
+"which song", and the 4-channel Muse EEG carries no decodable envelope tracking (linear
+reconstruction r ~ 0 even within the training distribution).
+
+MAD-EEG removes exactly that: the same mixture is attended with **different** target
+instruments across trials, so attention is identifiable and the within-trial decision
+(reconstruction against the sources of the *same* mixture) cannot be won by stimulus
+identity. What is left, once identity is unavailable, is the question of the thesis.
 
 ## Dataset (Cantisani et al., SMM 2019 — Zenodo 4537751, CC-BY-SA)
 

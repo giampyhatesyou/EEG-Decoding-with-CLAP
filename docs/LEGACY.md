@@ -1,6 +1,8 @@
 > **This is the upstream repository's own README, kept verbatim for reference.**
 > It describes the original Akama et al. code, not this repository. Nothing here
-> is maintained; see [`../README.md`](../README.md) for what actually runs.
+> is maintained, and its internal links (`model.png`, `LICENSE`) point at the
+> upstream layout, so they do not resolve from here. See
+> [`../README.md`](../README.md) for what actually runs.
 
 # Decoding Selective Auditory Attention to Musical Elements in Ecologically Valid Music Listening
 

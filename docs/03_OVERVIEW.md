@@ -1,8 +1,10 @@
-# Overview — what each arm and each experiment is asking
+# 3 · Overview — what each arm and each experiment is asking
+
+*Reading path: [1 README](../README.md) → [2 REPO_MAP](02_REPO_MAP.md) → **3 you are here** → [4 CODE_TOUR](04_CODE_TOUR.md) → [5 replicate](../scripts/replicate/README.md) → [6 provenance](provenance/README.md) → [7 METHOD_RULES](07_METHOD_RULES.md).*
 
 A reader's map of the science. For *where the code lives*, see
-[`CODE_TOUR.md`](CODE_TOUR.md); for *the rules every number obeys*, see
-[`METHOD_RULES.md`](METHOD_RULES.md); for *the numbers themselves with their
+[`04_CODE_TOUR.md`](04_CODE_TOUR.md); for *the rules every number obeys*, see
+[`07_METHOD_RULES.md`](07_METHOD_RULES.md); for *the numbers themselves with their
 thresholds*, see [`../scripts/replicate/README.md`](../scripts/replicate/README.md).
 
 > **Reading order.** The sections below are ordered by how central the claim is,
@@ -77,17 +79,29 @@ the CLAP branch is **one frozen LAION-CLAP tower** plus a single trainable
 projection head (116,120 + 157,028 = **273,148** trainable parameters, ~158 M
 frozen).
 
-**What each change was optimising, and what it bought**: swapping raw audio for
-CLAP is a better *audio representation*. It buys +0.071 within and +0.162
-leave-subject-out — and moves leave-song-out from *below* chance to *at* chance,
-which is not an improvement in kind. Read by columns: both branches survive
-removing the listener and both collapse when the song is removed. Removing a
-whole subject costs CLAP 0.003; removing a song costs it 0.678.
+**Why the grid exists at all, and it is a fact about the order of events.** The
+first move reproduced the published baseline: the raw branch, 0.875 macro / 0.865
+global, matching the paper. The second replaced the four learned audio encoders
+with a frozen CLAP tower, and the within-split went **well past 90 %** — 0.946
+macro / 0.935 global, per-seed global 0.8825 to 0.9550 over the 8 pinned seeds.
+**That number is what raised the question this chapter answers**: an accuracy that
+high on a 4-way task with 4-channel consumer EEG has to come from somewhere. The
+three splits were then run on *both* branches to find out where, which is what
+turns one surprising number into a property of the dataset.
+
+**What the swap actually bought**: a better *audio representation*, worth +0.071
+macro within and +0.162 leave-subject-out — and it moves leave-song-out from
+*below* chance to *at* chance, which is not an improvement in kind. Read by
+columns: both branches survive removing the listener and both collapse when the
+song is removed. Removing a whole subject costs CLAP 0.003; removing a song costs
+it 0.678.
 
 **The control that explains it**: the **audio alone, with no EEG at all**, reaches
 **0.996** within-split. In this dataset each song has one target instrument, so
-recognising the song is enough. The 0.865 must always be quoted next to the
-0.996 and the 0.268 — the *order* of those three numbers is the chapter's result.
+recognising the song is enough. Each contrastive figure is quoted next to the
+audio-only control **of its own branch** — 0.946 against 0.996 for CLAP, 0.875
+against 0.967 for raw — and next to that branch's leave-song-out. The *order* of
+those three numbers, within one branch, is the chapter's result.
 
 Two more controls close the alternatives: EEG alone scores 0.250 MACRO (it
 answers "vocals" to everything — the majority prior), and permuting the labels
@@ -178,11 +192,11 @@ mel gives r(attended) 0.0202 against r(best unattended) 0.0118, and flux gives
 attended-minus-unattended differential goes **+0.0084 → +0.0047**, i.e. flat or
 slightly down.
 
-> Provenance note: those four correlations are printed in the runs' own
-> `madeeg_summary.txt` under `runs/results/{canary_duo,exp9_P2_duo_flux}/`, which
-> is gitignored — so from a clean clone they are degree-2 provenance (the value a
-> rerun must produce) rather than degree 1. `exp09_flux_attention.sh` regenerates
-> them. The accuracies and the stem correlations above are degree 1.
+> Provenance note: those four correlations lived only in `runs/`, which is
+> gitignored, until the two summaries that print them were copied into
+> `docs/provenance/2026-08-27_{canary_duo,exp9_P2_duo_flux}_RESULT_madeeg_summary.txt`.
+> They are now degree-1 provenance like everything else on this page, and
+> `exp09_flux_attention.sh` regenerates them.
 
 > **Ensemble music synchronises across sources exactly the component that EEG
 > tracks best.** Every gain in tracking goes to both candidates and none to the

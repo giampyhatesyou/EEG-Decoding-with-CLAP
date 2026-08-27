@@ -27,7 +27,7 @@ Usage:
 
     python run.py exp --list            # every experiment, with what it costs
     python run.py exp exp13             # run one experiment (unique prefix is enough)
-    python run.py exp cheap             # the four that spend no held-out looks
+    python run.py exp cheap             # every experiment that spends no held-out look
     python run.py exp all               # all of them, in order, one log file each
     python run.py canaries              # the regression gates (LEVELS=0 1 2)
 
@@ -758,16 +758,17 @@ def flow_experiments():
 
 
 def flow_sanity():
-    audio_repr = pick("Model of the checkpoint:", AUDIO_REPRS,
-                      disabled=AUDIO_REPRS_DISABLED)
-    ckpt = ask_text("Checkpoint (repo-relative or absolute):",
-                    default="checkpoints/model-all0.ckpt")
-    tag = ask_text("Tag (training_date prefix):", default="sanity")
-    script = PROJECT_ROOT / "scripts" / "test_sanity.sh"
-    env = dict(os.environ, CKPT=ckpt, TAG=tag, AUDIO_REPR=audio_repr)
-    print(f"\n$ CKPT={shlex.quote(ckpt)} TAG={shlex.quote(tag)} "
-          f"AUDIO_REPR={audio_repr} bash scripts/test_sanity.sh\n")
-    subprocess.run(["bash", str(script)], cwd=str(PROJECT_ROOT), env=env)
+    """The three negative controls, from scripts/replicate.sh.
+
+    They used to live in scripts/test_sanity.sh, which was deleted and absorbed
+    into replicate.sh as its `sanity` phase. That phase fixes the tag and runs
+    --audio_repr raw, so the only thing left to ask is which checkpoint.
+    """
+    ckpt = ask_text("Checkpoint (relative to src/, or absolute):",
+                    default="../checkpoints/model-all0.ckpt")
+    return run_subprocess(["bash", "scripts/replicate.sh"],
+                          env={"PHASES": "sanity", "CKPT": ckpt},
+                          cwd=PROJECT_ROOT, log="sanity")
 
 
 # --- Non-interactive helpers (for verification) --------------------------------
@@ -968,11 +969,14 @@ def cmd_exp(args):
             title, budget, gpu = _header_fields(name)
             print(f"  {name:<32} {flag(budget):<6} {flag(gpu):<5} {title[:56]}")
         print("\n  python src/run.py exp <name>   one of them (unique prefix is enough)")
-        print("  python src/run.py exp cheap    only the four that spend nothing")
+        print("  python src/run.py exp cheap    only the ones that spend no look")
         print("  python src/run.py exp all      all of them, in order, one log each")
         return 0
 
     if args.name == "cheap":
+        if args.dry_run:
+            print(f"bash {(REPLICATE_DIR / 'run_all_cheap.sh').relative_to(PROJECT_ROOT)}")
+            return 0
         return run_subprocess(["bash", str(REPLICATE_DIR / "run_all_cheap.sh")],
                               cwd=PROJECT_ROOT, log="exp_cheap")
 
@@ -1107,6 +1111,10 @@ def main():
     p = sub.add_parser("exp", help="run the experiments in scripts/replicate/, one or all")
     p.add_argument("name", nargs="?", help="experiment name (unique prefix ok), 'cheap', or 'all'")
     p.add_argument("--list", action="store_true", help="list every experiment and what it costs")
+    # also accepted here, not only before the subcommand: `exp all --dry-run` is what
+    # everybody types, and argparse would otherwise reject it as an unknown argument.
+    p.add_argument("--dry-run", action="store_true", dest="dry_run_exp",
+                   help="print the scripts it would run, then exit")
     p.add_argument("args", nargs="*", help="extra arguments passed through to the script")
     p.set_defaults(func=cmd_exp)
 
@@ -1116,6 +1124,7 @@ def main():
     p.set_defaults(func=cmd_canaries)
 
     args = parser.parse_args()
+    args.dry_run = args.dry_run or getattr(args, "dry_run_exp", False)
     if args.selftest:
         return cmd_selftest()
     if args.dry_run and args.command != "exp":

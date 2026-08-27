@@ -5,7 +5,10 @@
 #
 # WHAT IT MEASURES: whether the contrastive model holds up when the test song was
 #   never seen in training. 20 folds (one song held out at a time) x 4 models.
-#   This is THE Chapter 1 number: 0.865 within against 0.268 leave-song-out.
+#   This is THE Chapter 1 contrast, and it is read WITHIN one model family: the CLAP
+#   branch goes 0.946 macro within -> 0.268 leave-song-out, the raw branch 0.875 ->
+#   0.142. Pairing the raw 0.865 with the CLAP 0.268 crosses two architectures and
+#   overstates the collapse of either (retraction #29).
 # DATE       : closed 20/20 on 2026-07-26.
 # QUESTION   : "does the model hold up on songs it has never seen?"
 # NULL       : 0.25 (4 fixed instrument slots, assumed from the design).

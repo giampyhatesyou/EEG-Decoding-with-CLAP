@@ -1,7 +1,9 @@
-# Code tour
+# 4 · Code tour
+
+*Reading path: [1 README](../README.md) → [2 REPO_MAP](02_REPO_MAP.md) → [3 OVERVIEW](03_OVERVIEW.md) → **4 you are here** → [5 replicate](../scripts/replicate/README.md) → [6 provenance](provenance/README.md) → [7 METHOD_RULES](07_METHOD_RULES.md).*
 
 How this repository is put together, from the outside in. Read
-[`OVERVIEW.md`](OVERVIEW.md) first if you want to know *what the experiments are
+[`03_OVERVIEW.md`](03_OVERVIEW.md) first if you want to know *what the experiments are
 asking*; this file is about *where the code that asks it lives*.
 
 ---
@@ -89,6 +91,18 @@ the trial, so stimulus identity cannot win it.
 this the one MAD-EEG binary that runs in the `h5py` environment on CPU, with no
 cluster and no GPU.
 
+### The ancestor, kept on purpose: `stimulus_reconstruction.py`
+
+`stimulus_reconstruction.py` is the **Chapter 1** backward model: the same idea as
+`madeeg_reconstruction.py`, written first, on the Akama dataset. It reuses that
+dataset's class only to get identical cross-validation splits, and it imports
+nothing from the contrastive path. **No experiment in the register runs it and
+it produces no reported number** — the question it was written to ask moved to
+MAD-EEG, where the within-song comparison it relies on is not confounded by the
+fixed song-to-target mapping. It is kept because it is where the Chapter 2
+workhorse comes from, and because deleting the ancestor of a method is not the
+same as simplifying it. Its own header states the rationale and the limitation.
+
 ## 4. The other drivers split into two families
 
 ### (a) Real drivers — they compute
@@ -150,6 +164,42 @@ implementation**, and it lives in the diagnostic file, which does not import
 torch. That is why `--check_rule` can rerun step C's 154 decisions offline and
 recover exactly 58/154.
 
+### The two audio towers, and what each one costs
+
+The `--audio_repr` switch in `main.py` is the whole architectural difference
+between the two Chapter 1 models, and it is worth stating in parameters because
+the comparison in `RESULTS.md` is otherwise easy to misread.
+
+| variant | audio side | trainable | frozen |
+|---|---|---:|---:|
+| `raw` (Akama baseline) | **four independent** `SampleCNN2DEEG`, one per stem | **580,600** | — |
+| `clap` (the extension) | **one shared** frozen LAION-CLAP tower + one `Linear(512,256)-GELU-Linear(256,100)` head, referenced from all four slots | **273,148** | ~158 M |
+
+Measured, not inferred: `SampleCNN2DEEG` is **116,120** parameters whatever it is
+built on, because nothing about the input reaches its shape -- `out_dim` is accepted
+and never used, the convolutional stack ends in `adaptive_avg_pool2d`, and the head is
+a hardcoded `128 -> 100 -> 100`. Its other argument, `kernal_size`, IS the Conv2d
+kernel and does move the count; all five construction sites, in `main.py` and
+`checkpoint_test.py`, pass `3`. The same instance runs on a `(4, 768)` EEG window
+and on a `(4, 177147)` audio clip with the same weights. So `raw` is
+5 x 116,120 and `clap` is 116,120 + 157,028, and the reading is that **CLAP
+reaches a higher within-split accuracy with less than half the trainable weight
+on the audio side** -- one small head against four convolutional networks. The
+frozen ~158 M is resident regardless: `CLAP_Module` also loads a RoBERTa text
+tower (~124.6 M) that the forward pass never calls.
+
+Two limits travel with every CLAP figure, and both are declared rather than fixed:
+
+* **The input is out of CLAP's regime.** LAION-CLAP was pre-trained on 10-30 s
+  clips; the Chapter 1 pipeline pads each 3 s clip to 3^11 samples at 44.1 kHz
+  (~4.016 s), so CLAP sees roughly a second of silence on each side. Removing the
+  padding means changing the dataset code, which is held fixed so the baseline
+  stays reproducible. The same gap, four orders of magnitude worse, is what
+  Exp. 17 measures in Chapter 2 at a 62.5 ms window.
+* **Only the head moves.** If the bottleneck were the rigidity of the
+  representation rather than the head, the next step would be parameter-efficient
+  fine-tuning; nothing here measures which of the two it is.
+
 `madeeg_diagnose.py` is the post-mortem: `--records` (prior-following),
 `--mcnemar` (paired), `--paired`, `--check_rule`, `--demo`. It is the file that
 turned step C's failure into the chapter's mechanism.
@@ -203,5 +253,6 @@ Chapter 1 has a third route: `results_manifest.tsv` -> `sweeps/report.py` ->
 3. See which driver it invokes. If it is `madeeg_reconstruction.py`, the flags in
    `BASE=(...)` are the identity of the number: change one and it is a different
    experiment.
-4. `cat docs/provenance/<file>` for the real output.
-5. [`METHOD_RULES.md`](METHOD_RULES.md) if a comment cites `method rule N`.
+4. `cat docs/provenance/<file>` for the real output — [`provenance/README.md`](provenance/README.md)
+   is the index from number to file.
+5. [`07_METHOD_RULES.md`](07_METHOD_RULES.md) if a comment cites `method rule N`.

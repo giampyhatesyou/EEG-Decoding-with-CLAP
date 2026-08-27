@@ -42,8 +42,8 @@ THE RECIPE, FIXED HERE BEFORE ANY NUMBER EXISTS (contract section A.3):
       (c) W = hop makes the frames disjoint, so no correlation between neighbouring frames
           is manufactured by overlap.
   * !! AND THE LIMIT THAT COMES WITH IT, DECLARED NOW AND NOT AFTER THE NUMBER: CLAP's
-    design aperture is 10 s and the model is time-invariant BY DESIGN (contract section A.3,
-    Registro section 2.5). 62.5 ms is 160x shorter. This is not a defect of the implementation, it
+    design aperture is 10 s and the model is time-invariant BY DESIGN (contract section A.3).
+    62.5 ms is 160x shorter. This is not a defect of the implementation, it
     is the pre-registered band and CLAP's own time scale being 160x apart. Whatever this
     gate returns, THAT is the finding, and it belongs next to the number.
 

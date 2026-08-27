@@ -47,8 +47,9 @@
 #    `scripts/replicate.sh` phase `loso` writes the tags akama_loso_sub{3,7,2},
 #    while `results_manifest.tsv` pins repro_loso_sub{2,3,7}. So relaunching
 #    replicate.sh does NOT update the pinned row: it produces a PARALLEL series.
-#    The manifest header says the opposite ("the latter is what the committed
-#    scripts/replicate.sh produces") and is STALE. Neither the tags nor the pins
+#    The manifest header used to say the opposite ("the latter is what the committed
+#    scripts/replicate.sh produces"); it was corrected on 2026-08-27 and now records
+#    this discrepancy itself. Neither the tags nor the pins
 #    were changed here: changing them would move a number, and that is not this
 #    script's job. The two options, both still open:
 #      1. rename the tags in replicate.sh to `repro_loso_sub{N}` (the number does

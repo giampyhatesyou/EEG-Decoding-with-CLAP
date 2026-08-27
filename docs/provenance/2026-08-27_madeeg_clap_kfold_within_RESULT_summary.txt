@@ -1,0 +1,11 @@
+!! STEP D -- within-mixture negatives. A SECOND LOOK at the same 154
+!! trials, decided after step C's number was known, therefore
+!! EXPLORATORY BY CONSTRUCTION. The threshold below is a descriptor,
+!! not a confirmatory verdict; step C's 58/154 = 0.3766 stands.
+
+== MAD-EEG contrastive CLAP<->EEG, step D ==
+ensemble=duo folds=5 epochs=10 lr=0.003 batch=8 seed=42 loss=within_mixture
+n_trials=154 chance=0.500
+accuracy: 70/154 = 0.4545
+one-sided binomial p=0.8867  95% CI=[0.374, 0.537]
+pre-registered threshold 88/154=0.5714 -> NOT DISTINGUISHABLE FROM CHANCE

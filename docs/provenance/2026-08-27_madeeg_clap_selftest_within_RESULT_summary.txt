@@ -1,0 +1,16 @@
+!! POSITIVE CONTROL -- the EEG is SYNTHETIC (a fixed linear operator on
+!! the attended source's envelope, snr=4.0). This accuracy is a
+!! control on the wiring, NOT a result, and NOT a statement about real EEG.
+!! The 'ABOVE CHANCE' verdict below is the control's, not step C's.
+
+!! STEP D -- within-mixture negatives. A SECOND LOOK at the same 154
+!! trials, decided after step C's number was known, therefore
+!! EXPLORATORY BY CONSTRUCTION. The threshold below is a descriptor,
+!! not a confirmatory verdict; step C's 58/154 = 0.3766 stands.
+
+== MAD-EEG contrastive CLAP<->EEG, step D ==
+ensemble=duo folds=5 epochs=10 lr=0.003 batch=8 seed=42 loss=within_mixture
+n_trials=154 chance=0.500
+accuracy: 142/154 = 0.9221
+one-sided binomial p=0.0000  95% CI=[0.868, 0.959]
+pre-registered threshold 88/154=0.5714 -> ABOVE CHANCE

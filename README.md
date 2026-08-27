@@ -7,12 +7,29 @@ Two arms, two datasets, two chapters. They answer different questions, so their
 numbers never share a table.
 
 - **Chapter 1 — the methodological arm** (Akama et al. 2025, consumer EEG).
-  Reproduces the published contrastive EEG↔audio baseline and then shows what it
-  actually learned: within-split **0.865**, leave-song-out **0.268** (chance 0.25),
-  leave-subject-out **0.943**. The model generalises across *people* but not across
-  *songs*, and the audio alone already identifies the target at **0.996** — in that
-  dataset song is aliased with target, so "which instrument is attended" cannot be
-  separated from "which song is playing".
+  Two moves, and the second is what started the investigation. First the published
+  contrastive EEG↔audio baseline is reproduced: **0.875 macro / 0.865 global**,
+  chance 0.25, matching the paper. Then its four learned audio encoders are replaced
+  by a frozen LAION-CLAP tower, and the within-split accuracy goes **well past 90 %**
+  — **0.946 macro / 0.935 global** over 8 seeds. *That* number is what had to be
+  explained, and the rest of the chapter explains it: **the same CLAP architecture
+  scores 0.943 leave-subject-out and 0.268 leave-song-out** (chance 0.25). It
+  generalises across *people* and collapses across *songs* — and the audio alone,
+  with no EEG at all, already identifies the target at **0.996**. In that dataset
+  song is aliased with target, so "which instrument is attended" cannot be separated
+  from "which song is playing". The learned-audio baseline behaves the same way, one
+  step lower (0.781 subject-out, 0.142 song-out): the confound is in the dataset, not
+  in the representation.
+
+  *Two caveats travel with those four numbers, and neither is hidden in a script.*
+  **(a)** 0.943 and 0.268 are the same *architecture*, not the same pipeline: 5 of the
+  6 subject-out folds are the pre-refactor **2026-05** revision, which is why
+  `RESULTS.md` carries a `vintage` column — the contrast holds, it just has to be
+  quoted with the vintage ([`cap1_leave_subject_out.sh`](scripts/replicate/cap1_leave_subject_out.sh),
+  "TWO MANDATORY CAVEATS"). **(b)** The thesis quotes only the **global 0.865** for the
+  baseline row: a second reading of that same fold, 0.865/0.852, is still open, and
+  0.865 is the figure common to both ([`cap1_within_split.sh`](scripts/replicate/cap1_within_split.sh),
+  "OPEN NUMBER CONFLICT").
 - **Chapter 2 — the identifiable arm** (MAD-EEG, 20-channel lab EEG).
   The same mixture is attended with **different** targets across trials, so attention
   is identifiable and stimulus identity cannot win. Everything here is a
@@ -24,15 +41,31 @@ numbers never share a table.
 Every reported number has a null computed from the data, a positive control crossed
 before the number was looked at, and a threshold written before the run.
 
-**Start here**, depending on what you came for:
+## The documentation, in the order it is meant to be read
 
-| you want | read |
-|---|---|
-| what each arm and experiment is asking, and what it optimises | [`docs/OVERVIEW.md`](docs/OVERVIEW.md) |
-| how the code is put together | [`docs/CODE_TOUR.md`](docs/CODE_TOUR.md) |
-| the numbers with their nulls, thresholds and provenance | [`scripts/replicate/README.md`](scripts/replicate/README.md) |
-| the rules every number obeys, and the incident behind each | [`docs/METHOD_RULES.md`](docs/METHOD_RULES.md) |
-| to run something | the [Quick start](#quick-start) below |
+Seven documents, numbered. Read 1 to 4 once, in order — that is about twenty
+minutes and it is the whole picture. Then 5, 6 and 7 are reference: you open them
+when you need a specific number, a specific file, or a specific rule.
+
+| # | document | what it answers | when |
+|:-:|---|---|---|
+| **1** | **this README** | what the project found, how to install it, how to run it, which flags change a number | first |
+| **2** | [`docs/02_REPO_MAP.md`](docs/02_REPO_MAP.md) | **where everything is** — every file in the repository, one line each | when you do not know where to look |
+| **3** | [`docs/03_OVERVIEW.md`](docs/03_OVERVIEW.md) | the science: the question, the four tasks and their four nulls, what each change was optimising and what it bought | before touching any code |
+| **4** | [`docs/04_CODE_TOUR.md`](docs/04_CODE_TOUR.md) | how the code is put together, from the outside in: the three levels, one experiment end to end, the workhorse | before changing any code |
+| **5** | [`scripts/replicate/README.md`](scripts/replicate/README.md) | the experiment table: for every row, its null, its pre-registered threshold, its verdict, its canary, its provenance | before running or citing an experiment |
+| **6** | [`docs/provenance/README.md`](docs/provenance/README.md) | which file on disk proves which number | before quoting a number |
+| **7** | [`docs/07_METHOD_RULES.md`](docs/07_METHOD_RULES.md) | the twelve rules every number obeys, each with the incident that caused it | when a comment cites `method rule N` |
+
+**The numbering is in the filenames**, so `ls docs/` shows the order. Documents 1, 5
+and 6 keep the name `README.md` in the directory they describe, because that is the
+file GitHub renders when you browse that directory — their number is in their title.
+Anything in `docs/` without a number is reference, not part of the route.
+
+Reference material sits outside that path: [`docs/MADEEG.md`](docs/MADEEG.md) (the
+Chapter 2 dataset), [`docs/CHANGES_FROM_BASELINE.md`](docs/CHANGES_FROM_BASELINE.md)
+(every diff from the upstream repository) and [`docs/LEGACY.md`](docs/LEGACY.md)
+(the upstream README, verbatim).
 
 ## Reference papers
 
@@ -83,7 +116,7 @@ python src/run.py report                # re-render RESULTS.md from the manifest
 
 python src/run.py exp --list            # the 26 experiments, in run order
 python src/run.py exp exp13             # one of them (a unique prefix is enough)
-python src/run.py exp cheap             # the four that spend no held-out looks
+python src/run.py exp cheap             # every experiment that spends no held-out look
 python src/run.py exp all               # all of them, canaries first, one log each
 python src/run.py canaries --levels 0   # 0 needs nothing, 1 needs torch, 2 needs MAD-EEG
 
@@ -101,69 +134,18 @@ training run implicitly.
 
 ```
 .
-├── results_manifest.tsv   THE pinned list of folds behind every reported number
-├── RESULTS.md             Generated from it by sweeps/report.py — do not edit by hand
-├── requirements.txt       Chapter 1 stack, pinned (torch 2.2.2, numpy 1.26.4, PL 1.9.5)
-├── configs/baseline.yaml  Config template + the audio_repr / objective / cv_mode switches
-│                          (loose defaults: the REAL protocol is $PROTO / PROTOCOL)
-├── src/
-│   ├── run.py                     Launcher: replicate | train | test | sweep | report | exp | canaries
-│   ├── main.py                    Chapter 1 training entry point
-│   ├── checkpoint_test.py         Chapter 1 evaluation (writes the breakdown)
-│   ├── stimulus_reconstruction.py Chapter 1 linear reconstruction probe
-│   ├── madeeg_reconstruction.py   ── CH.2 WORKHORSE (1687 l): ridge/shrinkage/CCA stimulus
-│   │                              reconstruction, own-vs-other, alpha LI, the four axes,
-│   │                              arm A, Exp. 4/6/7/8/9/10
-│   ├── madeeg_diagnose.py         CH.2 post-mortem: prior-following, McNemar, --check_rule
-│   ├── madeeg_contrastive.py      CH.2 steps A/B/C/D + Exp. 18/19 (GPU)
-│   ├── madeeg_spectral_attention.py  CH.2 Exp. 11/12 — band power + LDA on the register
-│   ├── madeeg_stem_separability.py   CH.2 Exp. 13/16A/17 — audio-only separability gate
-│   ├── madeeg_leakage_audit.py       CH.2 arm D — window-CV leakage audit
-│   ├── madeeg_exp14_tracking.py      CH.2 Exp. 14 — MFCC/mel-64 tracking
-│   ├── madeeg_exp15_differential.py  CH.2 Exp. 15 — attentional differential
-│   ├── madeeg_exp16a_clap_extract.py CH.2 CLAP embedding extraction (stage 1)
-│   ├── madeeg_exp16b_ccaviews.py     CH.2 Exp. 16B — band_power as a CCA view
-│   ├── datasets/
-│   │   ├── preprocessing_eegmusic_dataset.py  Ch.1 dataset + CV routing
-│   │   ├── madeeg_contrastive_dataset.py      Ch.2 contrastive adapter (steps C/D)
-│   │   └── madeeg_solo_matchmismatch.py       Ch.2 match-mismatch sampler (Exp. 18/19)
-│   ├── models/
-│   │   ├── sample_cnn2d_eeg.py     Akama 2D-CNN EEG / raw-audio encoder
-│   │   ├── clap_encoder.py         Frozen LAION-CLAP + projection head (extension)
-│   │   ├── spectra_eeg.py          Ch.1 spectral EEG front end (--eeg_repr spectra)
-│   │   ├── cca_multiview.py        Ch.2 model 9 — regularised multi-view CCA
-│   │   ├── alpha_lateralization.py Ch.2 Exp. 6 [H] — alpha lateralisation index
-│   │   └── model.py                Base nn.Module the encoders subclass
-│   ├── modules/
-│   │   ├── clip_loss.py            InfoNCE — FROZEN AT bb016fd, see The canaries
-│   │   ├── contrastive_learning.py LightningModule: loss, audit hooks, breakdown
-│   │   └── supervised_classification.py  classify_eeg / classify_audio controls
-│   ├── preprocessing/ · utils/     Transforms; config loader, paths, logging
-├── scripts/
-│   ├── replicate.sh          Chapter 1 from the released checkpoints (PHASES=...)
-│   ├── setup_checkpoints.sh  Unpack the paper checkpoints from archive/*.7z
-│   ├── madeeg_setup.sh       Fetch MAD-EEG (preprocessed release only)
-│   ├── train.sh              Train one model on one split
-│   └── replicate/            ── ONE SCRIPT PER EXPERIMENT (28) + its own README
-├── sweeps/
-│   ├── sweep_common.sh       Conda env, $PROTO (the 23 fixed flags), resume logic
-│   ├── sweep_{song,subject}_out.sh   Resumable CV sweeps
-│   └── report.py             Renders RESULTS.md; verifies every pin, or writes nothing
-├── docs/
-│   ├── OVERVIEW.md           What each arm and experiment asks, and what it optimises
-│   ├── CODE_TOUR.md          How the code is put together, from the outside in
-│   ├── METHOD_RULES.md       The twelve rules the code enforces, with their incidents
-│   ├── provenance/           56 PINNED result files — the evidence behind Chapter 2
-│   ├── MADEEG.md             The Chapter 2 note (why MAD-EEG is the identifiable arm)
-│   ├── METHODOLOGY.md · CHANGES_FROM_BASELINE.md · LEGACY.md   (Chapter 1)
-│   └── paper.pdf · cantisani_waspaa2019.pdf · model_architecture.png
-├── checkpoints/ · archive/   Paper weights (.ckpt gitignored; .7z tracked)
-├── dataset/                  Chapter 1 EEG + per-stem audio
-└── runs/                     Everything a run emits — GITIGNORED
-    ├── results/              Per-run CSVs, summaries, hparams, checkpoints
-    ├── replicate/            Where the replication scripts write their provenance
-    └── logs/                 One file per launcher run
+├── README.md · RESULTS.md · results_manifest.tsv   what was found, and the pins behind it
+├── docs/        the seven documents above, the two papers, and provenance/ (the evidence)
+├── src/         everything that computes: run.py is the entry point, the rest are drivers
+├── scripts/     everything you invoke, incl. replicate/ — one script per experiment
+├── sweeps/      the resumable cross-validation sweeps and the reporting script
+├── configs/     the config template and the tracklist
+├── checkpoints/ · archive/ · dataset/   released weights and Chapter 1 data
+└── runs/        GITIGNORED — everything a run emits: results/, replicate/, logs/
 ```
+
+**Every file, with one line on what it does: [`docs/02_REPO_MAP.md`](docs/02_REPO_MAP.md)** —
+that is document 2 and it is the index to the whole repository.
 
 **MAD-EEG is not in this repo** (4.7 GB). It lives at `--madeeg_dir ~/madeeg`.
 
@@ -196,10 +178,10 @@ different experiment, not a different run of the same one.
 
 | flag | values | what moves |
 |---|---|---|
-| `--cv_mode` | `within` · `leave_song_out` · `leave_subject_out` | **0.865** vs **0.268** vs **0.943**. This single flag *is* the chapter's result |
+| `--cv_mode` | `within` · `leave_song_out` · `leave_subject_out` | **compare within one model family or the contrast is meaningless.** CLAP: 0.946 macro within · **0.268** song-out · 0.943 subject-out. Raw: 0.875 within · 0.142 song-out · 0.781 subject-out. Both survive holding out a listener and both collapse on holding out a song — this flag *is* the chapter's result |
 | `--shuffle_test_mode` | `none` · `labels` · `audio_pair` | 0.865 → 0.225 → 0.383. The two controls are **not** bit-reproducible (`checkpoint_test` forces `shuffle=True`); cite them as "at chance", never as exact digits |
 | `--audio_repr` | `raw` · `clap` | within 0.875 (raw) vs 0.946 (clap, 8 seeds) |
-| `--objective` | `contrastive` · `classify_eeg` · `classify_audio` | `classify_audio` is the **leakage control**: 0.996 with CLAP audio, 0.967 with raw. It must be cited *next to* the 0.865, not after it |
+| `--objective` | `contrastive` · `classify_eeg` · `classify_audio` | `classify_audio` is the **leakage control**, and it is quoted next to the contrastive model *of its own audio branch*: 0.996 against CLAP's 0.946, 0.967 against raw's 0.875. Either way the audio alone beats the EEG model, which is the point |
 | `--eeg_repr` | `raw` · `spectra` | the `spectra` numbers (0.9350 / 0.4975 / 0.4713) are **not in the manifest and have no canary**. Do not quote them as pinned |
 | `$PROTO` / `PROTOCOL` | 23 flags | the real hyperparameters — **not** `configs/baseline.yaml`, whose defaults are a loose template. `python src/run.py --selftest` asserts the two copies still agree, flag by flag |
 

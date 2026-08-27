@@ -26,14 +26,25 @@
 #
 # THE MANDATORY SENTENCE NEXT TO THIS NUMBER:
 #    within = the confounded split. The same songs are in train and in test, so
-#    HIGHER = MEMORISES BETTER, not "decodes better". The within number must
-#    always be quoted next to leave-song-out (0.268) and the audio-only control
-#    (0.996): the ORDER of those three numbers is the chapter's result.
+#    HIGHER = MEMORISES BETTER, not "decodes better". A within number must always be
+#    quoted next to the leave-song-out and the audio-only control OF ITS OWN AUDIO
+#    BRANCH -- CLAP 0.946 / 0.268 / 0.996, raw 0.875 / 0.142 / 0.967 -- because the
+#    ORDER of those three numbers is the chapter's result and the order only means
+#    something inside one architecture. Mixing branches (the raw 0.865 against the
+#    CLAP 0.268) is retraction #29 and it overstates the collapse of both.
 #
 # EXPECTED REFERENCE NUMBERS (if these do not come out, it did not replicate):
 #   contrastive_raw   within   MACRO 0.875   GLOBAL 0.865   (pin `sanity_none`,
 #                              ckpt model-all0, 1 fold, vintage 2026-07)
 #                              Deterministic: 0.8650 is EXACT, bit for bit.
+#                              This is the REPRODUCTION of the published baseline,
+#                              not the headline model of the chapter.
+#   contrastive_clap  within   MACRO 0.946   GLOBAL 0.935   (8 seeds; per-seed
+#                              global 0.8825-0.9550, mean 0.9345 -> 0.935)
+#                              THE HEADLINE MODEL: swapping the four learned audio
+#                              encoders for a frozen CLAP tower took the within
+#                              split past 90%, and that is the number the rest of
+#                              the chapter exists to explain. Needs a GPU to redo.
 #   control `labels`           MACRO 0.227   GLOBAL 0.225
 #   control `audio_pair`       MACRO 0.339   GLOBAL 0.383
 #   THE TWO CONTROLS ARE NOT BIT-REPRODUCIBLE (manifest, row "NOT REPRODUCIBLE
@@ -45,7 +56,6 @@
 #   [GPU] audio_only_clap within  MACRO 0.996  GLOBAL 0.993   <- the confound
 #   [GPU] audio_only_raw  within  MACRO 0.967  GLOBAL 0.963
 #   [GPU] eeg_only        within  MACRO 0.250  GLOBAL 0.471
-#   [GPU] contrastive_clap within MACRO 0.946  GLOBAL 0.935   (8 seeds)
 #
 # OPEN NUMBER CONFLICT: the pair 0.865/0.852 also circulates for this same row.
 #    The canonical source is `results_manifest.tsv` -> `RESULTS.md`, i.e. 0.875

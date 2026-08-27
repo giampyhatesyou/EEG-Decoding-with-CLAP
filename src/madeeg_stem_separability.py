@@ -139,7 +139,7 @@ EXP17_CAVEAT = [
 ]
 CLAP_CAVEAT = [
     "!! EXP. 16 ARM A. The K=1 candidate of this run is CLAP, the thesis's own premise, which",
-    "!! Registro section 2.5 records as NEVER having been tested as a reconstruction target. The six",
+    "!! had never been tested as a reconstruction target (docs/03_OVERVIEW.md, the genealogy). The six",
     "!! Exp. 13 candidates are re-computed here only as the reference frame; the criterion,",
     "!! the canary and the floor are the Exp. 13 ones, unchanged.",
     "!! THE TIME-SCALE GAP, DECLARED BEFORE THE NUMBER: CLAP is time-invariant BY DESIGN and",

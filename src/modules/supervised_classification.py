@@ -12,7 +12,7 @@ never touched. Selection happens in ``main.py`` / ``checkpoint_test.py`` via the
   ``objective="classify_audio"`` -> 4 audio-stem encoders -> concat(4x100) -> Linear(400->4)
                                     -> CrossEntropy(task)                                  [#1]
 
-Scientific reading (see docs/METHODOLOGY.md):
+Scientific reading:
 
 * **#2 EEG-only** forces the EEG encoder to build label-discriminative features on its own.
   High argmax accuracy => attention is decodable from EEG alone; chance-level (~25%) =>

@@ -108,11 +108,12 @@ echo "[replicate] reproduction vs Akama et al. (2025)"
 echo "========================================================================"
 printf "  %-40s %-9s %-9s\n" "experiment" "paper" "this run"
 _w=$(_summary akama_within); printf "  %-40s %-9s %-9s\n" "within-subject (Table 1)" "0.865" "$( [ -n "$_w" ] && _acc "$_w" || echo n/a)"
-declare -A PAPER_LOSO=( [3]=0.6458 [7]=0.8447 [2]=0.7763 )
+# case, not an associative array: macOS ships bash 3.2, which has no `declare -A`.
+_paper_loso() { case "$1" in 3) echo 0.6458 ;; 7) echo 0.8447 ;; 2) echo 0.7763 ;; esac; }
 _sum=0; _n=0
 for _s in 3 7 2; do
   _f=$(_summary "akama_loso_sub${_s}"); _a=$( [ -n "$_f" ] && _acc "$_f" )
-  printf "  %-40s %-9s %-9s\n" "LOSO sub${_s} (Table 2, all-data)" "${PAPER_LOSO[$_s]}" "${_a:-n/a}"
+  printf "  %-40s %-9s %-9s\n" "LOSO sub${_s} (Table 2, all-data)" "$(_paper_loso "$_s")" "${_a:-n/a}"
   [ -n "$_a" ] && { _sum=$(awk -v s="$_sum" -v a="$_a" 'BEGIN{print s+a}'); _n=$((_n+1)); }
 done
 [ "$_n" -gt 0 ] && printf "  %-40s %-9s %-9s\n" "LOSO mean (Table 2, all-data)" "0.7556" \

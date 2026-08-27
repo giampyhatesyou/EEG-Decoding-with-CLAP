@@ -1,4 +1,6 @@
-# `scripts/replicate/` — one script per experiment
+# 5 · `scripts/replicate/` — one script per experiment
+
+*Reading path: [1 README](../../README.md) → [2 REPO_MAP](../../docs/02_REPO_MAP.md) → [3 OVERVIEW](../../docs/03_OVERVIEW.md) → [4 CODE_TOUR](../../docs/04_CODE_TOUR.md) → **5 you are here** → [6 provenance](../../docs/provenance/README.md) → [7 METHOD_RULES](../../docs/07_METHOD_RULES.md).*
 
 One script for every experiment in the project, carrying **the exact commands**
 taken from the provenance files and from the pre-registered criteria. Each script
@@ -15,7 +17,7 @@ file under `runs/logs/`:
 ```bash
 python src/run.py exp --list          # this table, generated from the headers
 python src/run.py exp exp13           # one experiment (a unique prefix is enough)
-python src/run.py exp cheap           # the four that spend no held-out looks
+python src/run.py exp cheap           # every experiment that spends no held-out look
 python src/run.py exp all             # all 26, in order, canaries first
 python src/run.py canaries --levels 0 # the regression gates on their own
 ```
@@ -122,7 +124,7 @@ rather than launches.
 | what | script | verdict | canary | CPU? |
 |---|---|---|---|---|
 | **all canaries, in order** | `canaries.sh` | printed by the run; **exit ≠ 0** if a crossable canary fails | **is** the canary file | L0 yes · L1 needs torch · L2 +MAD · L3 printed |
-| exp13 · exp07 · exp08 · exp14 in sequence | `run_all_cheap.sh` | — | those four | yes, +MAD (~25–50 min) |
+| every experiment that spends **no held-out look**, cheapest first: exp13 · exp08 · exp14 · exp16b · exp06 · exp07 | `run_all_cheap.sh` | — | each script's own | yes, +MAD (~45–70 min) |
 
 **How to read the "looks" column** (which lives in each script's header, not here):
 *NO* means the ledger of looks declares the experiment free (audio only, or
@@ -139,17 +141,14 @@ remaining holdout, one shot, stereo threshold already written at 38/90).
 
 ## From scratch: environment, data, order
 
-### 1. The environments (there are **three**, and they are not interchangeable)
+### 1. The environments
 
-| for | interpreter | what it must contain |
-|---|---|---|
-| `torch` canaries (`clip_loss.py`), Chapter 1 | conda **`attention`** — `eeg_attention` on the cluster | `torch==2.2.2`, `numpy<2`, `pytorch_lightning==1.9.5` → `pip install -r requirements.txt` |
-| MAD-EEG CPU analysis (every `madeeg_*.py`) | **`/opt/miniconda3/bin/python`** | numpy · scipy · sklearn · **h5py** · mne · librosa · pandas · pyyaml |
-| Exp. 16A/17/18/19 (needs `torch` **and** `laion_clap`) | **`/opt/anaconda3/bin/python`** | torch + `laion_clap` 1.1.6 |
-
-Why three and not one: the `attention` env **has no `h5py`** and cannot execute
-`madeeg_reconstruction.py`; `/opt/miniconda3` has no `torch`. It is not a
-convenience, it is the reason the scripts have `$PY` **and** `$PY_TORCH`.
+Three interpreters, listed with what each must contain in the root
+[`README.md`](../../README.md#hardware-and-environments). The consequence *here* is
+the one that shapes these scripts: the env with `torch` has no `h5py` and cannot
+execute `madeeg_reconstruction.py`, while the one with `h5py` has no `torch`. That
+is why every script carries `$PY` **and** `$PY_TORCH`, and why a script that cannot
+find `$PY_TORCH` prints `NOT CROSSED` instead of skipping quietly.
 
 ```bash
 # Chapter 1 env — 3.9 is the version the root README declares; requirements.txt
@@ -178,50 +177,20 @@ python src/modules/clip_loss.py     # must say: 0.628491 / 1.2994 / 4.8198 / 0.9
 
 ### 3. The order things run in
 
+The order is a decision, so it lives in one place only: `EXPERIMENT_ORDER` in
+`src/run.py`, which `exp --list` prints and `exp all` executes -- free experiments
+first, then the ones that decide on the duos, then the contrastive arm.
+
 ```bash
-# 0. ALWAYS first, after any diff. Level 0 needs nothing.
-python src/run.py canaries --levels 0
-PY_TORCH=~/miniconda3/envs/attention/bin/python python src/run.py canaries --levels "0 1"
-
-# 1. Chapter 1, from the released checkpoints (no training)
-bash scripts/setup_checkpoints.sh
-python src/run.py exp cap1_within_split        # ~25 min CPU
-python src/run.py exp cap1_leave_song_out      # re-reads the 80 pins, seconds
-python src/run.py exp cap1_leave_subject_out   # ~20 min CPU
-
-# 2. Chapter 2, free (no held-out looks): audio only and own-vs-other
-python src/run.py exp exp13                    # ~10 s — the separability gate
-python src/run.py exp exp06_ovo                # the 208/376 reference + its md5
-python src/run.py exp exp07
-python src/run.py exp exp08
-python src/run.py exp exp14
-python src/run.py exp exp16b
-python src/run.py exp exp17                    # stage 2
-
-# 3. Chapter 2 that SPENDS LOOKS (duos already spent, but the caveat goes in the title)
-python src/run.py exp ridge_anchors
-python src/run.py exp axes_paper_protocol      # 16 GB RAM
-python src/run.py exp exp04
-python src/run.py exp exp06_alpha
-python src/run.py exp exp09
-python src/run.py exp exp11
-python src/run.py exp exp12
-python src/run.py exp exp15
-python src/run.py exp armA
-python src/run.py exp armD
-
-# 4. Canary level 2 (reruns the reference and the anchors from scratch)
-python src/run.py canaries --levels 2
-
-# 5. The contrastive arm: gates on CPU, training printed
-python src/run.py exp stepC
-python src/run.py exp stepD
-python src/run.py exp exp18
-python src/run.py exp exp19
-
-# ...or all of the above, in this order, one log file per experiment:
-python src/run.py exp all
+python src/run.py canaries --levels 0   # 0. ALWAYS first, after any diff
+python src/run.py exp --list            # the order, read back out of these headers
+python src/run.py exp cheap             # every experiment that spends no look
+python src/run.py exp all               # all 26, canaries first, one log each
+python src/run.py exp exp13             # or one at a time (unique prefix is enough)
 ```
+
+Two prerequisites the launcher does not fetch for you: `bash scripts/setup_checkpoints.sh`
+for Chapter 1, and `MADEEG_DIR=~/madeeg bash scripts/madeeg_setup.sh` for Chapter 2.
 
 ### 4. What needs a GPU
 
@@ -247,7 +216,7 @@ are printed at the end of `stepD_within_mixture.sh` and reproduce
 
 ## Rules these scripts follow, and that whoever edits them does not renegotiate
 
-Full text with the incident behind each one: [`docs/METHOD_RULES.md`](../../docs/METHOD_RULES.md).
+Full text with the incident behind each one: [`docs/07_METHOD_RULES.md`](../../docs/07_METHOD_RULES.md).
 
 - **The canary first.** Where one exists it is crossed before any real number and
   the script stops if it fails (rule 3). Exp. 6/7/8/14/16B check the md5
