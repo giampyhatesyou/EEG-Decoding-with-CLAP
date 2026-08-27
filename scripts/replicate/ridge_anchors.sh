@@ -1,74 +1,76 @@
 #!/usr/bin/env bash
 # =============================================================================
-# L'ANCORA LINEARE (ridge) — le tre varianti che stanno in RESULTS.md §madeeg_duo.
+# THE LINEAR ANCHOR (ridge) - the three variants in RESULTS.md, madeeg_duo section.
 #
-# COSA MISURA: se la famiglia lineare sicura (ricostruzione dello stimolo + argmax
-#   della correlazione fra le sorgenti presenti) decide QUALE dei due strumenti
-#   di un duo era attenzionato. Tre varianti, che differiscono per UNA cosa
-#   ciascuna: come si allena (k-fold sui duo vs solo del protocollo del paper) e
-#   che rappresentazione si ricostruisce (log-mel vs inviluppo di Hilbert).
-# DATA       : archivio mag-lug 2026 · le due run pinnate sono ri-girate 30/7-08/2026
-#              con l'intestazione completa · `raw_solos` 3 lug 2026.
-# DOMANDA    : «la famiglia lineare decide l'attenzione sul duo?»
-# NULL       : 0.500 — su un duo il caso e' 1/n_present, e ogni mixture compare con
-#              ENTRAMBI i suoi strumenti come target (18/18), quindi il prior dello
-#              stimolo non e' informazione legittima.
-# SOGLIA PRE-REGISTRATA: 88/154 = 0.5714 (minimo intero con binomiale esatta a una
-#              coda < 0.05 su n=154). E' la soglia del contratto del 26/7.
-# VERDETTO   : 🔴 nessuna delle tre la supera.
-#              A1 duos_kfold mel  86/154 = 0.5584  p = 0.0853   <- il MASSIMO STORICO
-#                 del progetto sull'attenzione, e NON e' significativo.
+# WHAT IT MEASURES: whether the safe linear family (stimulus reconstruction +
+#   argmax of the correlation across the present sources) decides WHICH of a duo's
+#   two instruments was attended. Three variants, each differing in ONE thing:
+#   how it is trained (k-fold on the duos vs the paper protocol's solos) and which
+#   representation is reconstructed (log-mel vs Hilbert envelope).
+# DATE       : archive 2026-05/07; the two pinned runs were rerun 2026-07-30/08
+#              with the full header; `raw_solos` 2026-07-03.
+# QUESTION   : "does the linear family decide attention on the duo?"
+# NULL       : 0.500 - on a duo chance is 1/n_present, and every mixture appears
+#              with BOTH its instruments as target (18/18), so the stimulus prior
+#              is not legitimate information.
+# PRE-REGISTERED THRESHOLD: 88/154 = 0.5714 (smallest integer with one-sided exact
+#              binomial p < 0.05 at n=154). It is the threshold of the 2026-07-26
+#              pre-registration.
+# VERDICT    : none of the three crosses it.
+#              A1 duos_kfold mel  86/154 = 0.5584  p = 0.0853   <- the project's
+#                 HIGHEST attention number ever, and it is NOT significant.
 #              A2 duos_kfold env  78/154 = 0.5065
-#              A3 raw_solos  mel  74/154 = 0.4805  <- sotto il caso
-# COSTO      : ~5-10 min CPU per le tre (stima; a 64 Hz sono run leggere).
-#              DA CONFERMARE alla prima esecuzione: non c'e' un tempo misurato agli atti.
-# SGUARDI    : SI' — decidono sui DUO. I 309 duo sono TUTTI GIA' SPESI dal 30/7:
-#              rigirarli non apre materiale nuovo, ma ogni numero sui duo dopo quella
-#              data e' ESPLORATIVO PER COSTRUZIONE. 🔒 I TRIO NON SI TOCCANO.
-#              ⚠️ A1 e A3 sono 1º SGUARDO PRE-REGOLA: sono stati guardati prima che
-#              la convenzione statistica del progetto esistesse. Non si possono
-#              ri-etichettare confermativi a posteriori.
-# GPU        : no — madeeg_reconstruction.py e' numpy/scipy/sklearn/h5py, nessun torch.
+#              A3 raw_solos  mel  74/154 = 0.4805  <- below chance
+# COST       : ~5-10 min CPU for all three (estimate; at 64 Hz these are light runs).
+#              TO BE CONFIRMED on first execution: no measured timing on record.
+# BUDGET     : YES - these decide on the DUOS. All 309 duos have been spent since
+#              2026-07-30: rerunning them opens no new material, but every duo
+#              number after that date is EXPLORATORY BY CONSTRUCTION. The TRIOS are
+#              never touched. A1 and A3 are FIRST LOOKS PRE-RULE: they were looked
+#              at before the project's statistical convention existed, and cannot
+#              be relabelled confirmatory after the fact.
+# GPU        : no - madeeg_reconstruction.py is numpy/scipy/sklearn/h5py, no torch.
 #
-# NUMERI DI RIFERIMENTO ATTESI (se non escono questi, NON hai replicato):
-#   A1  train_on=duos_kfold  target=mel n_bands=8   -> 0.5584 · F1 micro/macro/weighted
-#       0.5584/0.5448/0.5548 · r(att) 0.0202 vs r(best unatt) 0.0118 · inner_val_r 0.0245
-#   A2  train_on=duos_kfold  target=envelope n_bands=1 -> 0.5065 · r 0.0139/0.0133 ·
+# EXPECTED REFERENCE NUMBERS (if these do not come out, it did not replicate):
+#   A1  train_on=duos_kfold  target=mel n_bands=8   -> 0.5584, F1 micro/macro/weighted
+#       0.5584/0.5448/0.5548, r(att) 0.0202 vs r(best unatt) 0.0118, inner_val_r 0.0245
+#   A2  train_on=duos_kfold  target=envelope n_bands=1 -> 0.5065, r 0.0139/0.0133,
 #       inner_val_r 0.0164
-#   A3  train_on=raw_solos --test_eeg raw  target=mel  -> 0.4805 · F1 0.4805/0.4849/0.4771 ·
-#       r(att) 0.0162 vs r(best unatt) 0.0221 · inner_val_r 0.0582
+#   A3  train_on=raw_solos --test_eeg raw  target=mel  -> 0.4805, F1 0.4805/0.4849/0.4771,
+#       r(att) 0.0162 vs r(best unatt) 0.0221, inner_val_r 0.0582
 #
-# ⚠️ IL FLAG CHE CAMBIA IL NUMERO, E LA TRAPPOLA CHE HA MORSO:
-#    A3 **richiede `--test_eeg raw`**. Il comando documentato SENZA quel flag
-#    (cioe' con la release preprocessed al test) da' **0.4870**, non 0.4805 —
-#    che e' anche l'accuratezza dell'ASSE 0. Due numeri diversi a una cifra di
-#    distanza per un flag non scritto: per questo qui e' esplicito.
+# THE FLAG THAT CHANGES THE NUMBER, AND THE TRAP THAT BIT:
+#    A3 REQUIRES `--test_eeg raw`. The documented command WITHOUT that flag (i.e.
+#    with the preprocessed release at test time) gives 0.4870, not 0.4805 - which
+#    is also the accuracy of AXIS 0. Two numbers one digit apart for an unwritten
+#    flag: that is why it is explicit here.
 #
-# ⚠️ A2 (envelope) NON E' PINNATO in results_manifest.tsv, e la ragione e' scritta
-#    nel manifest: l'unico run archiviato (`madeeg_ridge_duo_env`) ha un summary
-#    che PRECEDE i flag `--estimator` e `--spatial`, quindi il pin non sarebbe
-#    VERIFICABILE contro di esso. 0.5065 vive in `_baldo_archive_2026-07-18/` e
-#    fuori da RESULTS.md. Rigirandolo con l'intestazione di oggi diventa
-#    pinnabile: e' un lavoro di 5 minuti che nessuno ha ancora fatto.
+# A2 (envelope) IS NOT PINNED in results_manifest.tsv, and the manifest states the
+#    reason: the only archived run (`madeeg_ridge_duo_env`) has a summary that
+#    PREDATES the `--estimator` and `--spatial` flags, so the pin would not be
+#    VERIFIABLE against it. 0.5065 lives in the run archive, outside RESULTS.md.
+#    Rerunning it with today's header makes it pinnable: a 5-minute job nobody has
+#    done yet.
 #
-# CANARINO   : le tre run SONO i canarini l'una dell'altra nel tempo — i due record
-#              pinnati (`madeeg_ridge_{duo,solos}_repro2026-08`) esistono apposta per
-#              essere riprodotti byte per byte. Lo script confronta l'md5 di
-#              `madeeg_records.csv` con quello dei record pinnati e si ferma se
-#              differisce. In piu' il controllo positivo della ridge
-#              (`--self_test`, soglia 0.90 DICHIARATA NEL CODICE) gira PER PRIMO.
-# CONTRATTO  : vault, "Cap. 2 — criterio pre-registrato (26 lug 2026)" (soglia 88/154)
-# PROVENIENZA: RESULTS.md §madeeg_duo <- results_manifest.tsv, pin
-#              `madeeg_ridge_duo_repro2026-08` e `madeeg_ridge_solos_repro2026-08` ·
-#              A2 in `_baldo_archive_2026-07-18/results/madeeg_ridge_duo_env/`
+# CANARY     : the three runs ARE each other's canaries over time - the two pinned
+#              records (`madeeg_ridge_{duo,solos}_repro2026-08`) exist precisely to
+#              be reproduced byte for byte. This script compares the md5 of
+#              `madeeg_records.csv` against the pinned records and stops if it
+#              differs. On top of that the ridge positive control (`--self_test`,
+#              threshold 0.90 DECLARED IN THE CODE) runs FIRST.
+# PRE-REGISTRATION: "Chapter 2 - pre-registered criterion (2026-07-26)"
+#              (threshold 88/154)
+# PROVENANCE : RESULTS.md madeeg_duo section <- results_manifest.tsv, pins
+#              `madeeg_ridge_duo_repro2026-08` and `madeeg_ridge_solos_repro2026-08`;
+#              A2 in the run archive, results/madeeg_ridge_duo_env/
 # =============================================================================
 set -euo pipefail
 
-PY=${PY:-/opt/miniconda3/bin/python}          # trappola n.1 DOSSIER §8.4: MAI `python` nudo
-MADEEG_DIR=${MADEEG_DIR:-$HOME/madeeg}        # il dataset NON e' nel repo
+PY=${PY:-/opt/miniconda3/bin/python}          # environment trap #1: NEVER bare `python`
+MADEEG_DIR=${MADEEG_DIR:-$HOME/madeeg}        # the dataset is NOT in the repo
 REPO=${REPO:-$(cd "$(dirname "$0")/../.." && pwd)}
 OUT_DIR=${OUT_DIR:-$REPO/runs/replicate}
-TAG=${TAG:-repl_}                             # i record pinnati non si sovrascrivono
+TAG=${TAG:-repl_}                             # pinned records are never overwritten
 RES="$REPO/runs/results"
 
 mkdir -p "$OUT_DIR"
@@ -78,69 +80,69 @@ _md5() { md5 -q "$1" 2>/dev/null || md5sum "$1" | cut -d' ' -f1; }
 acc()  { grep -h "OVERALL AAD accuracy" "$RES/$1/madeeg_summary.txt"; }
 rec()  { echo "$RES/$1/madeeg_records.csv"; }
 
-# Gli invarianti delle tre varianti: identici in tutte, cambia SOLO cio' che la
-# variante dichiara di cambiare. Il seed dev'essere lo stesso o i fold cambiano.
+# The invariants of the three variants: identical everywhere, ONLY what the variant
+# declares to change changes. The seed must be the same or the folds change.
 BASE=(--madeeg_dir "$MADEEG_DIR" --ensemble duo --estimator ridge --filters pooled
       --eeg_clean none --target_fs 64 --band_low 1 --band_high 8 --lags_ms 250
       --seed 42 --cv_folds 5 --spatial stereo)
 
-# ---- CANARINO 1: il controllo positivo della ridge, PRIMA dei numeri veri ----
-# EEG SINTETICO (mistura della sorgente attesa ai lag del modello + rumore, snr 4.0),
-# poi la ridge VERA e la decisione VERA. Soglia 0.90 dichiarata nel codice.
-echo "--- CANARINO 1: controllo positivo della ridge (--self_test, EEG sintetico) ---"
+# ---- CANARY 1: the ridge positive control, BEFORE the real numbers ----------
+# SYNTHETIC EEG (mixture of the expected source at the model's lags + noise, snr 4.0),
+# then the REAL ridge and the REAL decision. Threshold 0.90 declared in the code.
+echo "--- CANARY 1: ridge positive control (--self_test, synthetic EEG) ---"
 "$PY" src/madeeg_reconstruction.py --madeeg_dir "$MADEEG_DIR" --self_test \
       --training_date "${TAG}anchors_ctrl"
 S="$RES/${TAG}anchors_ctrl_selftest/madeeg_selftest_summary.txt"
 grep -h "AAD accuracy" "$S"
 if ! grep -q "\[PASS\]" "$S"; then
-  echo "  -> [FALLITO] controllo positivo non superato: i numeri veri NON si guardano."
+  echo "  -> [FAILED] positive control not crossed: the real numbers are NOT looked at."
   exit 1
 fi
-echo "  -> [PASSATO] licenzia il cablaggio e nient'altro."
+echo "  -> [PASSED] this licenses the wiring and nothing else."
 
-# ---- LE TRE VARIANTI ---------------------------------------------------------
-echo; echo "--- A1 : duos_kfold, target mel (il massimo storico, 0.5584) ---"
+# ---- THE THREE VARIANTS ------------------------------------------------------
+echo; echo "--- A1 : duos_kfold, target mel (the historical maximum, 0.5584) ---"
 "$PY" src/madeeg_reconstruction.py "${BASE[@]}" --train_on duos_kfold \
       --target mel --n_mels 8 --training_date "${TAG}ridge_A1_duo_mel"
 
-echo; echo "--- A2 : duos_kfold, target envelope (NON pinnato, vedi l'avvertenza) ---"
+echo; echo "--- A2 : duos_kfold, target envelope (NOT pinned, see the header) ---"
 "$PY" src/madeeg_reconstruction.py "${BASE[@]}" --train_on duos_kfold \
       --target envelope --training_date "${TAG}ridge_A2_duo_env"
-#   ^ --n_mels NON si passa: `envelope` e' a 1 banda per costruzione.
+#   ^ --n_mels is NOT passed: `envelope` is single-band by construction.
 
-echo; echo "--- A3 : raw_solos, protocollo del paper. --test_eeg raw E' OBBLIGATORIO ---"
+echo; echo "--- A3 : raw_solos, paper protocol. --test_eeg raw IS MANDATORY ---"
 "$PY" src/madeeg_reconstruction.py "${BASE[@]}" --train_on raw_solos --test_eeg raw \
       --target mel --n_mels 8 --training_date "${TAG}ridge_A3_solos_mel"
 
-# ---- CANARINO 2: i due record pinnati devono riprodursi byte per byte --------
+# ---- CANARY 2: the two pinned records must reproduce byte for byte ----------
 echo
-echo "=== CANARINO 2 — i record pinnati, md5 per md5 ==="
+echo "=== CANARY 2 - the pinned records, md5 by md5 ==="
 FAILED=0
 for P in "${TAG}ridge_A1_duo_mel:madeeg_ridge_duo_repro2026-08" \
          "${TAG}ridge_A3_solos_mel:madeeg_ridge_solos_repro2026-08"; do
   NEW=${P%%:*}; OLD=${P##*:}
   if [ -f "$(rec "$OLD")" ]; then
     A=$(_md5 "$(rec "$OLD")"); B=$(_md5 "$(rec "$NEW")")
-    printf "  %-34s pinnato %s\n  %-34s replica %s\n" "$OLD" "$A" "$NEW" "$B"
+    printf "  %-34s pinned    %s\n  %-34s replicated %s\n" "$OLD" "$A" "$NEW" "$B"
     if [ "$A" = "$B" ]; then
-      echo "  -> [PASSATO]"
+      echo "  -> [PASSED]"
     else
-      echo "  -> [FALLITO] i record differiscono. Controlla PRIMA l'interprete"
-      echo "     (trappola n.1: /opt/anaconda3 muove i float a 2e-5), poi FERMATI e riporta."
+      echo "  -> [FAILED] the records differ. Check the INTERPRETER FIRST"
+      echo "     (trap #1: /opt/anaconda3 moves the floats at 2e-5), then STOP and report."
       FAILED=1
     fi
   else
-    echo "  ⏭️  $OLD non e' su questa macchina (runs/ e' gitignored): niente contro cui confrontare."
+    echo "  SKIPPED: $OLD is not on this machine (runs/ is gitignored): nothing to compare against."
   fi
 done
 
 echo
-echo "=== ESITO DELLA REPLICA (confronta con i RIFERIMENTI in testa a questo script) ==="
+echo "=== REPLICATION OUTCOME (compare with the REFERENCE NUMBERS in the header) ==="
 for R in "${TAG}ridge_A1_duo_mel" "${TAG}ridge_A2_duo_env" "${TAG}ridge_A3_solos_mel"; do
   printf "%-30s " "$R"; acc "$R"
 done
 echo
-echo "soglia pre-registrata (26/7): 88/154 = 0.5714. Nessuna delle tre la supera."
-echo "record pinnati : runs/results/madeeg_ridge_{duo,solos}_repro2026-08/"
-echo "A2 (envelope)  : _baldo_archive_2026-07-18/results/madeeg_ridge_duo_env/ — fuori da RESULTS.md"
+echo "pre-registered threshold (2026-07-26): 88/154 = 0.5714. None of the three crosses it."
+echo "pinned records : runs/results/madeeg_ridge_{duo,solos}_repro2026-08/"
+echo "A2 (envelope)  : run archive, results/madeeg_ridge_duo_env/ - outside RESULTS.md"
 [ "$FAILED" = 0 ] || exit 1

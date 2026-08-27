@@ -40,10 +40,10 @@ eeg_repr: "raw"
 #                       pairwise evaluation metric. DEFAULT; reproduces upstream.
 #   "classify_eeg"   -> supervised 4-class classifier on EEG only (encoder ->
 #                       Linear(100->4) -> cross-entropy on the attended-element
-#                       label). Supervisor experiment #2.
+#                       label). Diagnostic control #2.
 #   "classify_audio" -> supervised 4-class classifier on the 4 audio stems only
 #                       (concat of the 4 encoder embeddings -> Linear(400->4) ->
-#                       cross-entropy). Supervisor experiment #1, a NEGATIVE
+#                       cross-entropy). Diagnostic control #1, a NEGATIVE
 #                       control: expected ~chance; above-chance = song->label
 #                       leakage, not performance.
 # The two classify_* objectives use a SEPARATE LightningModule

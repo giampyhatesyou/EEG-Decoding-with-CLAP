@@ -1,5 +1,9 @@
 # Changes from the Akama baseline
 
+> **Scope: Chapter 1 only** — what this repository changed relative to the upstream
+> Akama code. The MAD-EEG drivers (`src/madeeg_*.py`) have no upstream to differ from:
+> they are new, and their design decisions live in each file's header.
+
 This repository derives from the Akama et al. (2025) code, kept verbatim under
 `Music_attention-main/codes_attention/attention/`. This file lists the
 difference between that upstream and the repository as it is now. In source,
@@ -16,7 +20,7 @@ each edit relative to upstream is marked `# CHANGED(baseline)`.
 - `src/models/clap_encoder.py` — frozen LAION-CLAP backbone + a trainable head
   `Linear(512→256)→GELU→Linear(256→100)`, one instance shared across the 4 stems.
 - `src/modules/supervised_classification.py` — `SupervisedClassification`, a separate
-  LightningModule for the supervisor-proposed unimodal diagnostics (#1/#2): a
+  LightningModule for the two unimodal diagnostic controls (#1/#2): a
   cross-entropy 4-class classifier over a single modality (`classify_eeg` /
   `classify_audio`), selected by the `objective` flag. It reuses the baseline encoders
   but defines its own loss and argmax metric, so the contrastive loss

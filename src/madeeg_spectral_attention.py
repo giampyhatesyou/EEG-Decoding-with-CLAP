@@ -1,11 +1,11 @@
 """EXP. 11 -- the attended spectral REGISTER from the EEG frequency decomposition.
 
-Vault contract (written BEFORE this file existed, and not touched after):
-  "Cap. 2 -- Exp. 11 (ESPLORATIVO): il registro spettrale attenzionato, criterio
-   pre-registrato (11 ago 2026)".
+Pre-registration (written BEFORE this file existed, and not touched after):
+  "Chapter 2 -- Exp. 11 (EXPLORATORY): the attended spectral register, pre-registered
+   criterion (2026-08-11)".
 
-THE HYPOTHESIS (external, dated, not born from our data). The supervisor's mail of
-~8/8/2026: "The instruments would trigger responses in vastly different frequency
+THE HYPOTHESIS (external, dated, not born from our data). A written suggestion received
+around 2026-08-08: "The instruments would trigger responses in vastly different frequency
 ranges ... one would expect to find this decodable ... when using the frequency
 decomposition as the features for the decoder (see Ingmar DeVries' paper from the lab
 in 2021)". Feature recipe = de Vries, Marinato & Baldauf (2021) J Neurosci 41(41),
@@ -19,7 +19,7 @@ THE DESIGN, and why it is immune to the confound this project has already demons
     47 such pairs exist (8 subjects). Unit of analysis = the PAIR: a forced choice
     between its two trials. Acoustics, subject, session and spatial render are
     IDENTICAL across the two, so they cancel; the null is 0.500 EXACT by symmetry,
-    not assumed (Comandamenti #4).
+    not assumed (method rule 4).
   * Label that generalises across pairs: y=1 iff the attended instrument is the one
     with the HIGHER spectral centroid, measured from the stems (`soli`) -- audio only,
     fixed a priori, 0 ambiguous orderings out of 18 duo mixtures.
@@ -33,7 +33,7 @@ DECLARED BEFORE THE RUN, in this file, and not editable afterwards:
     0.86 @0.70.
   * POSITIVE CONTROL threshold >= 0.90 (>= 43/47), crossed BEFORE the real number is
     computed -- this script REFUSES to compute the real number if it fails
-    (Comandamenti #3). Dose-response reported at half amplitude.
+    (method rule 3). Dose-response reported at half amplitude.
   * NEGATIVE CONTROL (training labels permuted, 20 seeds) must land in [0.40, 0.60];
     outside that band the claimed null is wrong and the primary is not reported.
   * SECONDARY, pre-declared with direction: dose-response on register distance, split
@@ -43,7 +43,7 @@ DECLARED BEFORE THE RUN, in this file, and not editable afterwards:
     the gain confound is imbalanced 27/13 and cannot be removed, only probed.
 
 EXPLORATORY BY CONSTRUCTION: the duos are spent material (ledger of looks). No trio is
-touched by this file. No sign is ever flipped (Comandamenti #6): if the register decodes
+touched by this file. No sign is ever flipped (method rule 6): if the register decodes
 below chance, that is explained, not inverted.
 
 Run (CPU, ~10'):
@@ -82,7 +82,7 @@ CAVEAT = [
     "!! EXPLORATORY BY CONSTRUCTION: the duos are spent material (ledger of looks).",
     "!! Unit = the PAIR (same mixture, two attended instruments); null = 0.500 EXACT by",
     "!! symmetry, not assumed. Criterion, thresholds and secondaries were written in the",
-    "!! vault contract BEFORE this file existed and are not editable after the fact.",
+    "!! pre-registration BEFORE this file existed and are not editable after the fact.",
 ]
 
 
@@ -321,7 +321,7 @@ def concentration_map(md):
 
 def run_exp12(args, out, md):
     """EXP. 12 -- the same test on the MONO duos, fresh material for this variable.
-    Contract: 'Cap. 2 -- Exp. 12 ... criterio pre-registrato (11 ago 2026)'."""
+    Pre-registration: 'Chapter 2 -- Exp. 12 ... pre-registered criterion (2026-08-11)'."""
     fp = h5py.File(os.path.join(md, "madeeg_preprocessed.hdf5"), "r")
     meta = yaml.safe_load(open(os.path.join(md, "madeeg_preprocessed.yaml")))
     print("[exp12] centroids from the stereo stems (stems are shared by both renders)...")
@@ -513,7 +513,7 @@ def main():
     ])
     if not passed:
         print("[exp11] positive control FAILED -> the real number is NOT computed "
-              "(Comandamenti #3). Fix the wiring.")
+              "(method rule 3). Fix the wiring.")
         f.close()
         sys.exit(1)
 

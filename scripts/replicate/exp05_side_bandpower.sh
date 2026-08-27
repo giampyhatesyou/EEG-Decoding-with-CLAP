@@ -1,115 +1,112 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Exp. 5 — il LATO attenzionato da band-power. ⚫ MAI GIRATO COME SCRITTO.
+# Exp. 5 - the attended SIDE from band power. NEVER RUN AS WRITTEN.
 #
-# Questo script NON esegue niente e non produce nessun numero. Esiste perche' il
-# contratto dell'Exp. 5 e' agli atti, tre delle sue soglie sono ancora in uso, e
-# una cartella di replica che semplicemente NON CONTIENE l'Exp. 5 farebbe pensare
-# a una dimenticanza invece che a una decisione ([[Comandamenti]] §12: chi
-# sbaglia ritira per iscritto, non cancella).
+# This script executes nothing and produces no number. It exists because the
+# Exp. 5 pre-registration is on record, three of its thresholds are still in use,
+# and a replication directory that simply DOES NOT CONTAIN Exp. 5 would look like
+# an oversight rather than a decision.
 #
-# COSA MISURAVA: se la potenza in banda (alfa in particolare) permette di
-#   decodificare da quale LATO proveniva lo strumento attenzionato — e se questo
-#   accade nella resa STEREO (±45°) e NON nella resa MONO.
-# DATA       : contratto scritto il **9 ago 2026**, prima di qualunque riga di
-#              codice e di qualunque numero. ARCHIVIATO l'11 ago 2026.
-# ORIGINE    : ESTERNA, per iscritto, datata — la mail del Relatore del ~8/8/2026
-#              («split up the EEG signal in different frequency bands, or better
-#              even, use the frequency decomposition as the features for the
-#              decoder»), con rimando a de Vries, Marinato & Baldauf (2021).
-#              L'ipotesi non nasce dai nostri dati. Questo non la rende
-#              confermativa (i duo erano gia' spesi), ma toglie il sospetto che
-#              sia stata scelta dopo aver visto cosa conveniva.
-# DOMANDA    : «il lato dello strumento attenzionato si legge dalla decomposizione
-#              in frequenza?»
-# NULL       : 0.5 teorico, ma il null OPERATIVO era **75/149 = 0.5034** — il
-#              tiratore costante che risponde sempre «sinistra». E' quello il
-#              pavimento, e andava stampato accanto alla statistica.
-# SOGLIA PRE-REGISTRATA: **86/149 = 0.5772** sul primario (p = 0.0356; 85 avrebbe
-#              dato 0.0505, quindi non c'era liberta' di scelta).
-# VERDETTO   : ⚫ **ARCHIVIATO SENZA NUMERO.** La decisione sul LATO e' stata
-#              eliminata il 10/8 e con essa la soglia 86/149. Nessuna run
-#              corrisponde a questo contratto.
-# SGUARDI    : zero. Non essendo mai stato eseguito, non ha speso niente.
+# WHAT IT MEASURED: whether band power (alpha in particular) allows decoding which
+#   SIDE the attended instrument came from - and whether this happens in the
+#   STEREO rendering (+/-45 degrees) and NOT in the MONO one.
+# DATE       : criterion written 2026-08-09, before any line of code and any
+#              number. ARCHIVED 2026-08-11.
+# ORIGIN     : EXTERNAL, in writing, dated - a written suggestion received around
+#              2026-08-08 ("split up the EEG signal in different frequency bands,
+#              or better even, use the frequency decomposition as the features for
+#              the decoder"), pointing to de Vries, Marinato & Baldauf (2021).
+#              The hypothesis does not come from our data. That does not make it
+#              confirmatory (the duos were already spent), but it removes any
+#              suspicion that it was picked after seeing what was convenient.
+# QUESTION   : "can the side of the attended instrument be read from the frequency
+#              decomposition?"
+# NULL       : 0.5 in theory, but the OPERATIONAL null was 75/149 = 0.5034 - the
+#              constant guesser that always answers "left". That is the floor, and
+#              it had to be printed next to the statistic.
+# PRE-REGISTERED THRESHOLD: 86/149 = 0.5772 on the primary (p = 0.0356; 85 would
+#              have given 0.0505, so there was no freedom of choice).
+# VERDICT    : ARCHIVED WITHOUT A NUMBER. The SIDE decision was dropped on
+#              2026-08-10 and the 86/149 threshold with it. No run corresponds to
+#              this pre-registration.
+# BUDGET     : zero. Never having been executed, it spent nothing.
 # GPU        : n/a.
 #
-# 🔑 COSA SOPRAVVIVE, ED E' LA PARTE CHE CONTA — tre soglie scritte il 9/8, cioe'
-#    DUE GIORNI PRIMA che esistesse qualunque numero, e poi riprese da altri
-#    esperimenti. E' la prova materiale che quelle soglie non sono state scelte
-#    dopo aver visto i dati:
+# WHAT SURVIVES, AND IT IS THE PART THAT MATTERS - three thresholds written on
+#    2026-08-09, i.e. TWO DAYS BEFORE any number existed, and later reused by other
+#    experiments. It is the material proof that those thresholds were not chosen
+#    after seeing the data:
 #
-#      30/47  ->  ripresa dall'**Exp. 11** (registro spettrale, duo stereo)
-#      27/42  ->  ripresa dall'**Exp. 12** (duo mono) e dall'**Exp. 6 [H°]**
-#      53/89  ->  ripresa dall'**Exp. 12** (pooled)
-#      28/44  ->  la variante dell'**Exp. 6 [H]** dopo l'esclusione dei 3 target
-#                 centrati (44 coppie a lati opposti invece di 47)
+#      30/47  ->  reused by Exp. 11 (spectral register, stereo duos)
+#      27/42  ->  reused by Exp. 12 (mono duos) and by Exp. 6 [H-prime]
+#      53/89  ->  reused by Exp. 12 (pooled)
+#      28/44  ->  the Exp. 6 [H] variant after excluding the 3 centred targets
+#                 (44 opposite-side pairs instead of 47)
 #
-# 🔑 E LA SCOPERTA DI METADATI che ha reso possibile tutto il resto, contata il
-#    9/8 e che NON spende sguardi (e' un conteggio di metadati, non di EEG):
-#    `wav_info.panning` in `madeeg_preprocessed.yaml` da', per ogni trial e per
-#    ogni strumento, **0.2 = sinistra · 0.8 = destra · 0.5 = centro**. Quindi:
-#      149 duo stereo con lato del target definito  (75 L · 74 R)
-#        5 duo stereo con target al CENTRO -> esclusi A PRIORI dal contratto
-#          (tutti `pop_mixtape_duo_GtVx_theme1_stereo_Vx`: la voce e' centrata)
-#       47 coppie gemelle stereo · di cui **44 a lati opposti**
-#       42 coppie gemelle mono
-#       22 mixture con la gemella in ENTRAMBE le rese
+# AND THE METADATA DISCOVERY that made everything else possible, counted on
+#    2026-08-09, which spends no held-out looks (it counts metadata, not EEG):
+#    `wav_info.panning` in `madeeg_preprocessed.yaml` gives, for every trial and
+#    every instrument, 0.2 = left / 0.8 = right / 0.5 = centre. Hence:
+#      149 stereo duos with a defined target side  (75 L / 74 R)
+#        5 stereo duos with the target at CENTRE -> excluded A PRIORI by the criterion
+#          (all `pop_mixtape_duo_GtVx_theme1_stereo_Vx`: the voice is centred)
+#       47 stereo twin pairs, of which 44 on opposite sides
+#       42 mono twin pairs
+#       22 mixtures with a twin in BOTH renderings
 #
-# ⚠️ IL CONFOUND DICHIARATO PRIMA, e che nessun successore ha rimosso: nei brani
-#    **pop** (`BsDr`, `GtVx`) il panning e' fisso, quindi **lato ≡ strumento** e un
-#    decoder del lato puo' essere un decoder dello strumento. Nei classici no:
-#    10 combinazioni (brano, strumento) su 20 compaiono con lo strumento
-#    attenzionato sia a sinistra sia a destra, per 79 trial — ⚠️ ma il ribaltamento
-#    e' **fra soggetti, non dentro il soggetto** (0 soggetti hanno sentito lo
-#    stesso strumento dai due lati), quindi quel contrasto e' BETWEEN-SUBJECT.
+# THE CONFOUND DECLARED IN ADVANCE, which no successor has removed: in the pop
+#    tracks (`BsDr`, `GtVx`) the panning is fixed, so side is identical to
+#    instrument and a side decoder may be an instrument decoder. In the classical
+#    tracks it is not: 10 (track, instrument) combinations out of 20 appear with the
+#    attended instrument both left and right, over 79 trials - but the flip is
+#    BETWEEN subjects, not within subject (0 subjects heard the same instrument from
+#    both sides), so that contrast is BETWEEN-SUBJECT.
 #
-# ⚠️ NESSUN FILE DEL REPO IMPLEMENTA L'EXP. 5 COME SCRITTO. Verificato il 15/8:
-#    non esiste un decoder del LATO da band-power. Le cose che gli somigliano, e
-#    che NON sono la stessa cosa:
-#      - `--alpha_li` (Exp. 6 [H]) decide il lato, ma con l'INDICE DI LATERALITA'
-#        alfa su coppie gemelle, non con un decoder addestrato su band-power;
-#      - `src/madeeg_spectral_attention.py` (Exp. 11/12) e' band-power + LDA, ma
-#        decide il **REGISTRO** (acuto/grave), non il **LATO**;
-#      - `--cca_views lateralization` (modello 9) e' una FEATURE, non un test, e
-#        dentro 1-8 Hz e' identicamente zero (l'alfa e' fuori banda).
-#    Scrivere «l'Exp. 5 e' stato fatto da X» sarebbe falso per tutti e tre.
+# NO FILE IN THE REPO IMPLEMENTS EXP. 5 AS WRITTEN. Verified 2026-08-15: there is
+#    no band-power SIDE decoder. The things that resemble it, and are NOT the same:
+#      - `--alpha_li` (Exp. 6 [H]) decides the side, but with the alpha LATERALITY
+#        INDEX on twin pairs, not with a decoder trained on band power;
+#      - `src/madeeg_spectral_attention.py` (Exp. 11/12) is band power + LDA, but
+#        decides the REGISTER (high/low), not the SIDE;
+#      - `--cca_views lateralization` (model 9) is a FEATURE, not a test, and inside
+#        1-8 Hz it is identically zero (alpha is out of band).
+#    Writing "Exp. 5 was done by X" would be false for all three.
 #
-# CONTRATTO  : vault, "90 Archivio/Contratti eseguiti/Cap. 2 — Exp. 5: lato
-#              attenzionato da band-power, criterio pre-registrato (9 ago 2026)"
-#              (archiviato l'11/8, NON riscritto)
-# PROVENIENZA: nessuna — non esiste nessun file di risultato, e non deve esistere.
-#              I successori: exp06_alpha_paired.sh · exp11_spectral_register_stereo.sh
-#              · exp12_spectral_register_mono.sh
+# PRE-REGISTRATION: "Chapter 2 - Exp. 5: attended side from band power,
+#              pre-registered criterion (2026-08-09)" (archived 2026-08-11, NOT rewritten)
+# PROVENANCE : none - no result file exists, and none should. The successors are
+#              exp06_alpha_paired.sh, exp11_spectral_register_stereo.sh and
+#              exp12_spectral_register_mono.sh
 # =============================================================================
 set -euo pipefail
 
 cat <<'EOF'
-⚫ Exp. 5 — ARCHIVIATO, MAI GIRATO COME SCRITTO. Questo script non esegue niente.
+Exp. 5 - ARCHIVED, NEVER RUN AS WRITTEN. This script executes nothing.
 
-Non c'e' un comando da rilanciare perche' non c'e' codice che implementi il test
-del contratto: la decisione sul LATO e' stata eliminata il 10/8 e con essa la
-soglia 86/149. Il contratto resta agli atti, non riscritto.
+There is no command to relaunch because no code implements the pre-registered test:
+the SIDE decision was dropped on 2026-08-10 and the 86/149 threshold with it. The
+pre-registration stays on record, unrewritten.
 
-Cosa lanciare INVECE, se quello che cerchi e' uno dei suoi successori:
+What to run INSTEAD, if what you are after is one of its successors:
 
-  il LATO, su coppie gemelle, con l'indice di lateralita' alfa   (Exp. 6 [H])
+  the SIDE, on twin pairs, with the alpha laterality index      (Exp. 6 [H])
     bash scripts/replicate/exp06_alpha_paired.sh
-    -> primario 23/44 = 0.5227 (soglia 28/44) · controllo mono 24/42 (soglia 27/42)
+    -> primary 23/44 = 0.5227 (threshold 28/44), mono control 24/42 (threshold 27/42)
 
-  il REGISTRO (acuto/grave), band-power Morlet + LDA, duo STEREO  (Exp. 11)
+  the REGISTER (high/low), Morlet band power + LDA, STEREO duos  (Exp. 11)
     bash scripts/replicate/exp11_spectral_register_stereo.sh
-    -> 24/47 = 0.5106 (soglia 30/47, scritta il 9/8)
+    -> 24/47 = 0.5106 (threshold 30/47, written 2026-08-09)
 
-  lo stesso sui duo MONO e sul pooled                             (Exp. 12)
+  the same on the MONO duos and on the pooled set                (Exp. 12)
     bash scripts/replicate/exp12_spectral_register_mono.sh
-    -> mono 22/42 (soglia 27/42) · pooled 46/89 (soglia 53/89), entrambe del 9/8
+    -> mono 22/42 (threshold 27/42), pooled 46/89 (threshold 53/89), both from 2026-08-09
 
-  band_power come VISTA della CCA su own-vs-other                 (Exp. 16 braccio B)
+  band_power as a CCA VIEW on own-vs-other                       (Exp. 16 arm B)
     bash scripts/replicate/exp16b_ccaviews.sh
-    -> 202/376 = 0.5372, barra 208/376 non superata
-    ⚠️ e li' `band_power` dentro 1-8 Hz e' SOLO delta+theta: alfa e beta sono zero
-       per costruzione e il modulo le scarta. Quel 🔴 vale per delta+theta, NON
-       per l'idea del Relatore, che richiede una banda piu' larga — cioe' una
-       PRE-REGISTRAZIONE NUOVA, non un flag in piu' su una run vecchia.
+    -> 202/376 = 0.5372, the 208/376 bar not crossed
+    NOTE: there `band_power` inside 1-8 Hz is ONLY delta+theta: alpha and beta are
+       zero by construction and the module discards them. That negative holds for
+       delta+theta, NOT for the wider-band proposal, which would require a NEW
+       PRE-REGISTRATION, not one more flag on an old run.
 EOF
 exit 0

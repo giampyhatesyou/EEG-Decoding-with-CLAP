@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # =============================================================================
-# replicate.sh — reproduce, in one command, every number this project reports.
+# replicate.sh — reproduce, in one command, every CHAPTER 1 number this project
+# reports. Chapter 2 (MAD-EEG) is a different arm and lives in scripts/replicate/;
+# `python src/run.py exp all` runs both.
 # (Was reproduce_akama.sh; it now also runs the negative controls that used to
 #  live in test_sanity.sh, and ends by rendering the thesis table.)
 #
@@ -16,7 +18,7 @@
 # Reference values.
 #   Table 1 (paper): global accuracy 0.865.
 #   Table 2 (paper, all-data): sub3 0.6458  sub7 0.8447  sub2 0.7763  mean 0.7556.
-#   Verified here 2026-06-02 (CPU, baldo): sub3 0.6642, sub7 0.8750, sub2 0.8664
+#   Verified here 2026-06-02 (CPU, cluster): sub3 0.6642, sub7 0.8750, sub2 0.8664
 #   (mean 0.8019). sub3/sub7 land within 2-3 points and reproduce the ranking
 #   reversal (sub3 best within-subject -> worst cross-subject; sub7 the opposite);
 #   sub2 is ~9 points higher, so this is a CLOSE-BUT-NOT-EXACT reproduction. The

@@ -1,5 +1,10 @@
 # Methodology (working draft)
 
+> **Scope: Chapter 1 only** — the Akama dataset and the contrastive baseline. The
+> MAD-EEG arm has its own note in [`MADEEG.md`](MADEEG.md), its experiments in
+> [`../scripts/replicate/README.md`](../scripts/replicate/README.md), and the rules
+> both arms follow in [`METHOD_RULES.md`](METHOD_RULES.md).
+
 This document is a working draft of the methodology section. It is **not**
 intended as a finished thesis chapter — it's a structured set of paragraphs
 that you can port to Overleaf / Word with minor stylistic adjustments. Each
@@ -221,7 +226,7 @@ when relevant).*
 
 ---
 
-## 7. Unimodal supervised diagnostics (supervisor experiments #1 and #2)
+## 7. Unimodal supervised diagnostics (diagnostic controls #1 and #2)
 
 [DEFEND] These two experiments are *diagnostic*, not part of the
 minimal-change baseline. Their purpose is to probe **how much of the
@@ -251,7 +256,7 @@ relying on alignment with the audio stems.
 Reading of the result:
 
 - **High accuracy** ⇒ the attended element is decodable from EEG alone,
-  which is the representation quality the supervisor wants to push.
+  which is the representation quality this line of work aims at.
 - **Chance-level (~25%)** ⇒ the contrastive model's apparent success
   leaned on the audio side / song structure rather than on EEG content.
 

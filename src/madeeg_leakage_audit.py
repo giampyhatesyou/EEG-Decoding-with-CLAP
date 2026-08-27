@@ -1,4 +1,4 @@
-"""ARM D -- the window-CV leakage audit on MAD-EEG (vault: Piano -- la svolta, par.4D).
+"""ARM D -- the window-CV leakage audit on MAD-EEG (arm D of the 2026-08-11 plan).
 
 Niu et al. 2024 (Neuroscience Letters) report 92.6% duo attention decoding on MAD-EEG
 with 1-second windows and a CSP+DNN pipeline. On the same data the honest signal-family

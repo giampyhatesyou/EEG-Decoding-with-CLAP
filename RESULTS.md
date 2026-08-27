@@ -9,7 +9,7 @@ GLOBAL is inflated by the ~49% vocal prior.
 `vintage` says which code revision produced each fold — see the manifest header.
 A row mixing vintages is reported as such rather than silently averaged away.
 
-MAD-EEG tables (Cap. 2) are a different arm and the two notes above do not
+MAD-EEG tables (Chapter 2) are a different arm and the two notes above do not
 apply to them: one row per TRIAL rather than per window, chance = 1/n_present
 (0.500 on a duo), and the label space is the 9 instruments, not 4 fixed slots.
 

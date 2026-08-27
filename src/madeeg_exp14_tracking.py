@@ -1,8 +1,8 @@
 """EXP. 14 -- the TRACKING side of the gate: MFCC-13 and mel-64 on own-vs-other.
 
-Vault contract, written BEFORE this file existed and not touched after:
-  "Cap. 2 -- Exp. 14: il lato tracking del gate -- MFCC e mel-64 su own-vs-other,
-   criterio pre-registrato (12 ago 2026)".
+Pre-registration, written BEFORE this file existed and not touched after:
+  "Chapter 2 -- Exp. 14: the tracking side of the gate -- MFCC and mel-64 on own-vs-other,
+   pre-registered criterion (2026-08-12)".
 
 THE QUESTION. Exp. 13 (audio only) promoted MFCC-13 on SEPARABILITY: among six fixed
 representations it is the one under which the two stems of a duo share the least. But
@@ -21,10 +21,10 @@ Primary bar: accuracy >= 208/376, i.e. P(X >= 208 | 376, 0.5) = 0.0221 <= 0.025 
 "tracks at least as well as the representation we use today".
 
 WHAT IS SPENT: nothing. own-vs-other runs on the SOLOS, declared free training material by
-the vault's ledger of looks and already used as the gauge by Exp. 7 and Exp. 8. No duo
+the held-out-look ledger and already used as the gauge by Exp. 7 and Exp. 8. No duo
 decision, no trio, no split by genre/melody/instrument/subject.
 
-GATES, DECLARED HERE AND CROSSED BEFORE ANY REAL NUMBER IS READ (contract SS2):
+GATES, DECLARED HERE AND CROSSED BEFORE ANY REAL NUMBER IS READ (contract section 2):
   G1 REGRESSION CANARY: --target mel --n_mels 8 must still give 208/376 with
      md5(madeeg_ownvsother.csv) = 2eaa926244de340d31907c6deeb04b0c. If it moves, the diff
      touched the science: STOP.
@@ -42,7 +42,7 @@ GATES, DECLARED HERE AND CROSSED BEFORE ANY REAL NUMBER IS READ (contract SS2):
 Any gate failing => this script writes what it has and exits non-zero. Nothing is run
 "just to see".
 
-Run (CPU, ~15', interpreter is NOT optional -- Legacy SS4 trap 1):
+Run (CPU, ~15', interpreter is NOT optional -- environment trap 1):
   /opt/miniconda3/bin/python src/madeeg_exp14_tracking.py --madeeg_dir ~/madeeg
 """
 import os
@@ -60,18 +60,18 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RECON = os.path.join(ROOT, "src", "madeeg_reconstruction.py")
 DIAGNOSE = os.path.join(ROOT, "src", "madeeg_diagnose.py")
 
-# ---- thresholds, contract SS2 and SS4. Not editable after the fact. ----
+# ---- thresholds, contract section 2 and section 4. Not editable after the fact. ----
 CANARY_K, CANARY_N = 208, 376
 CANARY_MD5 = "2eaa926244de340d31907c6deeb04b0c"
-CTRL_MIN = 0.95                 # contract SS2; the file's own built-in line still says 0.90
+CTRL_MIN = 0.95                 # contract section 2; the file's own built-in line still says 0.90
 BAR_K, BAR_N = 208, 376         # primary: >= 208/376, one-sided exact p = 0.0221 <= 0.025
 
-# ---- the K = 2 candidates, contract SS3. Declared before the run. ----
+# ---- the K = 2 candidates, contract section 3. Declared before the run. ----
 CANDIDATES = [
     ("T1 MFCC-13", "mfcc13", ["--target", "mfcc", "--n_mels", "64", "--n_mfcc", "13"]),
     ("T2 mel-64", "mel64", ["--target", "mel", "--n_mels", "64"]),
 ]
-# ---- contract SS6: run ONLY if T1 misses the bar. Exploratory by construction. ----
+# ---- contract section 6: run ONLY if T1 misses the bar. Exploratory by construction. ----
 SECONDARY = ("S1 MFCC-13+c0 (EXPLORATORY)", "mfcc13c0",
              ["--target", "mfcc_c0", "--n_mels", "64", "--n_mfcc", "13"])
 
@@ -82,7 +82,7 @@ CTRL_ARGS = ["--self_test", "--estimator", "ridge", "--target_fs", "64",
              "--band_low", "1", "--band_high", "8", "--lags_ms", "250", "--seed", "42"]
 
 CAVEAT = [
-    "!! READ BEFORE THE NUMBERS (Comandamenti #9).",
+    "!! READ BEFORE THE NUMBERS (method rule 9).",
     "!! WHAT THIS MEASURES: own-vs-other measures TRACKING and nothing else. Given the EEG",
     "!! of a held-out SOLO segment, is that segment's own audio scored above ANOTHER",
     "!! solo's? The other segment is a different song, so nothing here says anything about",
@@ -90,15 +90,15 @@ CAVEAT = [
     "!! NULL = 0.500, EXACT BY SYMMETRY, not estimated: every pair is scored in both",
     "!! directions, so a decoder with nothing but a fixed instrument preference gets",
     "!! exactly one of the two right. The null is printed next to every accuracy.",
-    "!! NOTHING IS SPENT: the solos are declared free training material by the vault's",
-    "!! ledger of looks. No duo decision, no trio, no split by genre/melody/instrument/",
+    "!! NOTHING IS SPENT: the solos are declared free training material by the held-out-look",
+    "!! ledger. No duo decision, no trio, no split by genre/melody/instrument/",
     "!! subject. The positive control is the Exp. 8 construction: it enumerates the duo",
     "!! stimuli to build its trial list, but every EEG is REPLACED by a synthetic mixture,",
     "!! so no real-EEG number is produced by it and none can be cited from it.",
     "!! THE POSITIVE-CONTROL NUMBERS ARE NOT RESULTS. They license the wiring and say",
     "!! nothing about the real data.",
     "!! K = 2, the bar (>= 208/376) and the four readings of the outcome were written in",
-    "!! the vault contract of 12/8/2026 BEFORE this file existed, and are not editable now.",
+    "!! the pre-registration of 12 Aug 2026 BEFORE this file existed, and are not editable now.",
     "!! McNemar against the mel-8 reference is DESCRIPTIVE, in both directions, and does",
     "!! NOT enter the verdict.",
 ]
@@ -115,7 +115,7 @@ def md5(path):
 
 
 def run_recon(madeeg_dir, tag, extra):
-    """One madeeg_reconstruction.py run into its own directory (Comandamenti #9: a control
+    """One madeeg_reconstruction.py run into its own directory (method rule 9: a control
     never writes over a result). Returns the output dir."""
     cmd = [PY, RECON, "--madeeg_dir", madeeg_dir, "--training_date", tag] + extra
     print(f"\n$ {' '.join(cmd)}", flush=True)
@@ -136,7 +136,7 @@ def ovo_result(d):
 
 def selftest_acc(d):
     # --self_test writes to <training_date>_selftest, never over a real run's directory
-    # (Comandamenti #9): a control must not be readable as a result by accident.
+    # (method rule 9): a control must not be readable as a result by accident.
     txt = open(os.path.join(d + "_selftest", "madeeg_selftest_summary.txt")).read()
     m = re.search(r"AAD accuracy=([0-9.]+)", txt)
     assert m, f"no accuracy line in {d}"
@@ -217,7 +217,7 @@ def main():
     say(f"  -> [{'PASSED' if ok else 'FAILED'}] the default path is bit-for-bit what it was "
         "before the diff.")
     if not ok:
-        say("  CANARY FAILED -> the diff moved the science. No candidate is run (Comandamenti #3/#8).")
+        say("  CANARY FAILED -> the diff moved the science. No candidate is run (method rules 3/8).")
         dump()
 
     # ---------------- G2: the new branch IS the Exp. 13 candidate ----------------
@@ -235,7 +235,7 @@ def main():
     # ---------------- G3: positive control per candidate ----------------
     say()
     say(f"=== GATE 3 -- POSITIVE CONTROL per candidate, threshold >= {CTRL_MIN:.2f} "
-        "(contract SS2) ===")
+        "(contract section 2) ===")
     say("  Synthetic EEG built FROM each candidate representation (Exp. 8 construction). A PASS")
     say("  licenses the wiring of that candidate and says NOTHING about the real data.")
     for name, tag, flags in CANDIDATES:
@@ -246,7 +246,7 @@ def main():
             f"-> [{'PASSED' if ok else 'FAILED'}]")
         if not ok:
             say(f"  positive control below {CTRL_MIN:.2f} -> the candidate is not reported "
-                "(Comandamenti #3).")
+                "(method rule 3).")
             dump()
     say("  Both wirings licensed. The real numbers may now be read.")
 
@@ -289,7 +289,7 @@ def main():
     # ---------------- descriptive McNemar, both directions ----------------
     say()
     say("=== DESCRIPTIVE -- McNemar against the mel-8 reference, BOTH directions ===")
-    say("  Does not enter the verdict (contract SS4). Both directions are printed so that a")
+    say("  Does not enter the verdict (contract section 4). Both directions are printed so that a")
     say("  candidate that is WORSE than the reference is as readable as one that is better.")
     for name, (_, _, csv_path) in res.items():
         say(f"\n  -- {name} vs mel-8 --")
@@ -300,7 +300,7 @@ def main():
     t1 = res["T1 MFCC-13"][0] >= BAR_K
     t2 = res["T2 mel-64"][0] >= BAR_K
     say()
-    say("=== VERDICT -- the reading was written before the numbers (contract SS5) ===")
+    say("=== VERDICT -- the reading was written before the numbers (contract section 5) ===")
     if t1 and t2:
         say("  BRANCH 1 (both track): arm C's front end is named -- MFCC-13, maximum separability")
         say("  AND tracking. Any EEG use beyond own-vs-other stays behind a NEW pre-registration.")
@@ -318,9 +318,9 @@ def main():
         say("  front end can work, and arm C must LEARN the representation instead of receiving")
         say("  it. The 18.4 GiB download stays unjustified.")
 
-    # ---------------- conditional secondary, contract SS6 ----------------
+    # ---------------- conditional secondary, contract section 6 ----------------
     say()
-    say("=== CONDITIONAL SECONDARY (contract SS6) ===")
+    say("=== CONDITIONAL SECONDARY (contract section 6) ===")
     if t1:
         say("  NOT RUN: it is defined only if T1 misses the bar, and T1 cleared it. No other")
         say("  variant is run, in any branch.")
@@ -328,9 +328,9 @@ def main():
         say("  T1 missed the bar -> the ONE declared diagnostic runs: the same MFCC WITH")
         say("  coefficient 0 (the log energy) put back, coefficients 0..13. It answers")
         say("  'is it the removed energy that costs the tracking?'.")
-        say("  🔴 EXPLORATORY BY CONSTRUCTION: outside the Bonferroni family, not a test, and")
+        say("  EXPLORATORY BY CONSTRUCTION: outside the Bonferroni family, not a test, and")
         say("  it cannot promote any candidate. Its own positive control is crossed first")
-        say("  (Comandamenti #3 has no exemption for exploratory numbers).")
+        say("  (method rule 3 has no exemption for exploratory numbers).")
         name, tag, flags = SECONDARY
         d = run_recon(md, f"exp14_ctrl_{tag}", CTRL_ARGS + flags)
         acc = selftest_acc(d)

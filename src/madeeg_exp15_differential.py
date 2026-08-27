@@ -1,12 +1,12 @@
 """EXP. 15 (EXPLORATORY) -- the STANDARDIZED attentional differential under MFCC-13.
 
-Vault contract, written BEFORE this file existed and not touched after:
-  "Cap. 2 -- Exp. 15 (ESPLORATIVO): il differenziale attenzionale sotto MFCC,
-   criterio pre-registrato (12 ago 2026)".
+Pre-registration, written BEFORE this file existed and not touched after:
+  "Chapter 2 -- Exp. 15 (EXPLORATORY): the attentional differential under MFCC,
+   pre-registered criterion (2026-08-12)".
 
 THE QUESTION, AND WHY IT IS NOT ACCURACY. Exp. 13 promoted MFCC-13 on separability (the two
 stems of a duo share ~4x less under it) and Exp. 14 showed it tracks the EEG at least as
-well as mel-8. Does that raise the ATTENTION decision on duos? The contract's SS0 answered
+well as mel-8. Does that raise the ATTENTION decision on duos? The contract's section 0 answered
 "can this test be won?" BEFORE the design was fixed, with a generative model built from our
 own measurements: the duo decision is an argmax of corr(s_hat, s_att) against
 corr(s_hat, s_unatt), so its margin is ~ a*(1-rho) with rho the between-stem correlation
@@ -17,8 +17,7 @@ binary test at that bar: 0.370. So a pre-registered accuracy primary would have 
 pre-registered failure, readable afterwards as evidence against the representation when it
 is only evidence about n.
 
-=> The primary changes QUANTITY, not threshold (the Exp. 9 bar is NOT lowered, Comandamenti
-SS5/SS6). It becomes the continuous quantity that governs the accuracy:
+=> The primary changes QUANTITY, not threshold (the Exp. 9 bar is NOT lowered, method rules 5/6). It becomes the continuous quantity that governs the accuracy:
 
     d_i(R) = corr(s_hat_i, s_att,i) - corr(s_hat_i, s_unatt,i)      raw differential
     D(R)   = mean_i d_i(R) / sd_i d_i(R)                            STANDARDIZED
@@ -27,22 +26,22 @@ THE STANDARDIZATION IS NOT COSMETIC. It is the correction of the defect Exp. 13 
 the MFCC correlations are ~46% of the mel ones, so comparing RAW differentials would repeat
 exactly the scale-invariance failure of that gate. D is dimensionless, and the accuracy is
 Phi(D) if d is approximately normal -- which is why Phi(D) is printed next to the observed
-accuracy as a mandatory coherence check (contract SS1: diverge by more than ~3 points and the
-SS0 model is wrong and MUST BE SAID, not worked around).
+accuracy as a mandatory coherence check (contract section 1: diverge by more than ~3 points and the
+section 0 model is wrong and MUST BE SAID, not worked around).
 
-PRIMARY TEST, contract SS1: exact paired sign-flip permutation on the STANDARDIZED paired
+PRIMARY TEST, contract section 1: exact paired sign-flip permutation on the STANDARDIZED paired
 differences over the SAME 154 trials, one-sided (MFCC > mel-8), alpha = 0.05, K = 1.
 Null = 0 by construction (one quantity, two representations, same trials), printed next to
 the statistic. K = 1 means ONE test: it is run on the k-fold duo protocol (P2), the protocol
-whose 86/154 the SS0 model is built on. D on the paper protocol (P1) is printed as a
+whose 86/154 the section 0 model is built on. D on the paper protocol (P1) is printed as a
 DESCRIPTIVE statistic and is not tested -- printing it does not spend a test, running a
 second permutation would.
 
-MANDATORY FLOOR, contract SS2: the minimum detectable difference in D at this n with power
+MANDATORY FLOOR, contract section 2: the minimum detectable difference in D at this n with power
 0.80, from the OBSERVED variance of the paired differences. A negative without its floor is
-not reportable here, because SS0 has already shown n is the binding constraint.
+not reportable here, because section 0 has already shown n is the binding constraint.
 
-GATES, DECLARED HERE AND CROSSED BEFORE ANY REAL NUMBER IS READ (contract SS3):
+GATES, DECLARED HERE AND CROSSED BEFORE ANY REAL NUMBER IS READ (contract section 3):
   G1 MEL ANCHORS DECISION-IDENTICAL to Exp. 9's: canary_rawsolos 74/154 and canary_duo
      86/154, identical TRIAL BY TRIAL (pred and correct, keyed subject+stim), not merely in
      total. These re-runs are also the mel-8 arm of the primary, so the gate and the
@@ -58,12 +57,12 @@ GATES, DECLARED HERE AND CROSSED BEFORE ANY REAL NUMBER IS READ (contract SS3):
      built-in PASS line still says 0.90, and a candidate between the two counts as FAILED.
 Any gate failing => this script writes what it has and exits non-zero.
 
-WHAT IS SPENT: the duos, which the vault's ledger of looks declares ALREADY ALL SPENT. Hence
+WHAT IS SPENT: the duos, which the held-out-look ledger declares ALREADY ALL SPENT. Hence
 EXPLORATORY BY CONSTRUCTION, in the title and inside the provenance file. NO TRIO is touched:
 they are the only untouched holdout, ONE shot, and even a GREEN primary here does not open
-them -- that needs a new pre-registration (contract SS6).
+them -- that needs a new pre-registration (contract section 6).
 
-Run (CPU, interpreter is NOT optional -- Legacy SS4 trap 1):
+Run (CPU, interpreter is NOT optional -- environment trap 1):
   /opt/miniconda3/bin/python src/madeeg_exp15_differential.py --madeeg_dir ~/madeeg
 """
 import os
@@ -82,24 +81,24 @@ RECON = os.path.join(ROOT, "src", "madeeg_reconstruction.py")
 DIAGNOSE = os.path.join(ROOT, "src", "madeeg_diagnose.py")
 RES = os.path.join(ROOT, "runs", "results")
 
-# ---- thresholds and constants, contract SS0-SS3. Not editable after the fact. ----
+# ---- thresholds and constants, contract section 0-section 3. Not editable after the fact. ----
 ANCHORS = {"P1": ("canary_rawsolos", 74, 154), "P2": ("canary_duo", 86, 154)}
-CTRL_MIN = 0.95              # contract SS3.2; the file's own built-in line still says 0.90
-ALPHA = 0.05                 # contract SS1, one-sided, K = 1
-POWER = 0.80                 # contract SS2
-N_PERM = 10000               # contract SS1
+CTRL_MIN = 0.95              # contract section 3.2; the file's own built-in line still says 0.90
+ALPHA = 0.05                 # contract section 1, one-sided, K = 1
+POWER = 0.80                 # contract section 2
+N_PERM = 10000               # contract section 1
 PERM_SEED = 20260812         # declared here, before the run
-COHERENCE_PTS = 3.0          # contract SS1: Phi(D) vs accuracy, in accuracy POINTS
+COHERENCE_PTS = 3.0          # contract section 1: Phi(D) vs accuracy, in accuracy POINTS
 EXP9_BAR = 90                # Exp. 9's absolute bar on 154. NOT LOWERED, NOT MOVED.
-SS0_PRED_ACC = 87.4          # contract SS0's predicted MFCC duo accuracy out of 154
-SS0_PRED_GAIN = 0.161        # contract SS0's predicted relative margin gain, +16.1%
+SEC0_PRED_ACC = 87.4          # contract section 0's predicted MFCC duo accuracy out of 154
+SEC0_PRED_GAIN = 0.161        # contract section 0's predicted relative margin gain, +16.1%
 
 # The decision protocol: every flag identical to the Exp. 9 anchors. Single variable = the
 # stimulus representation.
 DEC_ARGS = ["--ensemble", "duo", "--estimator", "ridge", "--filters", "pooled",
             "--eeg_clean", "none", "--target_fs", "64", "--band_low", "1", "--band_high", "8",
             "--lags_ms", "250", "--cv_folds", "5", "--seed", "42", "--spatial", "stereo"]
-PROTOCOL = {                                     # contract SS4: both Exp. 9 protocols
+PROTOCOL = {                                     # contract section 4: both Exp. 9 protocols
     "P1": ["--train_on", "raw_solos", "--test_eeg", "raw"],
     "P2": ["--train_on", "duos_kfold", "--test_eeg", "preprocessed"],
 }
@@ -107,14 +106,14 @@ MEL8 = ["--target", "mel", "--n_mels", "8"]
 MFCC13 = ["--target", "mfcc", "--n_mels", "64", "--n_mfcc", "13"]
 
 CAVEAT = [
-    "!! READ BEFORE THE NUMBERS (Comandamenti #9).",
+    "!! READ BEFORE THE NUMBERS (method rule 9).",
     "!! EXPLORATORY BY CONSTRUCTION, AND SAID SO IN THE TITLE. This runs on the DUOS, which",
-    "!! the vault's ledger of looks declares ALREADY ALL SPENT. No number here is",
+    "!! the held-out-look ledger declares ALREADY ALL SPENT. No number here is",
     "!! confirmatory, whatever threshold it clears. NO TRIO IS TOUCHED: 92 stereo + 93 mono",
     "!! are the only untouched holdout, ONE shot, and even a GREEN primary here does not open",
-    "!! them -- that requires a NEW pre-registration read by A. first (contract SS6).",
+    "!! them -- that requires a NEW pre-registration, read before the run (section 6).",
     "!! THE PRIMARY IS THE STANDARDIZED DIFFERENTIAL D = mean(d)/sd(d), NOT THE ACCURACY.",
-    "!! Why: the contract's SS0 check ('can this test be won?') was done BEFORE the design,",
+    "!! Why: the contract's section 0 check ('can this test be won?') was done BEFORE the design,",
     "!! with our own measurements, and predicted +1.4 trials where the Exp. 9 bar needs +4",
     "!! (power 0.370). A pre-registered accuracy primary would have been a pre-registered",
     "!! failure. The bar was NOT lowered; the QUANTITY changed. And the standardization is",
@@ -123,13 +122,13 @@ CAVEAT = [
     "!! NULL = 0, EXACT BY CONSTRUCTION, not estimated: the same quantity under two",
     "!! representations on the same trials has expected difference 0 under the null. It is",
     "!! printed next to the statistic.",
-    "!! ACCURACY IS SECONDARY AND DESCRIPTIVE. It is reported next to SS0's prediction",
+    "!! ACCURACY IS SECONDARY AND DESCRIPTIVE. It is reported next to section 0's prediction",
     "!! (87.4/154) and next to the Exp. 9 bar (90/154). MISSING THAT BAR IS THE PREDICTED",
     "!! OUTCOME, NOT A SURPRISE -- and no threshold anywhere has been lowered to meet it.",
     "!! THE POSITIVE-CONTROL NUMBER IS NOT A RESULT. It licenses the wiring of the MFCC path",
     "!! on the duo decision and says NOTHING about the real data: every EEG in it is",
     "!! synthetic. It may never be cited as a result.",
-    "!! K = 1. One permutation test, on the k-fold duo protocol (P2), the one SS0's model is",
+    "!! K = 1. One permutation test, on the k-fold duo protocol (P2), the one section 0's model is",
     "!! built on. D under the paper protocol (P1) is printed as a DESCRIPTIVE statistic and",
     "!! is not tested.",
 ]
@@ -137,7 +136,7 @@ CAVEAT = [
 
 # ----------------------------------------------------------------------------------
 def run_recon(madeeg_dir, tag, extra):
-    """One madeeg_reconstruction.py run into its own directory (Comandamenti #9: a control
+    """One madeeg_reconstruction.py run into its own directory (method rule 9: a control
     never writes over a result)."""
     cmd = [PY, RECON, "--madeeg_dir", madeeg_dir, "--training_date", tag] + extra
     print(f"\n$ {' '.join(cmd)}", flush=True)
@@ -242,7 +241,7 @@ def main():
         say(f"     -> [{'PASSED' if ok else 'FAILED'}]")
         if not ok:
             say("  ANCHOR MOVED -> the wiring is not the one Exp. 9 measured. No MFCC run "
-                "(Comandamenti #3/#8).")
+                "(method rules 3/8).")
             dump()
         mel_dir[p], mel_rec[p], keys[p] = d, new, common
     say("  Both anchors are decision-identical, trial by trial. The wiring is Exp. 9's.")
@@ -261,7 +260,7 @@ def main():
         f"threshold >= {CTRL_MIN:.2f}   -> [{'PASSED' if acc >= CTRL_MIN else 'FAILED'}]")
     if acc < CTRL_MIN:
         say("  positive control below the threshold -> no real number is produced "
-            "(Comandamenti #3).")
+            "(method rule 3).")
         dump()
     say("  The wiring is licensed. The real numbers may now be read.")
 
@@ -345,14 +344,14 @@ def main():
     say(f"     -> {'REJECTS' if p_perm <= ALPHA else 'does NOT reject'} the null at "
         f"alpha = {ALPHA}")
 
-    # ---------------- MANDATORY FLOOR, contract SS2 ------------------------------------
+    # ---------------- MANDATORY FLOOR, contract section 2 ------------------------------------
     say()
-    say("=== THE DETECTABILITY FLOOR -- mandatory, contract SS2 ===")
+    say("=== THE DETECTABILITY FLOOR -- mandatory, contract section 2 ===")
     sd_delta = float(delta.std(ddof=1))
     zsum = float(stats.norm.ppf(1 - ALPHA) + stats.norm.ppf(POWER))
     mdd = zsum * sd_delta / np.sqrt(n)
-    pred_dD_mult = SS0_PRED_GAIN * stat["P2"]["mel-8"]["D"]
-    pred_dD_acc = float(stats.norm.ppf(SS0_PRED_ACC / 154.0)
+    pred_dD_mult = SEC0_PRED_GAIN * stat["P2"]["mel-8"]["D"]
+    pred_dD_acc = float(stats.norm.ppf(SEC0_PRED_ACC / 154.0)
                         - stats.norm.ppf(ANCHORS["P2"][1] / 154.0))
     obs_power = float(stats.norm.sf(stats.norm.ppf(1 - ALPHA)
                                     - pred_dD_mult * np.sqrt(n) / sd_delta))
@@ -364,19 +363,19 @@ def main():
     say(f"     MDD = (z_{1 - ALPHA:.2f} + z_{POWER:.2f}) * sd/sqrt(n) = "
         f"({stats.norm.ppf(1 - ALPHA):.4f} + {stats.norm.ppf(POWER):.4f}) * {sd_delta:.4f}"
         f"/sqrt({n}) = {mdd:.4f}")
-    say(f"  THE EFFECT THE CONTRACT'S SS0 PREDICTS, in the same units (two routes, they must")
-    say(f"  agree because SS0's accuracy prediction IS Phi of its margin prediction):")
-    say(f"     +{SS0_PRED_GAIN * 100:.1f}% of D(mel-8) = {SS0_PRED_GAIN:.3f} * "
+    say(f"  THE EFFECT THE CONTRACT'S section 0 PREDICTS, in the same units (two routes, they must")
+    say(f"  agree because section 0's accuracy prediction IS Phi of its margin prediction):")
+    say(f"     +{SEC0_PRED_GAIN * 100:.1f}% of D(mel-8) = {SEC0_PRED_GAIN:.3f} * "
         f"{stat['P2']['mel-8']['D']:+.4f} = {pred_dD_mult:+.4f}")
-    say(f"     Phi^-1({SS0_PRED_ACC}/154) - Phi^-1({ANCHORS['P2'][1]}/154) = {pred_dD_acc:+.4f}")
-    say(f"  power of THIS test against SS0's predicted effect = {obs_power:.3f}")
+    say(f"     Phi^-1({SEC0_PRED_ACC}/154) - Phi^-1({ANCHORS['P2'][1]}/154) = {pred_dD_acc:+.4f}")
+    say(f"  power of THIS test against section 0's predicted effect = {obs_power:.3f}")
     say(f"  -> the floor is {'ABOVE' if mdd > pred_dD_mult else 'BELOW'} the predicted effect "
         f"({mdd:.4f} vs {pred_dD_mult:+.4f})")
 
-    # ---------------- coherence check, contract SS1 ------------------------------------
+    # ---------------- coherence check, contract section 1 ------------------------------------
     say()
-    say(f"=== COHERENCE CHECK (contract SS1) -- Phi(D) against the observed accuracy ===")
-    say(f"  If they diverge by more than ~{COHERENCE_PTS:.0f} accuracy points, the SS0 model is")
+    say(f"=== COHERENCE CHECK (contract section 1) -- Phi(D) against the observed accuracy ===")
+    say(f"  If they diverge by more than ~{COHERENCE_PTS:.0f} accuracy points, the section 0 model is")
     say("  wrong and that MUST BE SAID, not worked around.")
     worst = 0.0
     for p in ("P1", "P2"):
@@ -388,11 +387,11 @@ def main():
                 f"{s['k'] / s['n']:.4f}   divergence = {gap:.2f} points   "
                 f"[{'OK' if gap <= COHERENCE_PTS else 'MODEL WRONG -- SAID, NOT WORKED AROUND'}]")
     say(f"  worst divergence over the four cells = {worst:.2f} points   "
-        f"-> [{'COHERENT' if worst <= COHERENCE_PTS else 'THE SS0 MODEL IS WRONG'}]")
+        f"-> [{'COHERENT' if worst <= COHERENCE_PTS else 'THE section 0 MODEL IS WRONG'}]")
     say()
     say("  -- WHAT MAKES IT DIVERGE (added after the first run, because the contract says the")
     say("     divergence must be SAID, and saying it usefully means naming its cause; no")
-    say("     threshold, test or branch rule was touched -- Comandamenti #2) --")
+    say("     threshold, test or branch rule was touched -- method rule 2) --")
     say("     The accuracy IS the fraction of POSITIVE differentials: argmax(corr) == attended")
     say("     is the same event as d_i > 0 (asserted below, exactly). Phi(D) equals that")
     say("     fraction only if d is NORMAL. So every point of divergence is non-normality of")
@@ -414,12 +413,12 @@ def main():
     say("     Read the last column against the third: the MEDIAN-based figure is the one that")
     say("     tracks the accuracy, which is what a mean/sd summary of a non-normal d cannot do.")
 
-    # ---------------- SECONDARY, descriptive, contract SS4 -----------------------------
+    # ---------------- SECONDARY, descriptive, contract section 4 -----------------------------
     say()
-    say("=== SECONDARY -- ACCURACY, DESCRIPTIVE (contract SS4) ===")
-    say(f"  Reported next to SS0's prediction ({SS0_PRED_ACC}/154) and next to the Exp. 9 bar")
+    say("=== SECONDARY -- ACCURACY, DESCRIPTIVE (contract section 4) ===")
+    say(f"  Reported next to section 0's prediction ({SEC0_PRED_ACC}/154) and next to the Exp. 9 bar")
     say(f"  ({EXP9_BAR}/154 = {EXP9_BAR / 154:.4f}). MISSING THAT BAR IS THE PREDICTED OUTCOME,")
-    say("  NOT A SURPRISE: SS0 computed the power of the binary test at that bar as 0.370")
+    say("  NOT A SURPRISE: section 0 computed the power of the binary test at that bar as 0.370")
     say("  BEFORE any of this ran. No threshold has been lowered. Null 0.500 by construction")
     say("  on a duo (two candidates, argmax).")
     for p in ("P1", "P2"):
@@ -430,10 +429,10 @@ def main():
             say(f"     {name:8s} {s['k']}/{s['n']} = {s['k'] / s['n']:.4f}   null 0.500   "
                 f"one-sided exact binomial p = {pb:.4g}   bar {EXP9_BAR}/154 -> "
                 f"{'CLEARED' if s['k'] >= EXP9_BAR else 'not cleared (the PREDICTED outcome)'}")
-        say(f"     SS0 predicted for MFCC-13 on P2: {SS0_PRED_ACC}/154 = "
-            f"{SS0_PRED_ACC / 154:.4f}; observed {stat[p]['MFCC-13']['k']}/154 = "
+        say(f"     section 0 predicted for MFCC-13 on P2: {SEC0_PRED_ACC}/154 = "
+            f"{SEC0_PRED_ACC / 154:.4f}; observed {stat[p]['MFCC-13']['k']}/154 = "
             f"{stat[p]['MFCC-13']['k'] / 154:.4f}"
-            + ("   <- the protocol SS0's model is about" if p == "P2" else ""))
+            + ("   <- the protocol section 0's model is about" if p == "P2" else ""))
 
     say()
     say("=== SECONDARY -- McNEMAR against the mel anchors, BOTH directions (descriptive) ===")
@@ -446,9 +445,9 @@ def main():
         say(mcnemar(a, b))                 # B = MFCC: does MFCC beat mel-8
         say(mcnemar(b, a))                 # B = mel-8: does mel-8 beat MFCC
 
-    # ---------------- verdict, pre-declared, contract SS5 ------------------------------
+    # ---------------- verdict, pre-declared, contract section 5 ------------------------------
     say()
-    say("=== VERDICT -- the three readings were written before the numbers (contract SS5) ===")
+    say("=== VERDICT -- the three readings were written before the numbers (contract section 5) ===")
     if p_perm <= ALPHA and t_obs > 0:
         say("  BRANCH 1 (GREEN): D(MFCC) > D(mel) at alpha = 0.05. The representation route")
         say("  works ON THE MECHANISM: the limit is n, not the front end. The constructive")
@@ -457,35 +456,35 @@ def main():
         say("  N, from the observed effect, is printed below.")
         need = int(np.ceil((zsum * sd_delta / t_obs) ** 2)) if t_obs > 0 else -1
         say(f"     N for power {POWER} at alpha {ALPHA} on THIS effect = {need} paired trials")
-        say("  🔴 THE TRIOS STILL DO NOT OPEN. Contract SS6: that needs a NEW pre-registration,")
-        say("  read by A. first. Nothing in this file authorises touching them.")
+        say("  THE TRIOS STILL DO NOT OPEN. Contract section 6: that needs a NEW pre-registration,")
+        say("  read before the run. Nothing in this file authorises touching them.")
     elif mdd > pred_dD_mult:
         say("  BRANCH 2 (AMBER): the primary does not reject, and the floor is ABOVE the effect")
-        say(f"  SS0 predicts ({mdd:.4f} vs {pred_dD_mult:+.4f}). NOT CONCLUSIVE, FOR POWER, and")
+        say(f"  section 0 predicts ({mdd:.4f} vs {pred_dD_mult:+.4f}). NOT CONCLUSIVE, FOR POWER, and")
         say("  the floor says it in figures. No conclusion about the representation may be")
         say("  drawn from this: an effect of the predicted size would have been missed here.")
         need = int(np.ceil((zsum * sd_delta / pred_dD_mult) ** 2)) if pred_dD_mult > 0 else -1
-        say(f"     paired trials needed to see SS0's predicted effect at power {POWER}: {need}")
+        say(f"     paired trials needed to see section 0's predicted effect at power {POWER}: {need}")
         say(f"     (MAD-EEG has 154 stereo duo decisions in total, so this design is short by")
         say(f"     a factor of ~{need / n:.0f}. THIS is what 'the limit is n' means in figures.)")
     else:
         say("  BRANCH 3 (RED, the structural result): flat, and the floor is BELOW the effect")
-        say(f"  SS0 predicts ({mdd:.4f} vs {pred_dD_mult:+.4f}). A representation that tracks")
+        say(f"  section 0 predicts ({mdd:.4f} vs {pred_dD_mult:+.4f}). A representation that tracks")
         say("  as well as mel (Exp. 14) and separates 4x better (Exp. 13) does NOT raise the")
         say("  attentional differential: the failure is not in the front end. This closes the")
         say("  PASSIVE route and motivates arm C -- a model that LEARNS selectivity -- as the")
         say("  only road left.")
     if t_obs < 0 and abs(t_obs) > 0.5 * mdd:
         say()
-        say("  ⚠️ THE PRE-DECLARED TAXONOMY HAS NO CELL FOR WHAT WAS OBSERVED, AND SAYING SO IS")
+        say("  THE PRE-DECLARED TAXONOMY HAS NO CELL FOR WHAT WAS OBSERVED, AND SAYING SO IS")
         say("  PART OF APPLYING IT. The contract's branches 2 and 3 both begin with the word")
         say("  'flat'. The observed point estimate is NOT flat: it is")
         say(f"  {t_obs:+.4f}, i.e. {abs(t_obs) / mdd:.2f}x the detectability floor, in the")
         say("  OPPOSITE direction to the hypothesis. Branch 2 is applied because that is the")
-        say("  rule as written and a rule is not edited after seeing the number (Comandamenti")
-        say("  #5), and the qualifier is printed next to it because branch 2's own words")
+        say("  rule as written and a rule is not edited after seeing the number (method")
+        say("  rule 5), and the qualifier is printed next to it because branch 2's own words")
         say("  ('no conclusion may be drawn') would otherwise hide a large negative estimate.")
-        say("  WHAT IS NOT DONE HERE: the sign is NOT flipped (Comandamenti #6). 'mel-8 beats")
+        say("  WHAT IS NOT DONE HERE: the sign is NOT flipped (method rule 6). 'mel-8 beats")
         say("  MFCC-13 on attention' is NOT a result of this experiment -- the pre-registered")
         say("  test was one-sided in the other direction, and turning a below-hypothesis")
         say("  outcome into a claim by re-aiming the test is precisely the move the")

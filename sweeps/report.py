@@ -41,7 +41,7 @@ MODELS = {
     "eeg_only": ("classify_eeg", "raw", "raw"),
 }
 
-# The MAD-EEG arm (Cap. 2) writes a different file in a different shape, so it cannot be
+# The MAD-EEG arm (Chapter 2) writes a different file in a different shape, so it cannot be
 # read by the loader above and never could: one row per TRIAL instead of per window, the
 # label space is 9 instruments instead of 4 fixed slots, chance is 1/n_present instead of
 # 0.25, and there is no `task` column and no hparams.yaml. A row is a MAD-EEG row when its
@@ -274,7 +274,7 @@ def main():
               "A row mixing vintages is reported as such rather than silently averaged away."]
     if any(r["model"] in MADEEG_MODELS for r in rows):
         header += ["",
-                   "MAD-EEG tables (Cap. 2) are a different arm and the two notes above do not",
+                   "MAD-EEG tables (Chapter 2) are a different arm and the two notes above do not",
                    "apply to them: one row per TRIAL rather than per window, chance = 1/n_present",
                    "(0.500 on a duo), and the label space is the 9 instruments, not 4 fixed slots."]
     text = "\n".join(header + body) + "\n"

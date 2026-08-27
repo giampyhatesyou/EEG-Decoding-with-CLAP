@@ -1,35 +1,35 @@
 #!/usr/bin/env bash
 # =============================================================================
-# run_all_cheap.sh — in sequenza SOLO gli esperimenti che NON spendono sguardi
-# e NON richiedono GPU.
+# run_all_cheap.sh - in sequence, ONLY the experiments that spend no held-out
+# looks and need no GPU.
 #
-# Cosa gira, e perche' e' gratis:
-#   exp13  separabilita' solo-audio  — nessun file EEG viene mai aperto
-#   exp07  sweep own-vs-other        — solo segmenti SOLO held-out (assert raw_solos)
-#   exp08  flux su own-vs-other      — idem
-#   exp14  MFCC/mel-64 su own-vs-other — idem
+# What runs, and why it is free:
+#   exp13  audio-only separability   - no EEG file is ever opened
+#   exp07  own-vs-other sweep        - held-out SOLO segments only (asserts raw_solos)
+#   exp08  spectral flux on own-vs-other  - same
+#   exp14  MFCC/mel-64 on own-vs-other    - same
 #
-# Cosa NON gira, e va lanciato a mano sapendo cosa costa:
-#   exp09 · exp11 · exp12 · exp15 · braccio A · braccio D  -> decidono sui DUO.
-#   I 309 duo sono tutti gia' spesi: rigirarli non apre materiale nuovo, ma ogni
-#   numero sui duo e' ESPLORATIVO PER COSTRUZIONE e va etichettato cosi'.
-#   🔒 I TRIO (92 stereo + 93 mono) non li tocca nessuno script di questa cartella.
+# What does NOT run, and has to be launched by hand knowing what it costs:
+#   exp09 / exp11 / exp12 / exp15 / arm A / arm D  -> they decide on the DUOS.
+#   All 309 duos are already spent: rerunning them opens no new material, but
+#   every duo number is EXPLORATORY BY CONSTRUCTION and must be labelled as such.
+#   No script in this directory touches the TRIOS (92 stereo + 93 mono).
 #
-# COSTO TOTALE: ~25-50 min CPU, dominato dall'Exp. 7 (C5 e C7 girano a
-#   --target_fs 256, ~6 GB l'una). Vedi le stime in testa a ogni script.
+# TOTAL COST: ~25-50 min CPU, dominated by Exp. 7 (C5 and C7 run at
+#   --target_fs 256, ~6 GB each). See the estimates in each script's header.
 #
-# Ogni script si ferma da solo se il suo canarino non passa, e `set -e` qui ferma
-# la sequenza: un canarino rosso NON deve produrre i numeri successivi.
+# Every script stops on its own if its canary fails, and `set -e` here stops the
+# sequence: a red canary must NOT produce the numbers that follow it.
 #
 #   bash scripts/replicate/run_all_cheap.sh
-#   ONLY="exp13 exp14" bash scripts/replicate/run_all_cheap.sh   # un sottoinsieme
+#   ONLY="exp13 exp14" bash scripts/replicate/run_all_cheap.sh   # a subset
 # =============================================================================
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ONLY=${ONLY:-"exp13 exp07 exp08 exp14"}
 
-# case e non un array associativo: il bash di macOS e' il 3.2, che non ha `declare -A`.
+# case, not an associative array: macOS ships bash 3.2, which has no `declare -A`.
 script_for() {
   case "$1" in
     exp13) echo exp13_stem_separability.sh ;;
@@ -42,7 +42,7 @@ script_for() {
 
 for k in $ONLY; do
   s=$(script_for "$k")
-  [ -n "$s" ] || { echo "sconosciuto: $k (validi: exp13 exp07 exp08 exp14)"; exit 2; }
+  [ -n "$s" ] || { echo "unknown: $k (valid: exp13 exp07 exp08 exp14)"; exit 2; }
   echo
   echo "############################################################"
   echo "# $k  ->  $s   $(date '+%H:%M:%S')"
@@ -52,6 +52,6 @@ done
 
 echo
 echo "############################################################"
-echo "# tutti gli esperimenti gratuiti sono passati  $(date '+%H:%M:%S')"
-echo "# nessuno sguardo speso · nessuna GPU · trio non toccati"
+echo "# all free experiments passed  $(date '+%H:%M:%S')"
+echo "# no held-out looks spent / no GPU / trios untouched"
 echo "############################################################"

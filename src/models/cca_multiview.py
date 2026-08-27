@@ -60,7 +60,7 @@ LAT_BAND = "alpha"          # the lateralization index is the ALPHA one or it is
 def parse_views(spec, allowed, flag):
     """Comma-separated list -> tuple in canonical order. A misspelled name BREAKS.
 
-    Vault Comandamenti #8: a flag that quietly falls back produces a run that looks like the
+    method rule 8: a flag that quietly falls back produces a run that looks like the
     new arm and is the old one. `--cca_views eeg_laged` must not silently mean "no views"."""
     names = [s.strip() for s in str(spec).split(",") if s.strip()]
     assert names, f"{flag} is empty"

@@ -1,5 +1,5 @@
 # CHANGED(baseline): NEW FILE — not in the Akama et al. upstream. Match-mismatch sampling
-#   over the MAD-EEG *solos*, for Exp. 18 (vault contract of 12 Aug 2026, stages S1/S2).
+#   over the MAD-EEG *solos*, for Exp. 18 (pre-registration of 12 Aug 2026, stages S1/S2).
 """Match-mismatch pairs from the MAD-EEG solo trials: one EEG window, two audio candidates.
 
 Why a second dataset class instead of an option on `MadeegContrastiveDataset`: that one
@@ -36,7 +36,7 @@ The two mismatch modes, which are the two stages of the contract:
       held constant; only the instrument changes. That is the "which instrument" contrast
       the contract calls the missing ingredient.
 
-Two numbers are declared HERE, in the code, before any run (Comandamenti §3, §5):
+Two numbers are declared HERE, in the code, before any run (method rules 3/5):
 
   SOLO_WINDOW = 512 samples = 2.0 s. Not a taste: it is the longest window for which every
       solo excerpt still yields a non-overlapping pair. The shortest excerpts are the four
@@ -115,7 +115,7 @@ class MadeegSoloMatchMismatch(Dataset):
                  min_offset_s=MIN_OFFSET_S, band=SOLO_BAND, subjects=None,
                  eeg_normalization="MetaAI", clamp_value=20, verbose=True):
         # Asserted, not silently defaulted: a mistyped mode that fell back to the other one
-        # would produce a stage-S2 write-up from a stage-S1 run (Comandamenti §8).
+        # would produce a stage-S2 write-up from a stage-S1 run (method rule 8).
         assert negative in NEGATIVE_MODES, f"unknown negative mode {negative!r}"
         self.negative = negative
         self.eeg_length = eeg_length
@@ -330,7 +330,7 @@ class MadeegSoloMatchMismatch(Dataset):
         both directions -> the bound comes out at exactly 0.500, which is the check that
         the construction did what it claims. For `cross_instrument` the identity is the
         instrument, and this is the honest null to print next to the accuracy: the subjects
-        did not all hear the same solos, so it is NOT 0.500 a priori (Comandamenti §4).
+        did not all hear the same solos, so it is NOT 0.500 a priori (method rule 4).
 
         CHANGED(baseline): Exp. 19 §2.1 adds `by_subject`. The subject is readable off the
         EEG for free -- different anatomy, different impedances -- so a rule of the form
@@ -397,7 +397,7 @@ class MadeegSoloMatchMismatch(Dataset):
         keep = sorted(keep)
         # The postcondition, checked rather than argued: if this does not come out at 0.500
         # the repair did not happen and every number downstream would be read against the
-        # wrong chance level (Comandamenti §4).
+        # wrong chance level (method rule 4).
         if not keep:
             raise ValueError("balancing removed every pair -- no candidate pair of this "
                              "index exists in both directions")
@@ -412,7 +412,7 @@ class MadeegSoloMatchMismatch(Dataset):
 def check_sampling(ds, n_content=200):
     """THE check the contract makes mandatory: where does the negative actually come from?
 
-    Structural, over EVERY pair (Comandamenti §7 -- count, do not generalise from one):
+    Structural, over EVERY pair (method rule 7 -- count, do not generalise from one):
       1. `temporal_offset`: the negative wav is byte-for-byte the SAME FILE as the positive
          (same subject, same piece, same instrument, same repetition);
          `cross_instrument`: same piece and theme, DIFFERENT instrument, same instant.

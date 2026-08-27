@@ -12,7 +12,7 @@
 #   MODEL=baseline CV=subject HELD=3 TEST=1 bash scripts/train.sh   # train, then evaluate
 #
 #   MODEL : baseline | clap | audio_only | eeg_only
-#           audio_only / eeg_only are the supervisor's diagnostic controls: a SEPARATE
+#           audio_only / eeg_only are the two unimodal diagnostic controls: a SEPARATE
 #           cross-entropy module (src/modules/supervised_classification.py). The
 #           contrastive loss, split and metric are untouched.
 #   CV    : within | song | subject          HELD : held-out id (ignored for within)

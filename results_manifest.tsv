@@ -29,7 +29,7 @@
 #   so re-running replicate refreshes these pins in place.
 
 #
-# MAD-EEG arm (Cap. 2) -- rows whose `model` is madeeg_ridge / madeeg_shrinkage / madeeg_cca
+# MAD-EEG arm (Chapter 2) -- rows whose `model` is madeeg_ridge / madeeg_shrinkage / madeeg_cca
 #   are read by report.py from <run_tag>/madeeg_records.csv and verified against that run's
 #   madeeg_summary.txt. Two fields are re-read for this arm:
 #       eval     -> --train_on  (duos_kfold | raw_solos)
@@ -44,7 +44,7 @@
 #
 # NOT PINNED, and each for a stated reason -- never invent a pin:
 #   step D (model 8, 0.4545 + G2 0.9221): its artefacts are NOT on this Mac. They exist only
-#     inside the 28/7 report until the rsync from baldo is run. Pin it the day they land.
+#     inside the 28/7 report until the rsync from the cluster is run. Pin it the day they land.
 #   the archived madeeg_ridge_{duo,duo_env,solos}: their summaries predate the --estimator and
 #     --spatial flags, so the pin cannot be VERIFIED against them. The 30/7 re-runs below carry
 #     the full header and reproduce those numbers byte-for-byte (same madeeg_records.csv md5).

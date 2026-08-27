@@ -3,32 +3,39 @@
 #                    per-combination shell scripts in scripts/. It does not touch any
 #                    training/evaluation code; it only assembles the same command line the
 #                    scripts do and runs it as a subprocess.
-"""Interactive launcher for the EEG<->audio attention experiments.
+"""Single entry point for every experiment in this repository.
 
-One entry point instead of the per-combination scripts in scripts/. It asks only
-for the axes that actually vary between experiments and bakes the fixed Akama
-protocol -- the ~23 flags every script repeats verbatim -- into a single
-``PROTOCOL`` constant (the single source of truth). Every run prints the
-equivalent ``python main.py ...`` / ``checkpoint_test.py ...`` command before
-executing, so an interactive run stays reproducible as a one-liner and matches
-scripts/train.sh / test.sh flag-for-flag.
+Chapter 1 (Akama dataset) is driven from here directly: this file owns the fixed
+Akama protocol -- the ~23 flags every script repeats verbatim -- as a single
+``PROTOCOL`` constant, and assembles the same command line the shell scripts do.
+Chapter 2 (MAD-EEG) is driven through ``scripts/replicate/``, one script per
+experiment: those scripts stay the source of the exact commands, the pinned
+expected numbers and the regression canaries, and this file only orders and runs
+them. Nothing is reimplemented in two places.
 
-This is a thin subprocess wrapper: it changes nothing in main.py /
-checkpoint_test.py / the loss / the dataset. The science is identical because the
-emitted command line is identical to the canonical scripts.
+Every run prints the equivalent command before executing, so an interactive run
+stays reproducible as a one-liner, and every non-interactive run is teed to its
+own timestamped file under ``runs/logs/``.
 
 Usage:
-    python run.py                      # interactive launcher
-    python run.py replicate            # reproduce every reported number (released ckpts, no GPU)
-    python run.py train --model clap   # retrain the baseline / CLAP model
-    python run.py sweep --cv song      # resumable leave-one-song-out sweep
-    python run.py sweep --cv subject   # resumable leave-one-subject-out sweep
-    python run.py report               # render RESULTS.md from results_manifest.tsv
-    python run.py --dry-run            # print the commands it would build, no prompts
-    python run.py --selftest           # assert PROTOCOL still matches sweeps/sweep_common.sh
+    python run.py                       # interactive launcher (Chapter 1)
+    python run.py replicate             # Chapter 1 from the released checkpoints, no GPU
+    python run.py train --model clap    # train one model on one split
+    python run.py test                  # evaluate a checkpoint (interactive)
+    python run.py sweep --cv song       # resumable leave-one-song-out sweep (GPU)
+    python run.py report                # render RESULTS.md from results_manifest.tsv
 
-Those five commands are the whole surface: anything else is a one-off that belongs in
-a scratch shell, not in the repo.
+    python run.py exp --list            # every experiment, with what it costs
+    python run.py exp exp13             # run one experiment (unique prefix is enough)
+    python run.py exp cheap             # the four that spend no held-out looks
+    python run.py exp all               # all of them, in order, one log file each
+    python run.py canaries              # the regression gates (LEVELS=0 1 2)
+
+    python run.py --dry-run             # print the commands it would build, no prompts
+    python run.py --selftest            # assert PROTOCOL still matches sweeps/sweep_common.sh
+
+Anything not on that list is a one-off that belongs in a scratch shell, not in the
+repo.
 """
 import argparse
 import glob
@@ -36,10 +43,13 @@ import os
 import shlex
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 SRC_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SRC_DIR.parent
+REPLICATE_DIR = PROJECT_ROOT / "scripts" / "replicate"
+LOG_DIR = PROJECT_ROOT / "runs" / "logs"
 
 # --- The fixed Akama protocol --------------------------------------------------
 # The flags every canonical script repeats verbatim. This dict is the single
@@ -74,7 +84,7 @@ PHASES = {
     "train": "Train a model (main.py)",
     "test": "Evaluate a checkpoint (checkpoint_test.py)",
     "train+test": "Train then evaluate on the same config",
-    "experiments": "Supervisor diagnostic controls (EEG-only / audio-only classifiers)",
+    "experiments": "Unimodal diagnostic controls (EEG-only / audio-only classifiers)",
     "sanity": "Negative-control sweep (none / labels / audio_pair)",
 }
 # Model axis = the architectural switch (--audio_repr). The keys are the flag
@@ -97,7 +107,7 @@ EEG_REPRS = {
     "raw": "akama baseline - SampleCNN2DEEG on the raw EEG window",
     "spectra": "SpectraCLIP - raw 2D-CNN + band-power (delta/theta/alpha/beta) branch",
 }
-# Supervisor-proposed diagnostic controls (experiments #1/#2), kept separate from
+# The two externally proposed diagnostic controls (#1/#2), kept separate from
 # the contrastive baseline and reached through the dedicated "experiments" phase
 # rather than the generic train/test flows. Each pins a single training objective
 # (a SEPARATE cross-entropy LightningModule; the contrastive loss/metric/split are
@@ -174,18 +184,39 @@ def format_cmdline(cmd):
     return " ".join(shlex.quote(c) for c in cmd)
 
 
-def run_subprocess(cmd, *, env=None):
-    """Echo the equivalent command line, then run it from src/.
+def run_subprocess(cmd, *, env=None, cwd=None, log=None):
+    """Echo the equivalent command line, then run it.
 
     `env` ADDS to the current environment. Passing it straight to subprocess.run
     would replace it wholesale and strip PATH and the conda variables the scripts
     need to find their interpreter.
+
+    `log` names a run: its merged stdout/stderr is teed to
+    runs/logs/<timestamp>_<log>.log while still streaming to the terminal, so a
+    long run leaves a file behind without anyone having to remember a redirect.
     """
+    cwd = str(cwd or SRC_DIR)
     if env:
         print("  " + " ".join(f"{k}={v}" for k, v in sorted(env.items())), flush=True)
         env = {**os.environ, **env}
-    print("\n$ (cd src && " + format_cmdline(cmd) + ")\n", flush=True)
-    return subprocess.run(cmd, cwd=str(SRC_DIR), env=env).returncode
+    where = "cd src && " if cwd == str(SRC_DIR) else ""
+    banner = f"$ ({where}{format_cmdline(cmd)})"
+    print("\n" + banner + "\n", flush=True)
+    if log is None:
+        return subprocess.run(cmd, cwd=cwd, env=env).returncode
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
+    path = LOG_DIR / f"{time.strftime('%Y%m%d-%H%M%S')}_{log}.log"
+    print(f"  log: {path.relative_to(PROJECT_ROOT)}\n", flush=True)
+    with open(path, "w") as fh:
+        fh.write(f"# {time.strftime('%Y-%m-%d %H:%M:%S')}  cwd={cwd}\n# {banner}\n\n")
+        proc = subprocess.Popen(cmd, cwd=cwd, env=env, stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT, text=True, bufsize=1)
+        for line in proc.stdout:
+            sys.stdout.write(line)
+            fh.write(line)
+        rc = proc.wait()
+        fh.write(f"\n# exit {rc}\n")
+    return rc
 
 
 # --- Result lookup / parsing ---------------------------------------------------
@@ -669,7 +700,7 @@ def flow_train_test():
 
 
 def flow_experiments():
-    """Supervisor diagnostic controls — the two unimodal supervised classifiers.
+    """Diagnostic controls -- the two unimodal supervised classifiers.
 
     A thin wrapper that pins ``--objective`` (and ``audio_repr`` where it is
     meaningful) and then reuses the very same train/test machinery as the
@@ -839,12 +870,172 @@ def interactive():
         return
 
 
-# --- The four things you can ask this project to do ----------------------------
+# --- The experiment register ---------------------------------------------------
+# One entry per script in scripts/replicate/, in the order they are meant to run:
+# the free ones first, then the ones that decide on the duos, then the contrastive
+# arm (which only prepares and prints, because its training needs a GPU).
+#
+# Only the ORDER and the grouping live here. The command, the pre-registered
+# threshold, the expected numbers and the canary live in each script's header,
+# which is the single source for all of that -- `exp --list` reads the titles back
+# out of those headers rather than repeating them.
+EXPERIMENT_ORDER = [
+    # Chapter 1 -- Akama dataset, from the released checkpoints
+    "cap1_within_split",
+    "cap1_leave_song_out",
+    "cap1_leave_subject_out",
+    # Chapter 2 -- spends no held-out looks (audio only, or held-out solo segments)
+    "exp13_stem_separability",
+    "exp06_ovo_gate",
+    "exp07_ovo_config_sweep",
+    "exp08_flux_ovo",
+    "exp14_mfcc_tracking",
+    "exp16b_ccaviews",
+    "exp17_clap_separability",
+    "exp16a_clap_separability",
+    # Chapter 2 -- decides on the duos, all of which are already spent
+    "ridge_anchors",
+    "axes_paper_protocol",
+    "exp04_duo_mono",
+    "exp06_alpha_paired",
+    "exp09_flux_attention",
+    "exp11_spectral_register_stereo",
+    "exp12_spectral_register_mono",
+    "exp15_mfcc_differential",
+    "armA_paper_protocol",
+    "armD_leakage_audit",
+    # Chapter 2 -- the contrastive arm: gates on CPU, training printed, not launched
+    "stepC_contrastive_clap",
+    "stepD_within_mixture",
+    "exp18_matchmismatch",
+    "exp19_matchmismatch",
+    # Archived, runs nothing: kept so its absence cannot read as an oversight
+    "exp05_side_bandpower",
+]
+
+
+def _header_fields(name):
+    """Read (title, budget, gpu) back out of a replication script's header.
+
+    The headers are the source of truth for what an experiment costs; duplicating
+    that here would give two answers that drift. Anything unparseable comes back
+    as "?" rather than as a guess.
+    """
+    title, fields = name, {}
+    try:
+        lines = (REPLICATE_DIR / f"{name}.sh").read_text().splitlines()[:120]
+    except OSError:
+        return title, "?", "?"
+    for line in lines[1:]:              # [0] is the shebang
+        if not line.startswith("#"):
+            break
+        body = line[1:].strip()
+        if not body or set(body) <= {"="}:
+            continue
+        if title == name:
+            title = body            # first prose line of the header block
+        for key in ("BUDGET", "GPU"):
+            if body.startswith(key) and ":" in body:
+                fields.setdefault(key, body.split(":", 1)[1].strip())
+    return title, fields.get("BUDGET", "?"), fields.get("GPU", "?")
+
+
+def resolve_experiment(token):
+    """Exact name, or the unique script whose name starts with `token`."""
+    if token in EXPERIMENT_ORDER:
+        return token
+    hits = [n for n in EXPERIMENT_ORDER if n.startswith(token)]
+    if len(hits) == 1:
+        return hits[0]
+    if not hits:
+        sys.exit(f"unknown experiment {token!r} -- `python src/run.py exp --list`")
+    sys.exit(f"{token!r} is ambiguous: {', '.join(hits)}")
+
+
+def cmd_exp(args):
+    if args.list or not args.name:
+        def flag(s):
+            """First word of a header field, normalised to fit a column."""
+            word = (s.split() or ["?"])[0].strip(".,:").lower()
+            return {"zero": "no", "training": "yes"}.get(word, word)[:5]
+
+        print(f"{len(EXPERIMENT_ORDER)} experiments, in run order "
+              f"(scripts/replicate/<name>.sh).")
+        print("'looks' = does it decide on the held-out duos. Full detail, thresholds and")
+        print("expected numbers are in each script's header, which is the source.\n")
+        print(f"  {'name':<32} {'looks':<6} {'gpu':<5} what it measures")
+        for name in EXPERIMENT_ORDER:
+            title, budget, gpu = _header_fields(name)
+            print(f"  {name:<32} {flag(budget):<6} {flag(gpu):<5} {title[:56]}")
+        print("\n  python src/run.py exp <name>   one of them (unique prefix is enough)")
+        print("  python src/run.py exp cheap    only the four that spend nothing")
+        print("  python src/run.py exp all      all of them, in order, one log each")
+        return 0
+
+    if args.name == "cheap":
+        return run_subprocess(["bash", str(REPLICATE_DIR / "run_all_cheap.sh")],
+                              cwd=PROJECT_ROOT, log="exp_cheap")
+
+    if args.name != "all":
+        name = resolve_experiment(args.name)
+        script = REPLICATE_DIR / f"{name}.sh"
+        if args.dry_run:
+            print(f"bash {script.relative_to(PROJECT_ROOT)}")
+            return 0
+        return run_subprocess(["bash", str(script)] + args.args,
+                              cwd=PROJECT_ROOT, log=name)
+
+    # `all`: the canaries first -- a red canary means a number already reported may
+    # have moved, and no experiment after it would be worth reading.
+    print(f"{len(EXPERIMENT_ORDER)} experiments, in order. Level-0 canaries first.")
+    print("Experiments from `ridge_anchors` on decide on the DUOS: all 309 are already")
+    print("spent, so every duo number they print is exploratory by construction and has")
+    print("to be labelled so. No script here touches the trios.\n")
+    if args.dry_run:
+        print(f"bash {(REPLICATE_DIR / 'canaries.sh').relative_to(PROJECT_ROOT)}")
+        for name in EXPERIMENT_ORDER:
+            print(f"bash scripts/replicate/{name}.sh")
+        return 0
+    rc = run_subprocess(["bash", str(REPLICATE_DIR / "canaries.sh")],
+                        env={"LEVELS": "0"}, cwd=PROJECT_ROOT, log="canaries_L0")
+    if rc != 0:
+        sys.exit("a level-0 canary is red: stop and report. Nothing else was run.")
+    failed = []
+    for name in EXPERIMENT_ORDER:
+        print(f"\n{'#' * 70}\n# {name}\n{'#' * 70}")
+        if run_subprocess(["bash", str(REPLICATE_DIR / f"{name}.sh")],
+                          cwd=PROJECT_ROOT, log=name) != 0:
+            failed.append(name)
+    print(f"\n{len(EXPERIMENT_ORDER) - len(failed)} of {len(EXPERIMENT_ORDER)} finished; "
+          f"logs in {LOG_DIR.relative_to(PROJECT_ROOT)}")
+    if failed:
+        print("did not finish: " + ", ".join(failed))
+        print("a script that stops on its own canary is doing its job -- read its log "
+              "before rerunning it.")
+    return 1 if failed else 0
+
+
+def cmd_test(args):
+    """The interactive test flow, reachable without going through the phase menu."""
+    res = flow_test()
+    if res is BACK or res is None:
+        return 0
+    rc, _ = res
+    return rc or 0
+
+
+def cmd_canaries(args):
+    return run_subprocess(["bash", str(REPLICATE_DIR / "canaries.sh")],
+                          env={"LEVELS": args.levels}, cwd=PROJECT_ROOT, log="canaries")
+
+
+# --- The commands ---------------------------------------------------------------
 # Named shortcuts to the scripts, so nobody has to remember which env var each one
 # takes. Bare `python run.py` still drops into the interactive launcher.
 def cmd_replicate(args):
     return run_subprocess(["bash", str(PROJECT_ROOT / "scripts" / "replicate.sh")],
-                          env={"PHASES": args.phases} if args.phases else None)
+                          env={"PHASES": args.phases} if args.phases else None,
+                          log="cap1_replicate")
 
 
 def cmd_train(args):
@@ -853,7 +1044,8 @@ def cmd_train(args):
         env["HELD"] = str(args.held)
     if args.tag:
         env["TAG"] = args.tag
-    return run_subprocess(["bash", str(PROJECT_ROOT / "scripts" / "train.sh")], env=env)
+    return run_subprocess(["bash", str(PROJECT_ROOT / "scripts" / "train.sh")], env=env,
+                          log=f"train_{args.model}_{args.cv}")
 
 
 def cmd_sweep(args):
@@ -863,7 +1055,8 @@ def cmd_sweep(args):
         env["CAP"] = args.cap
     if args.budget:
         env["BUDGET"] = str(args.budget)
-    return run_subprocess(["bash", str(PROJECT_ROOT / "sweeps" / script)], env=env or None)
+    return run_subprocess(["bash", str(PROJECT_ROOT / "sweeps" / script)], env=env or None,
+                          log=f"sweep_{args.cv}_out")
 
 
 def cmd_report(args):
@@ -908,12 +1101,26 @@ def main():
     p.add_argument("--check", action="store_true", help="verify the pins, write nothing")
     p.set_defaults(func=cmd_report)
 
+    p = sub.add_parser("test", help="evaluate a checkpoint (interactive: model, split, checkpoint)")
+    p.set_defaults(func=cmd_test)
+
+    p = sub.add_parser("exp", help="run the experiments in scripts/replicate/, one or all")
+    p.add_argument("name", nargs="?", help="experiment name (unique prefix ok), 'cheap', or 'all'")
+    p.add_argument("--list", action="store_true", help="list every experiment and what it costs")
+    p.add_argument("args", nargs="*", help="extra arguments passed through to the script")
+    p.set_defaults(func=cmd_exp)
+
+    p = sub.add_parser("canaries", help="cross the regression gates that protect reported numbers")
+    p.add_argument("--levels", default="0 1 2",
+                   help="0 needs nothing, 1 needs torch, 2 needs MAD-EEG (3 is printed only)")
+    p.set_defaults(func=cmd_canaries)
+
     args = parser.parse_args()
-    if args.dry_run:
-        cmd_dry_run()
-        return 0
     if args.selftest:
         return cmd_selftest()
+    if args.dry_run and args.command != "exp":
+        cmd_dry_run()
+        return 0
     if args.command:
         return args.func(args)
     interactive()

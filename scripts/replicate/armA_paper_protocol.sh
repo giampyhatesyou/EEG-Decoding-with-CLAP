@@ -1,63 +1,62 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Braccio A — parita' di protocollo col paper (Cantisani et al., WASPAA 2019).
+# Arm A - protocol parity with the paper (Cantisani et al., WASPAA 2019).
 #
-# COSA MISURA: quanto si avvicina al 79 di F1 sui duetti il pacchetto COMPLETO
-#   dichiarato dal paper — decoder per-soggetto PER-STRUMENTO, shrinkage 0.1,
-#   24 bande mel a 256 Hz, lag 0-250 ms, training sui solo, decisione sul trial
-#   intero (~24 s), metrica F1 — girato su tre bande di analisi.
-# COSTO      : DA CONFERMARE. E' la famiglia piu' pesante del repo (3 run a
-#              --target_fs 256 con --filters per_instrument, ~6 GB di matrice di
-#              disegno l'una); i timestamp del 11/8 sono identici e non danno la
-#              durata. Prevedi decine di minuti e 16 GB di RAM (Legacy §4.7).
-# SGUARDI    : SI' — decide sui DUO stereo. Tutti gia' spesi: ESPLORATIVO PER
-#              COSTRUZIONE, dichiarato tale nel summary. 🔒 TRIO non toccati.
+# WHAT IT MEASURES: how close the COMPLETE package declared by the paper gets to
+#   its 79 F1 on duets - per-subject PER-INSTRUMENT decoders, shrinkage 0.1,
+#   24 mel bands at 256 Hz, lags 0-250 ms, training on the solos, decision on the
+#   whole trial (~24 s), F1 metric - run over three analysis bands.
+# COST       : TO BE CONFIRMED. This is the heaviest family in the repo (3 runs at
+#              --target_fs 256 with --filters per_instrument, ~6 GB of design matrix
+#              each); the 2026-08-11 timestamps are identical and give no duration.
+#              Expect tens of minutes and 16 GB of RAM.
+# BUDGET     : YES - it decides on the STEREO duos. All already spent: EXPLORATORY
+#              BY CONSTRUCTION, declared as such in the summary. TRIOS untouched.
 # GPU        : no.
 #
-# NUMERI DI RIFERIMENTO ATTESI (se non escono questi, NON hai replicato):
-#   banda 1-8 Hz   (armA_paper_package)  F1 micro = accuratezza 0.5267   n = 150
-#   banda 1-40 Hz  (armA_paper_band40)   F1 micro 0.4800
-#   banda 0.2-40Hz (armA_paper_band02_40) F1 micro 0.5400
-#   null 0.500 sul duo · r(attended) 0.016-0.025 contro la mediana 0.119 del paper
-#   ESITO: il 79 NON SI RIPRODUCE da nessun pacchetto fedele ai metodi dichiarati.
-#   n = 150 e non 154: 4 trial cadono sotto --filters per_instrument perche' il
-#   soggetto 0007 non ha i solo Bo/Fh — noto e dichiarato, non un bug.
+# EXPECTED REFERENCE NUMBERS (if these do not come out, it did not replicate):
+#   band 1-8 Hz    (armA_paper_package)   F1 micro = accuracy 0.5267   n = 150
+#   band 1-40 Hz   (armA_paper_band40)    F1 micro 0.4800
+#   band 0.2-40 Hz (armA_paper_band02_40) F1 micro 0.5400
+#   null 0.500 on the duo; r(attended) 0.016-0.025 against the paper's median 0.119
+#   OUTCOME: the 79 DOES NOT REPRODUCE from any package faithful to the declared
+#   methods. n = 150 and not 154: 4 trials drop under --filters per_instrument
+#   because subject 0007 has no Bo/Fh solos - known and declared, not a bug.
 #
-# CANARINO   : il contratto del braccio A non ne dichiara uno (nessun gate,
-#              nessuna affermazione pre-registrata: e' una sonda di protocollo).
-#              Il controllo e' la riproduzione stessa dei tre F1 qui sopra.
-#              NON aggiungere un --self_test per "avere un controllo": non ha un
-#              valore atteso pinnato e produrrebbe un numero nuovo (Comandamenti §10).
-# CONTRATTO  : vault, "Piano — la svolta: dal negativo onesto a un modello che
-#              decodifica (11 ago 2026)" §4A · report "2026-08-11 (6)"
-# PROVENIENZA: runs/results/armA_paper_{package,band40,band02_40}/
+# CANARY     : the arm A criterion declares none (no gate, no pre-registered claim:
+#              it is a protocol probe). The control is the reproduction of the three
+#              F1 values above. Do NOT add a --self_test "to have a control": it has
+#              no pinned expected value and would produce a new number.
+# PRE-REGISTRATION: none (protocol probe).
+# PROVENANCE : runs/results/armA_paper_{package,band40,band02_40}/ and
+#              docs/provenance/2026-08-17_armA_paper_*_RESULT_*
 #
-# ⚠️ SPLIT SAME/DIFF-MELODY (docs/provenance/2026-08-11_armA_same_diff_melody.txt,
-#    same 46/89 vs diff 33/61 a 1-8 Hz; same 51/89 vs diff 30/61 a 0.2-40 Hz):
-#    NON e' riproducibile da qui.
-# DA CONFERMARE: nessun file del repo produce quello split — e' stato calcolato
-#    ad hoc dai madeeg_records.csv + madeeg_sequences_raw.yaml e lo script non e'
-#    stato salvato (verificato con grep su src/, scripts/, sweeps/ il 12/8).
-#    Va riscritto, non indovinato.
+# SAME/DIFF-MELODY SPLIT (docs/provenance/2026-08-11_armA_same_diff_melody.txt,
+#    same 46/89 vs diff 33/61 at 1-8 Hz; same 51/89 vs diff 30/61 at 0.2-40 Hz):
+#    NOT reproducible from here.
+# TO BE CONFIRMED: no file in the repo produces that split - it was computed ad hoc
+#    from madeeg_records.csv + madeeg_sequences_raw.yaml and the script was not saved
+#    (verified by grepping src/, scripts/, sweeps/ on 2026-08-12).
+#    It has to be rewritten, not guessed.
 # =============================================================================
 set -euo pipefail
 
-PY=${PY:-/opt/miniconda3/bin/python}          # trappola n.1 Legacy §4: MAI `python` nudo
-MADEEG_DIR=${MADEEG_DIR:-$HOME/madeeg}        # il dataset NON e' nel repo
+PY=${PY:-/opt/miniconda3/bin/python}          # environment trap #1: NEVER bare `python`
+MADEEG_DIR=${MADEEG_DIR:-$HOME/madeeg}        # the dataset is NOT in the repo
 REPO=${REPO:-$(cd "$(dirname "$0")/../.." && pwd)}
-TAG=${TAG:-repl_}                             # i record pinnati non si sovrascrivono
+TAG=${TAG:-repl_}                             # pinned records are never overwritten
 
 cd "$REPO"
 
-# Il pacchetto del paper. --eeg_clean none e' imposto dalla release preprocessed
-# usata per i solo; --test_eeg raw e --spatial stereo sono il protocollo del paper.
+# The paper package. --eeg_clean none is imposed by the preprocessed release used
+# for the solos; --test_eeg raw and --spatial stereo are the paper protocol.
 PKG=(--madeeg_dir "$MADEEG_DIR" --train_on raw_solos --test_eeg raw --spatial stereo
      --ensemble duo --target mel --n_mels 24 --target_fs 256 --lags_ms 250
      --estimator shrinkage --shrinkage_lambda 0.1 --filters per_instrument
      --eeg_clean none --seed 42 --cv_folds 5)
 
-run() {  # run <nome> <band_low> <band_high>
-  echo; echo "--- $1 : banda $2-$3 Hz ---"
+run() {  # run <name> <band_low> <band_high>
+  echo; echo "--- $1 : band $2-$3 Hz ---"
   "$PY" src/madeeg_reconstruction.py "${PKG[@]}" --band_low "$2" --band_high "$3" \
         --training_date "${TAG}$1"
 }
@@ -67,11 +66,11 @@ run armA_paper_band40   1   40
 run armA_paper_band02_40 0.2 40
 
 echo
-echo "=== ESITO DELLA REPLICA (confronta con i RIFERIMENTI in testa a questo script) ==="
+echo "=== REPLICATION OUTCOME (compare with the REFERENCE NUMBERS in the header) ==="
 for R in armA_paper_package armA_paper_band40 armA_paper_band02_40; do
   printf "%-22s " "$R"
   grep -h "^F1 over the attended" "$REPO/runs/results/${TAG}$R/madeeg_summary.txt"
 done
 echo
-echo "record pinnati (11/8): runs/results/armA_paper_*"
-echo "il paper (WASPAA 2019 Tab. 1, duetti): AE 58 · MAG 74 · MEL 79"
+echo "pinned records (2026-08-11): runs/results/armA_paper_*"
+echo "the paper (WASPAA 2019 Tab. 1, duets): AE 58 / MAG 74 / MEL 79"

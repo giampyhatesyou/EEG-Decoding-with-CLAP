@@ -1,12 +1,12 @@
 """EXP. 16 ARM A, STAGE 1 -- CLAP embeddings of the duo stems, as a TIME SERIES.
 
-Vault contract, written BEFORE this file existed and not touched after:
-  "Cap. 2 -- Exp. 16: la premessa della tesi messa alla prova -- CLAP come bersaglio e le
-   feature EEG ricche, criterio pre-registrato (12 ago 2026)", SSA.
+Pre-registration, written BEFORE this file existed and not touched after:
+  "Chapter 2 -- Exp. 16: the thesis premise put to the test -- CLAP as a target and rich
+   EEG features, pre-registered criterion (2026-08-12)", section A.
 
 WHY TWO STAGES, AND WHY THIS ONE IS NOT THE MEASUREMENT.
 `laion_clap` is NOT installed in /opt/miniconda3 (the canonical interpreter of every MAD-EEG
-number) and IS installed in /opt/anaconda3 with torch 2.11. Legacy SS4 trap 1: Anaconda base
+number) and IS installed in /opt/anaconda3 with torch 2.11. environment trap 1: Anaconda base
 produces different floats at 2e-5 and makes the md5 canaries fail. So this file ONLY writes
 embeddings to disk, under /opt/anaconda3, and takes NO measurement; the gate itself runs in
 /opt/miniconda3 from those .npy, where the Exp. 13 canary must reproduce exactly. Nothing is
@@ -19,7 +19,7 @@ ZERO LOOKS SPENT. Audio only: it reuses madeeg_stem_separability.load_stems(), w
 the preprocessed HDF5 for its `soli` datasets and metadata and never touches ['response'],
 never reads a trial, never reads a label.
 
-THE RECIPE, FIXED HERE BEFORE ANY NUMBER EXISTS (contract SSA.3):
+THE RECIPE, FIXED HERE BEFORE ANY NUMBER EXISTS (contract section A.3):
   * hop = 62.5 ms  ->  series rate 16 Hz  ->  Nyquist 8 Hz, exactly the top of the
     pre-registered 1-8 Hz band. The contract calls this non-negotiable and forbids
     compensating a slower hop by resampling. MEASURED cost at this hop: ~62 ms of CPU per
@@ -42,8 +42,8 @@ THE RECIPE, FIXED HERE BEFORE ANY NUMBER EXISTS (contract SSA.3):
       (c) W = hop makes the frames disjoint, so no correlation between neighbouring frames
           is manufactured by overlap.
   * !! AND THE LIMIT THAT COMES WITH IT, DECLARED NOW AND NOT AFTER THE NUMBER: CLAP's
-    design aperture is 10 s and the model is time-invariant BY DESIGN (contract SSA.3,
-    Registro SS2.5). 62.5 ms is 160x shorter. This is not a defect of the implementation, it
+    design aperture is 10 s and the model is time-invariant BY DESIGN (contract section A.3,
+    Registro section 2.5). 62.5 ms is 160x shorter. This is not a defect of the implementation, it
     is the pre-registered band and CLAP's own time scale being 160x apart. Whatever this
     gate returns, THAT is the finding, and it belongs next to the number.
 
@@ -150,7 +150,7 @@ def main():
 
     man = dict(
         experiment="Exp. 16 arm A stage 1 (extraction only -- no measurement here)",
-        contract="Cap. 2 -- Exp. 16 ... criterio pre-registrato (12 ago 2026), SSA",
+        contract="Chapter 2 -- Exp. 16 ... pre-registered criterion (2026-08-12), section A",
         model="laion_clap.CLAP_Module(enable_fusion=False, amodel=%r)" % args.amodel,
         checkpoint=os.path.abspath(ckpt),
         checkpoint_bytes=os.path.getsize(ckpt),
@@ -175,7 +175,7 @@ def main():
                       laion_clap=_dist_version("laion_clap")),
         caveats=[
             "EXTRACTION ONLY. No statistic is computed here and no number in this directory "
-            "is a result. The gate runs in /opt/miniconda3 (Legacy SS4 trap 1).",
+            "is a result. The gate runs in /opt/miniconda3 (environment trap 1).",
             "CLAP's design aperture is 10 s and the model is time-invariant by design; the "
             "pre-registered band forces a 62.5 ms window. The two time scales are 160x "
             "apart, and that gap must be reported next to whatever the gate returns.",

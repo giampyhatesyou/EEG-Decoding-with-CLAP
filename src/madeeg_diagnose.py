@@ -20,7 +20,7 @@ attended at stem X" is therefore wrong more often than right, by construction �
 exactly what a below-chance result looks like.
 
 A separate entrypoint on purpose: this is CPU/stdlib work, and `madeeg_contrastive.py`
-imports torch at module scope. The vault's rule is that every number can be re-checked
+imports torch at module scope. The rule is that every number can be re-checked
 offline, so the check must not need the training environment.
 
     python src/madeeg_diagnose.py --madeeg_dir ~/madeeg \
@@ -273,10 +273,10 @@ def _grain_table(rows, per_subject):
         flag = "" if hit / total > 0.5 else "  <- BELOW a coin flip: not prior-following"
         print(f"    {label:<32} {hit}/{total} = {hit / total:.3f}   "
               f"null {null:.3f}   p={p:.1e}{flag}")
-    print("  ⚠ a small null makes p misleading on its own: a coin-flipping model agrees with")
+    print("  NOTE: a small null makes p misleading on its own: a coin-flipping model agrees with")
     print("  the prior ~0.500 of the time and beats any null below that. Read agreement")
     print("  against BOTH the null (a perfect decoder scores it) and 0.500 (a coin flip).")
-    print("  ⚠ these grains are nested and correlated -- a prior at one grain lifts all the")
+    print("  NOTE: these grains are nested and correlated -- a prior at one grain lifts all the")
     print("  others, so this table says THAT the model follows a training prior, not WHICH")
     print("  grain it reads. Separating them needs a design that decorrelates them.")
 
@@ -386,7 +386,7 @@ def mcnemar_report(csv_a, csv_b):
     if len(common) != len(A) or len(common) != len(B):
         # Not a warning to be skimmed: a paired test on a partial intersection is a different
         # test. Both runs must have used the same seed and the same fold count.
-        print("  🔴 the two runs did NOT score the same comparisons -- the paired test below "
+        print("  the two runs did NOT score the same comparisons -- the paired test below "
               "covers only the intersection, and that is not the pre-registered test. Re-run "
               "both with the same --seed and --cv_folds.")
     if not common:

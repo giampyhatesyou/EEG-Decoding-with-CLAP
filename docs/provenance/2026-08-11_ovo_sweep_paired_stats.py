@@ -3,7 +3,7 @@ Bonferroni McNemar threshold at alpha = 0.05/8 = 0.00625.
 
 POSITIVE CONTROLS (declared before looking at any candidate number):
   * on runs/results/ovo_sweep_REF/madeeg_ownvsother.csv the script must give
-    n0/n1/n2 = 36/96/56 and exact paired p = 0.0235 (vault, report 2026-08-11 (2) par.3);
+    n0/n1/n2 = 36/96/56 and exact paired p = 0.0235 (report of 2026-08-11, par. 3);
   * the Bonferroni threshold table must reproduce the contract par.3 rows:
     60->41, 80->52, 100->63, 120->75, 131->81, 150->91, 180->108.
 Only stdlib: math.comb, csv.
@@ -55,7 +55,7 @@ if __name__ == "__main__":
     ref = paired_exact_p(sys.argv[1])
     assert (ref["n0"], ref["n1"], ref["n2"]) == (36, 96, 56), f"REF pair counts off: {ref}"
     assert abs(ref["p_exact"] - 0.0235) < 5e-4, f"REF exact paired p off: {ref['p_exact']:.4f}"
-    print(f"control 2 PASS: REF n0/n1/n2 = 36/96/56, exact paired p = {ref['p_exact']:.4f} (vault: 0.0235)")
+    print(f"control 2 PASS: REF n0/n1/n2 = 36/96/56, exact paired p = {ref['p_exact']:.4f} (expected: 0.0235)")
     for path in sys.argv[2:]:
         r = paired_exact_p(path)
         print(f"{path}: acc {r['k']}/{r['n']} = {r['acc']:.4f}  n_pairs={r['n_pairs']}  "

@@ -1,18 +1,18 @@
 """EXP. 16 ARM B -- does a RICHER EEG feature extraction help? band_power on own-vs-other.
 
-Vault contract, written BEFORE this file existed and not touched after:
-  "Cap. 2 -- Exp. 16: la premessa della tesi messa alla prova -- CLAP come bersaglio e le
-   feature EEG ricche, criterio pre-registrato (12 ago 2026)", SSB.
+Pre-registration, written BEFORE this file existed and not touched after:
+  "Chapter 2 -- Exp. 16: the thesis premise put to the test -- CLAP as a target and rich
+   EEG features, pre-registered criterion (2026-08-12)", section B.
 
-THE QUESTION. A. asked to combine "the best EEG feature extraction we have found". The
-contract corrects the premise: `--eeg_repr spectra` lives in the contrastive model -- the
+THE QUESTION. The request was to combine "the best EEG feature extraction we have found".
+The criterion corrects the premise: `--eeg_repr spectra` lives in the contrastive model -- the
 family that memorises song identity -- and is excluded; and no EEG front end has ever been
 shown better in this project. What DOES exist inside the safe family is
 `src/models/cca_multiview.py::EEG_VIEWS`, whose `band_power` view (per-channel log power
 envelope, one block per declared band) is the honest version of the idea. This file runs
 it, once, on own-vs-other.
 
-PRELIMINARY GATE (contract SSB.2), settled BEFORE this file was written and recorded here:
+PRELIMINARY GATE (contract section B.2), settled BEFORE this file was written and recorded here:
 the pinned 209/376 CCA run is `runs/results/ovo_cca_ica/`, whose summary reads
 `MODEL 9: views=eeg_lagged stim_views=source_repr k=5 reg=0.001` -- the SINGLE view. So the
 arm is not already done, and it proceeds. Had it read `eeg_lagged,band_power` this file
@@ -25,22 +25,22 @@ Primary bar: accuracy >= 208/376, one-sided exact binomial P(X >= 208 | 376, 0.5
 the bar reads "tracks at least as well as what we use today".
 
 WHAT IS SPENT: nothing. own-vs-other runs on the SOLOS, declared free training material by
-the vault's ledger of looks. No duo decision, no trio, no split by genre/melody/instrument/
+the held-out-look ledger. No duo decision, no trio, no split by genre/melody/instrument/
 subject. NOTE the standing debt the contract makes explicit: this is the 13th comparison on
 the same 376 decisions (Exp. 7 x8, Exp. 8 x2, Exp. 14 x2, this x1). Free in the ledger of
 LOOKS, not free in the family-wise error rate. Printed with the verdict.
 
-GATES, DECLARED HERE AND CROSSED BEFORE ANY REAL NUMBER IS READ (contract SSB.3):
+GATES, DECLARED HERE AND CROSSED BEFORE ANY REAL NUMBER IS READ (contract section B.3):
   G1 REGRESSION CANARY on the DEFAULT path: --target mel --n_mels 8, ridge, must still give
      208/376 with md5(madeeg_ownvsother.csv) = 2eaa926244de340d31907c6deeb04b0c. If it
      moves, the diff touched the science: STOP.
-  G2 SINGLE-VIEW CCA REPRODUCTION (an addition of this file, not a relaxation -- SS8 of the
+  G2 SINGLE-VIEW CCA REPRODUCTION (an addition of this file, not a relaxation -- section 8 of the
      report). The contract asks for a descriptive McNemar against "the 209/376 of the
      single-view CCA". That number was measured on 2026-08-10 and the file has been edited
      twice since (Exp. 14 added --target mfcc). Re-measured here: it must give 209/376 AND
      be decision-identical to the archived run, comparison by comparison. Otherwise the
      object the McNemar compares against is not the pinned one: STOP.
-  G3 POSITIVE CONTROL of the MULTI-VIEW CCA path (contract SSB.3), threshold >= 0.95 -- the
+  G3 POSITIVE CONTROL of the MULTI-VIEW CCA path (contract section B.3), threshold >= 0.95 -- the
      contract raises the 0.90 the file itself still prints, and any value between the two
      counts as FAILED here. Exp. 8/14 construction: every EEG replaced by a synthetic linear
      mixture of that trial's attended representation at the model lags + noise. It licenses
@@ -49,7 +49,7 @@ GATES, DECLARED HERE AND CROSSED BEFORE ANY REAL NUMBER IS READ (contract SSB.3)
 Any gate failing => this script writes what it has and exits non-zero. Nothing is run "just
 to see", and no second candidate exists in any branch.
 
-Run (CPU, ~10', interpreter is NOT optional -- Legacy SS4 trap 1):
+Run (CPU, ~10', interpreter is NOT optional -- environment trap 1):
   /opt/miniconda3/bin/python src/madeeg_exp16b_ccaviews.py --madeeg_dir ~/madeeg
 """
 import os
@@ -67,15 +67,15 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RECON = os.path.join(ROOT, "src", "madeeg_reconstruction.py")
 DIAGNOSE = os.path.join(ROOT, "src", "madeeg_diagnose.py")
 
-# ---- thresholds, contract SSB.3. Not editable after the fact. ----
+# ---- thresholds, contract section B.3. Not editable after the fact. ----
 CANARY_K, CANARY_N = 208, 376
 CANARY_MD5 = "2eaa926244de340d31907c6deeb04b0c"
-CCAREF_K, CCAREF_N = 209, 376          # the pinned single-view CCA, vault Registro SS2.1 [G]
+CCAREF_K, CCAREF_N = 209, 376          # the pinned single-view CCA, Exp. 6 [G]
 CCAREF_DIR = os.path.join(ROOT, "runs", "results", "ovo_cca_ica")   # the 10/8 run, on disk
 CTRL_MIN = 0.95                        # contract; the file's own built-in line still says 0.90
 BAR_K, BAR_N = 208, 376                # primary: >= 208/376, one-sided exact p = 0.0221
 
-# ---- the K = 1 candidate, contract SSB.3. Declared before the run. ----
+# ---- the K = 1 candidate, contract section B.3. Declared before the run. ----
 CANDIDATE = ("B1 CCA eeg_lagged+band_power", "cca_bp",
              ["--estimator", "cca", "--cca_views", "eeg_lagged,band_power"])
 SINGLE_VIEW = ["--estimator", "cca", "--cca_views", "eeg_lagged"]
@@ -88,7 +88,7 @@ CTRL_ARGS = ["--self_test", "--target_fs", "64", "--band_low", "1", "--band_high
              "--lags_ms", "250", "--seed", "42"]
 
 CAVEAT = [
-    "!! READ BEFORE THE NUMBERS (Comandamenti #9).",
+    "!! READ BEFORE THE NUMBERS (method rule 9).",
     "!! WHAT THIS MEASURES: own-vs-other measures TRACKING and nothing else. Given the EEG",
     "!! of a held-out SOLO segment, is that segment's own audio scored above ANOTHER solo's?",
     "!! The other segment is a different song, so nothing here says anything about separating",
@@ -106,7 +106,7 @@ CAVEAT = [
     "!! multi-view path and says nothing about the real data.",
     "!! rho (CCA) and band_pearson (ridge) are DIFFERENT statistics and are never compared.",
     "!! Only the ACCURACY is comparable across estimators, because it is dimensionless.",
-    "!! K = 1 for this arm and the bar (>= 208/376) were written in the vault contract of",
+    "!! K = 1 for this arm and the bar (>= 208/376) were written in the pre-registration of",
     "!! 12/8/2026 BEFORE this file existed, and are not editable now. McNemar is DESCRIPTIVE,",
     "!! in both directions, against BOTH references, and does NOT enter the verdict.",
 ]
@@ -123,7 +123,7 @@ def md5(path):
 
 
 def run_recon(madeeg_dir, tag, extra):
-    """One madeeg_reconstruction.py run into its own directory (Comandamenti #9: a control
+    """One madeeg_reconstruction.py run into its own directory (method rule 9: a control
     never writes over a result). Returns the output dir."""
     cmd = [PY, RECON, "--madeeg_dir", madeeg_dir, "--training_date", tag] + extra
     print(f"\n$ {' '.join(cmd)}", flush=True)
@@ -208,7 +208,7 @@ def main():
 
     # ---------------- the preliminary gate, settled before the code ----------------
     say()
-    say("=== PRELIMINARY GATE (contract SSB.2) -- which views produced the pinned 209/376? ===")
+    say("=== PRELIMINARY GATE (contract section B.2) -- which views produced the pinned 209/376? ===")
     ref_sum = os.path.join(CCAREF_DIR, "madeeg_ownvsother_summary.txt")
     model9 = [l for l in open(ref_sum).read().splitlines() if l.startswith("MODEL 9:")]
     say(f"  {CCAREF_DIR}/madeeg_ownvsother_summary.txt")
@@ -234,7 +234,7 @@ def main():
     say(f"                    expected = {CANARY_MD5}")
     say(f"  -> [{'PASSED' if ok else 'FAILED'}] the default path is bit-for-bit what it was.")
     if not ok:
-        say("  CANARY FAILED -> the diff moved the science. Nothing is run (Comandamenti #3/#8).")
+        say("  CANARY FAILED -> the diff moved the science. Nothing is run (method rules 3/8).")
         dump()
 
     # ---------------- G2: the single-view CCA reproduces, decision by decision ----------
@@ -259,7 +259,7 @@ def main():
     say(f"  -> [{'PASSED' if ok else 'FAILED'}]")
     if not ok:
         say("  The single-view CCA is no longer the object the contract names -> STOP "
-            "(Comandamenti #8).")
+            "(method rule 8).")
         dump()
 
     # ---------------- G3: positive control of the MULTI-VIEW path ----------------
@@ -284,7 +284,7 @@ def main():
     say("      declared change and is NOT made here.")
     if not ok:
         say(f"  positive control below {CTRL_MIN:.2f} -> the candidate is not reported "
-            "(Comandamenti #3).")
+            "(method rule 3).")
         dump()
     say("  The wiring is licensed. The real number may now be read.")
 
@@ -321,7 +321,7 @@ def main():
     # ---------------- descriptive McNemar, both references, both directions ----------
     say()
     say("=== DESCRIPTIVE -- McNemar, BOTH references, BOTH directions ===")
-    say("  Does not enter the verdict (contract SSB.3). Both directions are printed so that a")
+    say("  Does not enter the verdict (contract section B.3). Both directions are printed so that a")
     say("  candidate WORSE than a reference is as readable as one that is better. The second")
     say("  pair is what isolates what band_power adds, since it holds the estimator fixed and")
     say("  changes only the EEG feature set.")
@@ -334,16 +334,16 @@ def main():
 
     # ---------------- verdict, pre-declared ----------------
     say()
-    say("=== VERDICT -- the reading was written before the numbers (contract SS5) ===")
+    say("=== VERDICT -- the reading was written before the numbers (contract section 5) ===")
     if passed:
         say("  B PASSES: a richer EEG feature helps the tracking. The contract's pre-declared")
-        say("  reading is 🟡 -- 'to be confirmed OUTSIDE own-vs-other before any claim'. It is")
+        say("  reading is NOT CONCLUSIVE -- 'to be confirmed OUTSIDE own-vs-other before any claim'. It is")
         say("  not a result about attention: own-vs-other upper-bounds the attention decision")
-        say("  and has already failed to predict it once (Exp. 8 🟢 -> Exp. 9 🔴).")
+        say("  and has already failed to predict it once (Exp. 8 positive -> Exp. 9 negative).")
     else:
         say("  B FAILS: on the EEG side too, the hand-picked-feature route is closed, with")
         say("  band_power -- the only EEG view this project ever proposed from the literature")
-        say("  and never tried. Pre-declared reading, contract SS5.")
+        say("  and never tried. Pre-declared reading, contract section 5.")
     say()
     say(f"  Family-wise bookkeeping, printed with the verdict: this is comparison 13 on the")
     say(f"  same 376 decisions (Exp. 7 x8 + Exp. 8 x2 + Exp. 14 x2 + this x1). The bar itself")

@@ -1,4 +1,4 @@
-# CHANGED(baseline): NEW FILE -- the paired alpha test (vault: Exp. 6 pre-registration, 10/8).
+# CHANGED(baseline): NEW FILE -- the paired alpha test (Exp. 6 pre-registration, 2026-08-10).
 #   Used by `madeeg_reconstruction.py --alpha_li`. No decoder, no audio, no training: this is a
 #   sign test on a TONIC quantity, scored on twin pairs.
 #
@@ -16,7 +16,7 @@
 
     LI(E) = mean over F3/F4, C3/C4, P3/P4, O1/O2 of [ log P_alpha(right) - log P_alpha(left) ]
 
-🔴 THE DIRECTION IS FIXED HERE, BEFORE ANY NUMBER, AND IS NOT FLIPPED LATER (Comandamenti #6).
+THE DIRECTION IS FIXED HERE, BEFORE ANY NUMBER, AND IS NOT FLIPPED LATER.
     Alpha desynchronization is CONTRALATERAL to the attended side: attending on the RIGHT
     lowers alpha over the LEFT hemisphere, hence RAISES log P(right) - log P(left). So a twin
     pair is correct when sign(LI(E_A) - LI(E_B)) == sign(side(a) - side(b)). If the real data

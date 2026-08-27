@@ -53,7 +53,7 @@ from modules.clip_loss import CLIP_Loss  # noqa: E402
 MATCH_MISMATCH = ("temporal_offset", "cross_instrument")
 
 # CHANGED(baseline): Exp. 19. Three numbers declared HERE, in the code, before the run
-# (Comandamenti §3, §5). They come from the vault contract of 13 Aug 2026 and none of them
+# (method rules 3/5). They come from the pre-registration of 13 Aug 2026 and none of them
 # is tunable from the command line, precisely so that a run cannot quietly move one.
 MM_GATE = 0.70              # §1 and §2.2 -- the SAME bar as Exp. 18. The budget changed;
 #                             the criterion did not, and lowering it after seeing a number
@@ -72,7 +72,7 @@ CONVERGED_TRAIN_LOSS = 0.50  # §1 -- the boundary between the contract's first 
 #                             cause, and the number that separates them is written first.
 
 
-# The one sentence that has to survive the terminal (Comandamenti §9), so it is written
+# The one sentence that has to survive the terminal (method rule 9), so it is written
 # into the summary FILE above the numbers and not only printed.
 EPOCH_RULE = (
     "!! THE REPORTED NUMBER IS THE ONE AT THE STOPPING EPOCH, and the stopping epoch is\n"
@@ -86,23 +86,23 @@ EPOCH_RULE = (
 def branch_of_contract(args, stopped_early, final_loss, acc, passed):
     """Which of the four readings the Exp. 19 contract §1 declared in advance has fired.
 
-    Written as a table in the vault before this code existed, and the boundary between the
+    Written as a table before this code existed, and the boundary between the
     first two is `CONVERGED_TRAIN_LOSS`, declared above for the reason given there.
     """
     if passed:
-        return (f"🟢 held-out {acc:.4f} clears the gate: Exp. 18 was UNDER-TRAINED. "
+        return (f"held-out {acc:.4f} clears the gate: Exp. 18 was UNDER-TRAINED. "
                 "The own-vs-other gauge follows, under a NEW pre-registration.")
     if not stopped_early:
-        return (f"🟡 NOT CONCLUSIVE -- the train loss was still improving by more than "
+        return (f"NOT CONCLUSIVE -- the train loss was still improving by more than "
                 f"{args.early_stop_min_delta} when the {args.epochs}-epoch cap was reached "
                 f"(last {final_loss:.4f}). The budget was not enough. No third run without "
                 "a new contract.")
     if final_loss < CONVERGED_TRAIN_LOSS:
-        return (f"🔴 PURE OVERFITTING -- the train loss converged well below "
+        return (f"PURE OVERFITTING -- the train loss converged well below "
                 f"{CONVERGED_TRAIN_LOSS} ({final_loss:.4f}) and the held-out set stayed at "
                 f"{acc:.4f}. The limit is the amount of data, now demonstrated instead of "
                 "inferred.")
-    return (f"🔴 THE QUESTION IS CLOSED: it was not the epochs. The optimiser stopped "
+    return (f"THE QUESTION IS CLOSED: it was not the epochs. The optimiser stopped "
             f"improving at a train loss of {final_loss:.4f}, still at or above "
             f"{CONVERGED_TRAIN_LOSS} (chance = log 2 = 0.6931), and the held-out set is "
             f"{acc:.4f}. Exp. 18's negative becomes definitive and stronger, because it now "
@@ -290,7 +290,7 @@ def run_epoch(loader, encoder_eeg, encoder_audio, criterion, optimizer, device, 
 def run_kfold(ds, args, device):
     """One prediction per trial, k folds, pooled model. Reports against 0.50.
 
-    The criterion was fixed in the vault BEFORE this function produced a number:
+    The criterion was fixed in writing BEFORE this function produced a number:
     >= 88/154 = 0.5714, one-sided binomial p < 0.05. Anything below is reported as not
     distinguishable from chance -- including anything that merely beats the linear anchor,
     whose own 0.5584 is itself not significant (p = 0.085).
@@ -460,7 +460,7 @@ def match_mismatch_records(subset, encoder_eeg, encoder_audio, device, batch_siz
 def run_matchmismatch(ds, args, device):
     """Exp. 18, stages S1/S2: train on solo match-mismatch pairs, score held-out recordings.
 
-    The gate was written in the vault BEFORE this function existed (Exp. 18 §4.2): held-out
+    The gate was written down BEFORE this function existed (Exp. 18 §4.2): held-out
     accuracy >= 0.70 against a chance of 0.500. Below it the encoder learned nothing and the
     contract stops -- no own-vs-other gauge, no claim, no second look.
 
@@ -471,13 +471,13 @@ def run_matchmismatch(ds, args, device):
       seconds of audio played four times, so splitting between them would put a near-copy
       of a training item in the test set. `split_by_trial` already holds out whole trials
       and is reused unchanged; the solo dataset just declares its recordings as `trials`.
-    * The null is PRINTED, never assumed (Comandamenti §4). For `temporal_offset` the index
+    * The null is PRINTED, never assumed (method rule 4). For `temporal_offset` the index
       carries every (start, start) pair in both directions, so the best rule that ignores
       the EEG scores exactly 0.500 -- and the number is computed rather than asserted. For
       `cross_instrument` the subjects did not all hear the same solos, so it is NOT 0.500
       and the measured value is what the accuracy has to be read against.
 
-    CHANGED(baseline): Exp. 19 (vault contract, 13 Aug 2026) adds two things and only two,
+    CHANGED(baseline): Exp. 19 (pre-registration, 13 Aug 2026) adds two things and only two,
     both behind flags that default to off so an Exp. 18 command still reproduces Exp. 18:
 
     * `--early_stop_patience` / `--early_stop_min_delta` (§1): a 120-epoch cap with early
@@ -494,8 +494,7 @@ def run_matchmismatch(ds, args, device):
     # CHANGED(baseline): Exp. 19 §2.1 -- repair the null BEFORE training, per split.
     # Per split and not once over the whole index, because the two are different numbers:
     # Exp. 18 measured 0.5063 over all of S2 and 0.6061 on the held-out side of the very
-    # same index, and it is the held-out one the gate reads. Off by default (Comandamenti
-    # §8), and a provable no-op on S1 anyway -- see `balanced_indices`.
+    # same index, and it is the held-out one the gate reads. Off by default (method rule 8), and a provable no-op on S1 anyway -- see `balanced_indices`.
     if args.balance_pairs:
         tr_ids, va_ids = ds.balanced_indices(train_ds.indices), ds.balanced_indices(valid_ds.indices)
         print(f"[balance] train {len(train_ds)} -> {len(tr_ids)} pairs, "
@@ -612,7 +611,7 @@ def run_matchmismatch(ds, args, device):
                      f"'beat it, exact one-sided binomial p <= 0.05' (p = {test.pvalue:.4g})"
                      f"; the absolute {MM_GATE:.2f} bar is reported alongside, not instead")
         passed = test.pvalue <= 0.05
-    # A control never writes over a result (Comandamenti §9): an overfit run is scored on
+    # A control never writes over a result (method rule 9): an overfit run is scored on
     # its own training items, so it has no held-out accuracy and the gate does not apply to
     # it. Printing "PASSED" there would leave a line waiting to be quoted by mistake.
     verdict = ("not applicable -- this run has no held-out set" if args.overfit else
@@ -646,7 +645,7 @@ def run_matchmismatch(ds, args, device):
         caveat += (f"!! --max_batches={args.max_batches}: UNDERTRAINED by construction.\n"
                    f"!! This accuracy is not a result.\n\n")
     # CHANGED(baseline): Exp. 19. Two caveats that have to be INSIDE the file, above the
-    # numbers, because the file outlives the terminal (Comandamenti §9).
+    # numbers, because the file outlives the terminal (method rule 9).
     if args.early_stop_patience:
         caveat += EPOCH_RULE + "\n\n"
     if args.loss == "cross_instrument":
@@ -752,7 +751,7 @@ def main():
                          "nothing changes nothing; on a cluster, pointing at the file that "
                          "is already on disk saves a 1.74 GiB download at run time")
     # CHANGED(baseline): Exp. 19 -- the epoch budget and the null repair. Both default to
-    # OFF, so every Exp. 18 command still runs Exp. 18 (Comandamenti §8).
+    # OFF, so every Exp. 18 command still runs Exp. 18 (method rule 8).
     ap.add_argument("--early_stop_patience", type=int, default=0,
                     help="Exp. 19 §1: stop after this many epochs without a TRAIN-loss "
                          "improvement greater than --early_stop_min_delta. 0 (the default) "
@@ -772,7 +771,7 @@ def main():
                          "number it produces is marked as a check inside the summary file")
     args = ap.parse_args()
 
-    # Comandamenti §8: a value that is not one of the four must BREAK. argparse already
+    # method rule 8: a value that is not one of the four must BREAK. argparse already
     # rejects a typo; this second gate is here because the failure mode that cost us a
     # write-up was a mode silently behaving like the previous one, and it is cheap.
     assert args.loss in ("batch", "within_mixture", *MATCH_MISMATCH), \
@@ -792,7 +791,7 @@ def main():
             args.training_date += "_within"
         if args.loss in MATCH_MISMATCH:
             # A control never writes over a result, and neither does a different budget
-            # (Comandamenti §9): the Exp. 19 run lands beside the Exp. 18 one, not on it.
+            # (method rule 9): the Exp. 19 run lands beside the Exp. 18 one, not on it.
             exp = "exp19" if (args.early_stop_patience or args.balance_pairs) else "exp18"
             args.training_date = f"madeeg_{exp}_{args.loss}"
             if args.overfit:

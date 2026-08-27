@@ -785,7 +785,7 @@ def native_score(model, eeg, rep, n_lags, cca_cfg, ch_names, band, fs, n_keep):
     """The estimator's OWN similarity between one EEG segment and one source representation.
 
     ridge / shrinkage -> band_pearson of the reconstruction.   CCA -> rho.
-    🔴 The two are NEVER compared with each other. Only the ACCURACIES they produce are, and
+    The two are NEVER compared with each other. Only the ACCURACIES they produce are, and
     those are dimensionless. Comparing rho against a band_pearson is the metric trap in its
     third costume (AXIS 2 on 2026-07-29, the step-1 gate this morning).
 
@@ -870,7 +870,7 @@ def main():
                          "stereo half where the true `soli` exists. Prints PASS/FAIL and exits. "
                          "Touches no accuracy: durations, onsets and audio only")
     ap.add_argument("--alpha_li", action="store_true",
-                    help="THE PAIRED ALPHA TEST (vault: Exp. 6, 10/8). No decoder, no audio, no "
+                    help="THE PAIRED ALPHA TEST (Exp. 6 pre-registration, 2026-08-10). No decoder, no audio, no "
                          "training: the alpha laterality index on F3/F4, C3/C4, P3/P4, O1/O2, "
                          "scored on TWIN PAIRS (same subject, same mixture, both targets), where "
                          "every constant of subject/channel/session cancels in the difference. "
@@ -883,7 +883,7 @@ def main():
                          "it. Threshold 0.90, declared in the code. Writes to a separate "
                          "directory with the caveat inside the summary. 0 = off = real data")
     ap.add_argument("--own_vs_other", action="store_true",
-                    help="THE REPLACEMENT GATE (vault: Exp. 6, 10/8). On held-out SOLO segments, "
+                    help="THE REPLACEMENT GATE (Exp. 6 pre-registration, 2026-08-10). On held-out SOLO segments, "
                          "does the estimator score a segment's EEG higher against its own audio "
                          "than against another solo's? Discrimination -- the quantity de "
                          "Cheveigne's claim is about -- on TRAINING material, so no duo is "
@@ -893,7 +893,7 @@ def main():
     ap.add_argument("--inner_val_only", action="store_true",
                     help="fit the decoder exactly as a full run would and report inner_val_r "
                          "ONLY: no test trial is built and none is decided, so no accuracy "
-                         "exists to be read by accident. The vault's ledger of looks declares "
+                         "exists to be read by accident. The held-out-look ledger declares "
                          "inner_val_r free because it is scored on an inner split of the "
                          "TRAINING material and touches no attention decision; this flag makes "
                          "that structural instead of a matter of discipline. Use it for every "
@@ -917,7 +917,7 @@ def main():
                     help="EXP. 14: number of DCT coefficients kept by --target mfcc/mfcc_c0. "
                          "Must be 0 for every other target: it is asserted, not ignored, so a "
                          "run that carries it under --target mel breaks instead of looking like "
-                         "the new arm and being the old one (Comandamenti #8)")
+                         "the new arm and being the old one (method rule 8)")
     # --- the four axes of the published protocol. Every default is the CURRENT behaviour,
     #     so the three reference numbers stay reproducible bit-for-bit. -------------------
     ap.add_argument("--estimator", default="ridge", choices=["ridge", "shrinkage", "cca"],
@@ -982,7 +982,7 @@ def main():
                          "isolated sources borrowed from the same mixture's preprocessed twin "
                          "(see duo_test_recipes). 'both' pools the two halves -- POOLING IS A "
                          "SEPARATE DECISION and was explicitly not taken on 2026-07-30: the two "
-                         "halves are reported separately first (vault: Exp. 4 pre-registration)")
+                         "halves are reported separately first (Exp. 4 pre-registration)")
     args = ap.parse_args()
     if not args.log_dir:  # same run-output dir as main.py / checkpoint_test.py
         # Load paths.py by file rather than as `utils.paths`: the package __init__ pulls in
@@ -1019,7 +1019,7 @@ def main():
     _s0 = next(iter(meta)); _k0 = next(iter(meta[_s0]))
     ch_names = list(meta[_s0][_k0]["eeg_info"]["ch_names"])
     # MODEL 9. The cca_* flags are asserted, not ignored: a run that carries them under
-    # --estimator ridge would look like the new arm and be the old one (Comandamenti #8).
+    # --estimator ridge would look like the new arm and be the old one (method rule 8).
     cca_cfg = None
     if args.estimator == "cca":
         _c = _cca_mod()
@@ -1111,7 +1111,7 @@ def main():
         return
 
     if args.alpha_li:
-        # THE PAIRED ALPHA TEST (vault: Exp. 6 pre-registration, 10/8). Nothing is trained and
+        # THE PAIRED ALPHA TEST (Exp. 6 pre-registration, 2026-08-10). Nothing is trained and
         # no audio is read: this is a sign test on a TONIC quantity, which is why it lives
         # outside the CCA -- a within-trial correlation centres tonic levels out.
         alz = _load_by_file("_alpha_lat", "models", "alpha_lateralization.py")
@@ -1189,7 +1189,7 @@ def main():
                    if sum(_m.comb(n, i) for i in range(c, n + 1)) / 2.0 ** n < 0.05)
         lines = ["== MAD-EEG alpha laterality, TWIN-PAIR sign test =="]
         if args.alpha_inject:
-            lines.append(f"🔴 CAVEAT, INSIDE THE FILE AND ABOVE THE NUMBERS: this is the POSITIVE "
+            lines.append(f"CAVEAT, INSIDE THE FILE AND ABOVE THE NUMBERS: this is the POSITIVE "
                          f"CONTROL. A lateralized alpha modulation of amplitude "
                          f"{args.alpha_inject} was INJECTED into the real EEG with the side taken "
                          f"from the true panning. These numbers say the index and the pairing are "
@@ -1199,7 +1199,7 @@ def main():
                   "RULE, fixed before the run and NOT flipped afterwards: alpha desynchronization "
                   "is CONTRALATERAL, so attending on the right raises log P(right)-log P(left). "
                   "A pair is correct when sign(LI_a - LI_b) == sign(side_a - side_b).",
-                  "🔴 NULL = 0.5 and it is EXACT, not estimated: under H0 the two twins are "
+                  "NULL = 0.5 and it is EXACT, not estimated: under H0 the two twins are "
                   "EXCHANGEABLE -- same subject, same mixture, same audio, same session, only "
                   "the attended source differs -- so the sign of their LI difference is equally "
                   "likely either way. No constant of subject, channel or impedance can survive: "
@@ -1217,14 +1217,14 @@ def main():
                   "per-subject: " + " ".join(f"{s}={v:.2f}"
                                              for s, v in pr.groupby('subject').correct.mean().items())]
         if args.spatial == "mono":
-            lines.append("📌 THIS IS THE CONTROL ARM. In mono there is no side physically present, "
+            lines.append("THIS IS THE CONTROL ARM. In mono there is no side physically present, "
                          "so the same nominal panning of the mixture is used and the rule is "
                          "identical: only the spatial separation is removed. The mono arm must "
                          "stay AT CHANCE. If it matches or beats stereo, the spatial reading is "
                          "FALSIFIED even if stereo passes.")
         else:
-            lines.append("⚠️ EXPLORATORY BY CONSTRUCTION: the 154 stereo and 155 mono duos are "
-                         "already spent (vault: ledger of looks). No threshold written beforehand "
+            lines.append("EXPLORATORY BY CONSTRUCTION: the 154 stereo and 155 mono duos are "
+                         "already spent (held-out-look ledger). No threshold written beforehand "
                          "makes this confirmatory, and the thesis section must say so in its "
                          "title, not in a footnote.")
         txt = "\n".join(lines)
@@ -1233,7 +1233,7 @@ def main():
         return
 
     if args.own_vs_other:
-        # THE REPLACEMENT GATE (vault: Exp. 6 pre-registration, 10/8). Held-out SOLO segments
+        # THE REPLACEMENT GATE (Exp. 6 pre-registration, 2026-08-10). Held-out SOLO segments
         # only: no duo is loaded, no attention decision is taken, no trio is touched. The
         # ledger of looks declares this free -- the solos are training material.
         assert args.train_on == "raw_solos", (
@@ -1290,7 +1290,7 @@ def main():
                  "discrimination -- the same operation the real decision performs -- but on "
                  "TRAINING material: no duo is loaded and no attention decision is taken. The "
                  "ledger of looks declares it free.",
-                 "🔴 THE SIMILARITY IS THIS ESTIMATOR'S OWN and is NOT comparable across "
+                 "THE SIMILARITY IS THIS ESTIMATOR'S OWN and is NOT comparable across "
                  f"estimators (here: {stat}). Only the ACCURACY below is comparable, because it "
                  "is dimensionless. Never put a rho next to a band_pearson.",
                  f"estimator={args.estimator} eeg_clean={args.eeg_clean} filters={args.filters} "
@@ -1301,7 +1301,7 @@ def main():
                          f"stim_views={','.join(cca_cfg['stim_views'])} k={cca_cfg['k']} "
                          f"reg={cca_cfg['reg']:g}")
         lines += [f"comparisons={n}  (mutual pairs x 2 directions)",
-                  "🔴 NULL = 0.5, and it is EXACT BY SYMMETRY, not estimated: every pair is "
+                  "NULL = 0.5, and it is EXACT BY SYMMETRY, not estimated: every pair is "
                   "scored in both directions, so an estimator with nothing but a fixed "
                   "instrument preference gets exactly one of the two right.",
                   f"own-vs-other accuracy: {k}/{n} = {k / n:.4f}   null 0.500   "
@@ -1456,7 +1456,7 @@ def main():
                         f"comparable)={rec.inner_val_rho.mean():.4f}")
         txt = "\n".join(head)
         print(txt)
-        # A control never writes over a result (Comandamenti #9): its own directory, and the
+        # A control never writes over a result (method rule 9): its own directory, and the
         # caveat lives in the file, which outlives the terminal.
         st_out = os.path.join(args.log_dir, args.training_date + "_selftest")
         os.makedirs(st_out, exist_ok=True)
@@ -1590,7 +1590,7 @@ def main():
                      f"stim_views={','.join(cca_cfg['stim_views'])} k={cca_cfg['k']} "
                      f"reg={cca_cfg['reg']:g} blocks_x={cca_cfg['blocks_x']} "
                      f"blocks_y={cca_cfg['blocks_y']}",
-                     "🔴 inner_val_r is BACK-PROJECTED and comparable with the ridge; "
+                     "inner_val_r is BACK-PROJECTED and comparable with the ridge; "
                      "inner_val_rho is a sum of canonical correlations and is NOT comparable "
                      "with any ridge number (a canonical correlation is >= a Pearson by "
                      "construction)."]
@@ -1647,7 +1647,7 @@ def main():
              f"mean {'rho_cca' if cca_cfg else 'r'}(best unattended)={rec.r_best_unattended.mean():.4f}",
              f"mean inner_val_r (in-distribution reconstruction)={rec.inner_val_r.mean():.4f}"]
     if cca_cfg is not None:
-        # MODEL 9. The caveat goes INSIDE the file and ABOVE the numbers (Comandamenti #9):
+        # MODEL 9. The caveat goes INSIDE the file and ABOVE the numbers (method rule 9):
         # this file is what survives the terminal, and the two statistics below look alike.
         lines.insert(1, "\n".join([
             f"MODEL 9 (multi-view CCA): views={','.join(cca_cfg['views'])} "
@@ -1656,7 +1656,7 @@ def main():
             "  band-power/lateralization views use only the declared bands that fit inside the "
             "analysis band above; a band outside it is ZERO by construction and is dropped, not "
             "carried as noise. Widening the band is a separate, declared change (--band_high).",
-            "🔴 TWO STATISTICS IN THIS FILE, AND THEY ARE NOT COMPARABLE:",
+            "TWO STATISTICS IN THIS FILE, AND THEY ARE NOT COMPARABLE:",
             "   inner_val_r = band_pearson between the BACK-PROJECTED reconstruction and the "
             "attended representation, computed with the SAME function the ridge uses. THIS is "
             "the number to put next to the ridge's inner_val_r (0.0582 on raw_solos, 0.0245 on "

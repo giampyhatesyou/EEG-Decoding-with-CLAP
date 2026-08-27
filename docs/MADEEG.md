@@ -93,7 +93,7 @@ metadata[subj][stim] = {target, instruments[list], ensemble(duo/trio), spatial,
 ## Workflow
 
 ```bash
-# 1. download (baldo/edu02), ~3.7 GB
+# 1. download the preprocessed release, ~3.7 GB
 MADEEG_DIR=~/madeeg bash madeeg_setup.sh
 
 # 2. verify the schema on the real files before any run
@@ -101,7 +101,7 @@ cd src && python madeeg_reconstruction.py --madeeg_dir ~/madeeg --inspect 3
 
 # 3. linear backward-model AAD baseline on duos (the reproducible anchor)
 python madeeg_reconstruction.py --madeeg_dir ~/madeeg --ensemble duo \
-    --training_date madeeg_ridge_duo --log_dir ../results
+    --training_date madeeg_ridge_duo        # output defaults to <repo>/runs/results
 ```
 
 ## Method (`src/madeeg_reconstruction.py`)
@@ -111,15 +111,25 @@ reconstructs the **attended** source envelope from EEG (band-pass 1–8 Hz, down
 64 Hz, lags 0–250 ms). At test: argmax of Pearson r between the reconstruction and each
 **present** source envelope. Chance = 1/n_present (0.50 duo, 0.33 trio).
 
-- **Target to beat:** the paper's linear stimulus-reconstruction reaches r_attended >
-  r_unattended in **>78 %** of duet tests. Recovering that number validates the loader.
 - Method validated on synthetic data (EEG that truly tracks the attended source is
   recovered at ~100 %), so a chance result on real data means genuine absence of signal,
-  not a bug.
+  not a bug. That control is `--self_test`, threshold 0.90 declared in the code.
 
-## Next (extension, after the linear anchor holds)
+## What this arm found
 
-Bring the repo's contrastive / CLAP / SpectraEEG framework here, with the **correct**
-negatives = the *competing stems of the same mixture* (within-stimulus contrast), and the
-within-trial attended-vs-unattended evaluation. Honest risk: 8 subjects is small → linear
-may beat deep; report it as such.
+This file describes the dataset and the loader. The results themselves, with their nulls,
+their pre-registered thresholds and their provenance files, are in
+[`../scripts/replicate/README.md`](../scripts/replicate/README.md); the numbers are
+summarised in [`../README.md`](../README.md) and pinned in `../RESULTS.md`.
+
+Two things are worth carrying over from there into any reading of this document:
+
+- **The paper's 78–79 % does not reproduce** from any package faithful to its declared
+  methods. Arm A runs the complete published package over three analysis bands and gets
+  F1 micro 0.5267 / 0.4800 / 0.5400 at n = 150 (`armA_paper_protocol.sh`). The gap is not
+  a loader bug: the loader is validated by `--self_test` and by the alignment gate.
+- **The safe linear family peaks at 0.5584** on the duo decision against a pre-registered
+  threshold of 0.5714, and the contrastive extension lands *below* chance at 0.3766 for a
+  diagnosed reason (prior-following). The extension was brought here, with within-mixture
+  negatives, and is step D: it did not remove the shortcut, it followed the prior better.
+  8 subjects is small, and the linear family does beat the deep one here.

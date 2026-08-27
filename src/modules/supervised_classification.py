@@ -1,5 +1,5 @@
 # CHANGED(baseline): NEW FILE — not present in the Akama et al. upstream. Diagnostic extension.
-"""Unimodal supervised classification baselines (supervisor-proposed diagnostics).
+"""Unimodal supervised classification baselines (the two diagnostic controls).
 
 These are the diagnostic experiments #1 and #2, deliberately
 *outside* the minimal-change contrastive baseline. They live in their own
