@@ -81,6 +81,7 @@ reference, not part of the path.
 | `madeeg_stem_separability.py` | The audio-only separability gate: Experiment 13, the noise-512 negative control, and Experiment 17. Two of its outputs carry pinned md5s. |
 | `madeeg_leakage_audit.py` | Arm D: the window-versus-trial cross-validation audit on balanced pseudo-labels. The interpretation rule is written in the code before the run. |
 | `madeeg_exp14_tracking.py` | Experiment 14 — orchestrator: runs `madeeg_reconstruction.py` as a subprocess and judges MFCC-13 and mel-64 against the 208/376 bar. |
+| `madeeg_same_diff_melody.py` | The same/diff-melody split of an arm A run, from its records plus the session metadata. Descriptive, no new looks; exits non-zero if the split is not 89/61. |
 | `madeeg_exp15_differential.py` | Experiment 15 — orchestrator: the attended-minus-unattended differential under MFCC, with its minimum detectable difference. |
 | `madeeg_exp16a_clap_extract.py` | Stage 1 of Experiments 16A/17: CLAP embedding extraction, writing a manifest with the checkpoint checksum and library versions. |
 | `madeeg_exp16b_ccaviews.py` | Experiment 16B — orchestrator: band power as a second view inside the multi-view CCA. |
@@ -137,6 +138,7 @@ each costs.
 | `exp11_spectral_register_stereo.sh` · `exp12_spectral_register_mono.sh` | Exp. 11 and 12 — the attended spectral register, stereo then fresh mono. |
 | `exp15_mfcc_differential.sh` | Exp. 15 — the attentional differential under MFCC, with its detectability floor. |
 | `armA_paper_protocol.sh` | Arm A — protocol parity with Cantisani et al.: the published 79 does not reproduce. |
+| `armA_same_diff_melody.sh` | Arm A — the same/diff-melody split of those runs: where the published advantage lives in frequency. Rewritten 2026-09-01 after the original was lost. |
 | `armD_leakage_audit.sh` | Arm D — the window-versus-trial leakage audit. |
 | `stepC_contrastive_clap.sh` · `stepD_within_mixture.sh` | Steps C and D — the contrastive arm and the within-mixture loss. GPU steps are printed, not launched. |
 | `exp18_matchmismatch.sh` · `exp19_matchmismatch.sh` | Exp. 18 and 19 — match-mismatch on the solos, then the same at twelve times the compute budget. |

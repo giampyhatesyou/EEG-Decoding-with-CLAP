@@ -43,7 +43,7 @@ stronger form of provenance — each pin is verified against its run's own
 | **Exp. 12** — register, mono **22/42**, pooled **46/89**, stereo-from-raw 24/47 | `2026-08-17_exp12_*_RESULT_*` |
 | paired alpha — **23/44** stereo, **24/42** mono control, injection **44/44** | `2026-08-17_alpha_*_RESULT_*` |
 | arm D leakage audit — pseudo-labels **0.6209** window-CV vs **0.4847** trial-CV | `2026-08-17_armD_leakage_audit_RESULT_*` |
-| arm A protocol parity — F1 **0.5267** / **0.4800** / **0.5400**; same-melody 46/89 vs diff 33/61 | `2026-08-17_armA_paper_*_RESULT_*`, `2026-08-11_armA_same_diff_melody.txt` |
+| arm A protocol parity — F1 **0.5267** / **0.4800** / **0.5400**; same-melody 46/89 vs diff 33/61 | `2026-08-17_armA_paper_*_RESULT_*`, `2026-08-11_armA_same_diff_melody.txt` — the split has had code again since 2026-09-01: `scripts/replicate/armA_same_diff_melody.sh` reproduces both bands exactly |
 | step C **58/154 = 0.3766** | pinned in `results_manifest.tsv` as `madeeg_clap_kfold` |
 | step D **70/154 = 0.4545**; ridge on the envelope target **0.5065** | `2026-08-27_madeeg_clap_kfold_within_RESULT_*`, `2026-08-27_madeeg_ridge_duo_env_RESULT_*` |
 | synthetic positive controls, steps C and D — **148/154** and **142/154** | `2026-08-27_madeeg_clap_selftest{,_within}_RESULT_*` |

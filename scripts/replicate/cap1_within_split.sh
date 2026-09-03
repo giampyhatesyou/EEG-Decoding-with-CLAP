@@ -57,10 +57,13 @@
 #   [GPU] audio_only_raw  within  MACRO 0.967  GLOBAL 0.963
 #   [GPU] eeg_only        within  MACRO 0.250  GLOBAL 0.471
 #
-# OPEN NUMBER CONFLICT: the pair 0.865/0.852 also circulates for this same row.
-#    The canonical source is `results_manifest.tsv` -> `RESULTS.md`, i.e. 0.875
-#    MACRO / 0.865 GLOBAL. The entry has to be closed in writing, not resolved
-#    silently by whoever writes it up.
+# NUMBER CONFLICT, CLOSED 2026-08-27 (decision D6, taken by A. in writing).
+#    The pair 0.865/0.852 also circulates for this same row -- it is the
+#    all-trials / high-attention reading, not a different run. CANONICAL is
+#    `results_manifest.tsv` -> `RESULTS.md`: 0.875 MACRO / 0.865 GLOBAL, and that
+#    is the pair the thesis now quotes. The two readings share the global figure
+#    and must never be mixed. Nothing was resolved silently: the alternative is
+#    named in the thesis text as well.
 #
 # CANARY     : (1) `python src/modules/clip_loss.py` - the InfoNCE arithmetic
 #              that holds up EVERY Chapter 1 number (0.628491 / 1.2994 / 4.8198).

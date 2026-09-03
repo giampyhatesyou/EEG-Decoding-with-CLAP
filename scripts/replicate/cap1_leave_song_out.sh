@@ -31,8 +31,12 @@
 # THREE MANDATORY CAVEATS, all three to be written next to the number:
 #   (a) MIXED VINTAGE on the contrastive_clap row: 6 folds come from 2026-05 code
 #       and 14 from 2026-07 code. That is TWO CODE ERAS inside one mean. The
-#       homogeneous 14-fold table gives 0.258. Which of the two goes into the
-#       write-up has been an OPEN decision since 2026-07-26.
+#       homogeneous 14-fold table gives 0.258. CLOSED 2026-08-27 (decision D4,
+#       taken by A. in writing): the thesis quotes the HOMOGENEOUS 14-fold row,
+#       0.258, and keeps the 20-fold mixed mean 0.268 visible beside it. The
+#       0.258 was recomputed 2026-08-27 from the pinned folds with report.py's
+#       own aggregation and reproduces exactly (MACRO 0.2580; the 20-fold mean
+#       is 0.2678). No verdict depends on the choice: chance is 0.25 either way.
 #   (b) BELOW CHANCE IS NOT A MEASUREMENT ERROR: 0.142 and 0.181 are
 #       prior-following on single-class folds. Say it that way, not "the model
 #       gets it wrong".

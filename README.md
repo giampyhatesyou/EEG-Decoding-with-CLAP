@@ -26,10 +26,11 @@ numbers never share a table.
   6 subject-out folds are the pre-refactor **2026-05** revision, which is why
   `RESULTS.md` carries a `vintage` column — the contrast holds, it just has to be
   quoted with the vintage ([`cap1_leave_subject_out.sh`](scripts/replicate/cap1_leave_subject_out.sh),
-  "TWO MANDATORY CAVEATS"). **(b)** The thesis quotes only the **global 0.865** for the
-  baseline row: a second reading of that same fold, 0.865/0.852, is still open, and
-  0.865 is the figure common to both ([`cap1_within_split.sh`](scripts/replicate/cap1_within_split.sh),
-  "OPEN NUMBER CONFLICT").
+  "TWO MANDATORY CAVEATS"). **(b)** A second reading of the baseline fold,
+  0.865/0.852, also circulates; it is the all-trials / high-attention pair, not another
+  run. **Closed on 27 August 2026**: the canonical pair is the one the manifest pins,
+  **0.875 macro / 0.865 global**, and the two readings are never mixed
+  ([`cap1_within_split.sh`](scripts/replicate/cap1_within_split.sh)).
 - **Chapter 2 — the identifiable arm** (MAD-EEG, 20-channel lab EEG).
   The same mixture is attended with **different** targets across trials, so attention
   is identifiable and stimulus identity cannot win. Everything here is a

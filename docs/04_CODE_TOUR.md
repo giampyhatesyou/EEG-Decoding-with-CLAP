@@ -47,7 +47,7 @@ python src/run.py exp exp06_ovo
    stops a replication from overwriting a pinned record.
 
 That shape — *canary, then the runs, then the paired test, then a comparison
-against the reference numbers in the header* — is the same in all 28 scripts.
+against the reference numbers in the header* — is the same in all 29 scripts.
 
 ## 3. `madeeg_reconstruction.py` — the workhorse
 

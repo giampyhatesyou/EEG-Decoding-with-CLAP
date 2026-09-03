@@ -904,6 +904,7 @@ EXPERIMENT_ORDER = [
     "exp12_spectral_register_mono",
     "exp15_mfcc_differential",
     "armA_paper_protocol",
+    "armA_same_diff_melody",
     "armD_leakage_audit",
     # Chapter 2 -- the contrastive arm: gates on CPU, training printed, not launched
     "stepC_contrastive_clap",

@@ -33,11 +33,11 @@
 #
 # SAME/DIFF-MELODY SPLIT (docs/provenance/2026-08-11_armA_same_diff_melody.txt,
 #    same 46/89 vs diff 33/61 at 1-8 Hz; same 51/89 vs diff 30/61 at 0.2-40 Hz):
-#    NOT reproducible from here.
-# TO BE CONFIRMED: no file in the repo produces that split - it was computed ad hoc
-#    from madeeg_records.csv + madeeg_sequences_raw.yaml and the script was not saved
-#    (verified by grepping src/, scripts/, sweeps/ on 2026-08-12).
-#    It has to be rewritten, not guessed.
+#    CLOSED on 2026-09-01. The ad hoc script of 2026-08-11 was never saved; it has
+#    been rewritten as scripts/replicate/armA_same_diff_melody.sh from the same two
+#    inputs (this run's madeeg_records.csv + madeeg_sequences_raw.yaml) and it
+#    reproduces all four pinned figures exactly, with the 89/61 split as its
+#    structural control. Run it after this script.
 # =============================================================================
 set -euo pipefail
 

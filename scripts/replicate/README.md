@@ -96,6 +96,7 @@ rather than launches.
 | Exp. 9 — flux on **attention** | `exp09_flux_attention.sh` | 0.500 on the duo | absolute bar **90/154** at α 0.025 | the transfer fails: 76/154 and 77/154 | `docs/provenance/2026-08-11_exp9_flux_attention_mcnemar.txt` | mel anchors **74/154 and 86/154 decision-identical** (zero discordant) | yes, +MAD |
 | Exp. 11 — spectral register, stereo duos | `exp11_spectral_register_stereo.sh` | 0.500 exact by symmetry | **30/47** (written 2026-08-09) | 24/47 = 0.5106 | runs/results/exp11_* · `docs/provenance/2026-08-17_exp11_*_RESULT_*` | positive control **47/47**, hard exit inside the driver | yes, +MAD |
 | Exp. 12 — the same on mono duos | `exp12_spectral_register_mono.sh` | 0.500 | **27/42** mono · **53/89** pooled | 22/42 · 46/89 | runs/results/exp12_* · `docs/provenance/2026-08-17_exp12_*_RESULT_*` | positive control **42/42**, hard exit | yes, +MAD (raw release too) |
+| arm A — same/diff-melody split (descriptive) | `armA_same_diff_melody.sh` | none: descriptive split, no test | none | same **0.5169** vs diff **0.5410** at 1–8 Hz; **0.5730** vs **0.4918** at 0.2–40 Hz — the advantage lives below 1 Hz | `runs/replicate/armA_same_diff_melody.txt` · pinned `docs/provenance/2026-08-11_armA_same_diff_melody.txt` | the 89/61 split, enforced by the driver | no — reads records already made |
 | arm A — protocol parity with the paper | `armA_paper_protocol.sh` | 0.500 on the duo | none: it is a protocol probe | F1 **0.5267 / 0.4800 / 0.5400** at n=150 — the paper's 79 **does not reproduce** | runs/results/armA_paper_* · `docs/provenance/2026-08-17_armA_paper_*_RESULT_*` | none declared (the reproduction of the three F1 values is the control) | yes, +MAD, **16 GB RAM** |
 | arm D — per-window leakage audit | `armD_leakage_audit.sh` | **0.5136 by construction** on windows, **0.500 exact** on trials — the null pairs with the unit of the accuracy next to it | interpretation rule written in the code **before** the run: leakage shown if pseudo window-CV > 0.60 **and** pseudo trial-CV in [0.40, 0.60] | leakage demonstrated: pseudo window-CV **0.6209** vs trial-CV **0.4847** (true labels 0.3803 vs 0.0895, null 0.2277) | runs/results/armD_leakage_audit/ · `docs/provenance/2026-08-17_armD_leakage_audit_RESULT_*` | the pseudo-label arm **is** the audit's positive control; v1 kept as `*_v1_unbalanced*` | yes, +MAD |
 
@@ -234,8 +235,7 @@ Full text with the incident behind each one: [`docs/07_METHOD_RULES.md`](../../d
   There is no fourth category between passed, failed and not crossed.
 - **No plausible invocations** (rule 10): anything not reconstructible with
   certainty is commented `TO BE CONFIRMED:` with the reason. The open cases today
-  are: the **same/diff-melody split of arm A** (no file in the repo produces it,
-  the script was not saved); the **runtimes in minutes** of much of Chapter 2 (the
+  are: the **runtimes in minutes** of much of Chapter 2 (the
   2026-08-11 timestamps are identical and give no duration); and the **exact cause**
   of the 5 missing trials on Exp. 4's mono arm (the 155/150 count is written down,
   the mechanism is not).
@@ -251,7 +251,8 @@ Full text with the incident behind each one: [`docs/07_METHOD_RULES.md`](../../d
 - **C1-8 (`--eeg_repr spectra`)** — 0.9350 / 0.4975 / 0.4713: never aggregated,
   never pinned, **no canary**. It has no script and should not have one until those
   numbers enter the manifest.
-- **Arm A's same/diff-melody split** — no file in the repo produces it. The numbers
-  (0.5169/0.5410 and 0.5730/0.4918) have their provenance file
-  (`docs/provenance/2026-08-11_armA_same_diff_melody.txt`) **but not the code**.
-  It has to be rewritten, not guessed.
+- **Arm A's same/diff-melody split** — was the one number with a provenance file and
+  no code. **Closed on 2026-09-01**: `armA_same_diff_melody.sh` rewrites the lost
+  script from the same two inputs and reproduces all four figures exactly
+  (0.5169/0.5410 at 1–8 Hz, 0.5730/0.4918 at 0.2–40 Hz), with 89/61 as its
+  structural control.
