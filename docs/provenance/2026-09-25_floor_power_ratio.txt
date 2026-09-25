@@ -1,0 +1,9 @@
+# 2026-09-25 10:53  git 9ca5d3f  scripts/replicate/floor_power_ratio.py --madeeg_dir ~/madeeg
+duo trials (preprocessed, stereo): 154; channels: P3,P1,Pz,P2,P4,POz,O1,Oz,O2; band 8-13 Hz; no label read
+ratio = 8-13 Hz power after / before injection, pooled over trials and channels (median of per-trial-channel ratios in brackets)
+  a=0.20  ideal (1+a)^2 = 1.4400   welch x1.417 [1.395]   morlet x1.419 [1.399]
+  a=0.10  ideal (1+a)^2 = 1.2100   welch x1.199 [1.189]   morlet x1.200 [1.191]
+  a=0.05  ideal (1+a)^2 = 1.1025   welch x1.097 [1.092]   morlet x1.098 [1.093]
+  a=0.02  ideal (1+a)^2 = 1.0404   welch x1.038 [1.036]   morlet x1.039 [1.037]
+# value used in Ch. 9 tab:floor: Welch median in brackets (x1.395, x1.189, x1.092, x1.036).
+# The earlier printed x1.393 / x1.188 / x1.092 had no file; other estimators (periodogram, Welch 1-8 s) give 1.376-1.424 at a=0.20.

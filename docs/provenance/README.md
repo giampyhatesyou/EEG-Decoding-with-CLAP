@@ -39,7 +39,8 @@ stronger form of provenance — each pin is verified against its run's own
 | **Exp. 17** — CLAP w/floor **3.837** against a ceiling of 1.80 → NO-GO | `2026-08-12_exp17_clap_separability.txt` (+ extraction log and manifest) |
 | **Exp. 18** — preparation gates, then S1 **278/536 = 0.5187**, null 0.5000 measured | `2026-08-12_exp18_matchmismatch.txt`, `2026-08-13_exp18_S1_RESULT_*` |
 | **Exp. 19** — preparation, then S1 **244/536**, S2 **113/188 = 0.6011** p 0.003404, both with the full training curve | `2026-08-13_exp19_S{1,2}.txt`, `2026-08-13_exp19_S{1,2}_RESULT_*` |
-| **Exp. 11** — register, stereo **24/47**; sweep 38/47 at +18.8 %, 26/47 at +9.2 %; controls 47/47 and 0.4968 | `2026-08-17_exp11_*_RESULT_*` |
+| **Exp. 11** — register, stereo **24/47**; sweep 38/47 at +18.9 %, 26/47 at +9.2 %; controls 47/47 and 0.4968 | `2026-08-17_exp11_*_RESULT_*` |
+| **Exp. 11, detection floor** — band-power change of each injected amplitude (×1.395, ×1.189, ×1.092, ×1.036; no label read) | `2026-09-25_floor_power_ratio.txt` (`scripts/replicate/floor_power_ratio.py`) |
 | **Exp. 12** — register, mono **22/42**, pooled **46/89**, stereo-from-raw 24/47 | `2026-08-17_exp12_*_RESULT_*` |
 | paired alpha — **23/44** stereo, **24/42** mono control, injection **44/44** | `2026-08-17_alpha_*_RESULT_*` |
 | arm D leakage audit — pseudo-labels **0.6209** window-CV vs **0.4847** trial-CV | `2026-08-17_armD_leakage_audit_RESULT_*` |
