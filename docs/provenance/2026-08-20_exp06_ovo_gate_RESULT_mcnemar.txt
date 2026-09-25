@@ -1,0 +1,18 @@
+
+[mcnemar] A=/Users/andrea/Library/Mobile Documents/com~apple~CloudDocs/Tesi/akami/runs/results/repl_ovo_ridge_ica/madeeg_ownvsother.csv
+          B=/Users/andrea/Library/Mobile Documents/com~apple~CloudDocs/Tesi/akami/runs/results/repl_ovo_cca_ica/madeeg_ownvsother.csv
+  comparisons: A=376  B=376  in common=376
+  A correct 208/376 = 0.5532   B correct 209/376 = 0.5559   (null 0.500, exact by symmetry)
+  agreement table: both 143 · A only 65 · B only 66 · neither 102
+  discordants=131   B beats A on 66/131   one-sided McNemar p=0.5000   (null 0.500)
+  pre-registered threshold at n_disc=131: 76/131 = 0.5802 (smallest integer with p < 0.05; 75 would give 0.0577)
+  -> B does NOT beat A under the pre-registered rule.
+
+[mcnemar] A=/Users/andrea/Library/Mobile Documents/com~apple~CloudDocs/Tesi/akami/runs/results/repl_ovo_ridge/madeeg_ownvsother.csv
+          B=/Users/andrea/Library/Mobile Documents/com~apple~CloudDocs/Tesi/akami/runs/results/repl_ovo_cca/madeeg_ownvsother.csv
+  comparisons: A=376  B=376  in common=376
+  A correct 202/376 = 0.5372   B correct 207/376 = 0.5505   (null 0.500, exact by symmetry)
+  agreement table: both 135 · A only 67 · B only 72 · neither 102
+  discordants=139   B beats A on 72/139   one-sided McNemar p=0.3673   (null 0.500)
+  pre-registered threshold at n_disc=139: 80/139 = 0.5755 (smallest integer with p < 0.05; 79 would give 0.0633)
+  -> B does NOT beat A under the pre-registered rule.

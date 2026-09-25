@@ -1,0 +1,9 @@
+== MAD-EEG stimulus-reconstruction AAD ==
+train_on=raw_solos ensemble=duo target=mel n_bands=8 target_fs=256.0 lags=64 band=(1.0, 8.0) folds=5 estimator=ridge filters=pooled eeg_clean=none test_eeg=raw
+n_trials=154  chance=0.500
+OVERALL AAD accuracy: 0.4935
+per-subject: 0001=0.55 0002=0.35 0003=0.30 0004=0.50 0005=0.65 0007=0.36 0008=0.75 0009=0.45
+F1 over the attended-instrument label: micro=0.4935 (= accuracy) macro=0.4968 weighted=0.4915
+  ^ the paper (WASPAA 2019 Table 1) reports F1 without naming the averaging; its duets column is AE 58 / MAG 74 / MEL 79
+mean r(attended)=0.0182  mean r(best unattended)=0.0187
+mean inner_val_r (in-distribution reconstruction)=0.0492

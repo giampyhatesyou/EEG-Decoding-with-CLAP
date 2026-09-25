@@ -1,0 +1,10 @@
+== MAD-EEG own-vs-other on held-out SOLO segments ==
+WHAT THIS IS: for a held-out solo segment, does the estimator score that segment's EEG higher against its OWN audio than against another solo's? It is discrimination -- the same operation the real decision performs -- but on TRAINING material: no duo is loaded and no attention decision is taken. The ledger of looks declares it free.
+🔴 THE SIMILARITY IS THIS ESTIMATOR'S OWN and is NOT comparable across estimators (here: band_pearson). Only the ACCURACY below is comparable, because it is dimensionless. Never put a rho next to a band_pearson.
+estimator=ridge eeg_clean=none filters=pooled target=mel n_bands=8 target_fs=64.0 band=(1.0, 8.0) lags=16 folds=5 seed=42
+comparisons=376  (mutual pairs x 2 directions)
+🔴 NULL = 0.5, and it is EXACT BY SYMMETRY, not estimated: every pair is scored in both directions, so an estimator with nothing but a fixed instrument preference gets exactly one of the two right.
+own-vs-other accuracy: 202/376 = 0.5372   null 0.500   one-sided binomial p=0.0819
+per-subject: 0001=0.460 0002=0.540 0003=0.640 0004=0.654 0005=0.519 0007=0.333 0008=0.542 0009=0.500
+mean band_pearson(own)=0.0271  mean band_pearson(other)=0.0103
+NEXT: the paired comparison between two estimators is McNemar on the SAME comparisons -- python src/madeeg_diagnose.py --mcnemar <ridge.csv> <cca.csv>

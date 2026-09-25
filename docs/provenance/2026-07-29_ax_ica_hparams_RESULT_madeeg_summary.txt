@@ -1,0 +1,18 @@
+== MAD-EEG stimulus-reconstruction AAD ==
+train_on=raw_solos ensemble=duo target=mel n_bands=24 target_fs=256.0 lags=64 band=(1.0, 8.0) folds=5 estimator=ridge filters=pooled eeg_clean=notch_ica test_eeg=raw
+n_trials=154  chance=0.500
+OVERALL AAD accuracy: 0.5065
+per-subject: 0001=0.60 0002=0.50 0003=0.30 0004=0.50 0005=0.60 0007=0.43 0008=0.55 0009=0.55
+F1 over the attended-instrument label: micro=0.5065 (= accuracy) macro=0.5052 weighted=0.5039
+  ^ the paper (WASPAA 2019 Table 1) reports F1 without naming the averaging; its duets column is AE 58 / MAG 74 / MEL 79
+mean r(attended)=0.0174  mean r(best unattended)=0.0156
+mean inner_val_r (in-distribution reconstruction)=0.0485
+EEG cleaning (AXIS 1) per subject -- positive control is the drop in frontal-EOG coupling:
+  0001: ICs=15 excluded=1 (eog=[np.int64(0)] max|r|=0.94 · ecg=[] max|r|=0.16)  frontal-EOG coupling 1-8 Hz: 0.552 -> 0.006
+  0002: ICs=18 excluded=1 (eog=[np.int64(0)] max|r|=0.31 · ecg=[np.int64(0)] max|r|=0.26)  frontal-EOG coupling 1-8 Hz: 0.218 -> 0.027
+  0003: ICs=14 excluded=1 (eog=[] max|r|=0.72 · ecg=[np.int64(1)] max|r|=0.66)  frontal-EOG coupling 1-8 Hz: 0.842 -> 0.586
+  0004: ICs=18 excluded=0 (eog=[] max|r|=0.36 · ecg=[] max|r|=0.09)  frontal-EOG coupling 1-8 Hz: 0.131 -> 0.131
+  0005: ICs=12 excluded=0 (eog=[] max|r|=0.71 · ecg=[] max|r|=0.13)  frontal-EOG coupling 1-8 Hz: 0.827 -> 0.827
+  0007: ICs=16 excluded=2 (eog=[np.int64(0), np.int64(1)] max|r|=0.89 · ecg=[] max|r|=0.15)  frontal-EOG coupling 1-8 Hz: 0.608 -> 0.021
+  0008: ICs=20 excluded=3 (eog=[np.int64(0), np.int64(1), np.int64(2)] max|r|=0.64 · ecg=[] max|r|=0.13)  frontal-EOG coupling 1-8 Hz: 0.755 -> 0.014
+  0009: ICs=17 excluded=2 (eog=[np.int64(0), np.int64(1)] max|r|=0.87 · ecg=[] max|r|=0.09)  frontal-EOG coupling 1-8 Hz: 0.919 -> 0.038

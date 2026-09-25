@@ -25,9 +25,16 @@ stronger form of provenance — each pin is verified against its run's own
 
 | number | file |
 |---|---|
+| the axis study of 2026-07-29, read outside any pre-registration — the eleven `ax_*` runs that survive, maximum **86/150 = 0.5733** (`ax_ica_perinstr`: per-instrument ridge, notch+ICA, 8 mel at 64 Hz); the list of all sixteen configurations was never written to a file, but no run dated 2026-07-29 prints a higher accuracy | `2026-07-29_ax_*_RESULT_*` |
+| the published-protocol anchor without `--test_eeg raw`: **75/154 = 0.4870** (with the flag: 74/154 = 0.4805, pinned in `results_manifest.tsv`) | `2026-07-29_madeeg_gate_solos_RESULT_*` |
+| **Exp. 4** — the mono half, the only confirmatory look: **79/150 = 0.5267**, F1 0.5267/0.5225/0.5160 (p 0.2839 and 95% CI [0.444, 0.609] are exact binomial on 79/150, not printed by the run); the spent genre split **classical 47/90, pop 32/60** is a count over the `stim` column of the same records | `2026-07-30_exp04_mono_confirm_RESULT_*` |
+| **Exp. 6** — own-vs-other gate: ridge **202/376**, CCA **207/376**, ridge+ICA **208/376**, CCA+ICA **209/376**; McNemar CCA vs ridge **66/131** (with ICA) and **72/139** (without), exact paired p: ridge 0.0851, CCA 0.0265, ridge+ICA 0.0235, CCA+ICA 0.0230 | `2026-08-10_exp06_ovo_{ridge,cca,ridge_ica,cca_ica}_RESULT_*`; `2026-08-20_exp06_ovo_gate_RESULT_{mcnemar,paired_stats}.txt` (run on the 2026-08-20 replicas, whose CSVs are byte-identical to the originals) |
 | **Exp. 7** — own-vs-other sweep: reference **208/376**, best **213/376**, no candidate clears Bonferroni | `2026-08-11_ovo_sweep_mcnemar.txt` (output) · `2026-08-11_ovo_sweep_paired_stats.py` (the exact paired test, code) |
+| **Exp. 7** — the reference configuration of the sweep, per decision | `2026-08-11_exp07_ovo_sweep_REF_RESULT_*` |
 | **Exp. 8** — flux **243/376**, McNemar 84/133 p 0.0015; variant 238/376 | `2026-08-11_exp8_flux_mcnemar.txt` |
+| **Exp. 8** — the runs behind it: flux F1 **243/376**, exact paired p **1.78e-08** against the null; variant F2 238/376; the regression check of the reference. Mean own-band correlation **0.0360** (regcheck) → **0.0742** (flux F1) | `2026-08-11_exp08_ovo_flux_{F1,F2,regcheck}_RESULT_*` |
 | **Exp. 9** — flux on attention **76/154**, **77/154** (mel 74 and 86); stem correlation flux **0.2874** vs mel **0.1772**, 30/36 | `2026-08-11_exp9_flux_attention_mcnemar.txt` |
+| **Exp. 9**, protocol P1 — the two runs the McNemar above compares: mel anchor 74/154 (`canary_rawsolos`) and flux 76/154 | `2026-08-10_canary_rawsolos_RESULT_*`, `2026-08-11_exp9_P1_rawsolos_flux_RESULT_*` |
 | **Exp. 9** — the attended-minus-unattended differential, mel **0.0202/0.0118** vs flux **0.0560/0.0513** | `2026-08-27_canary_duo_RESULT_*`, `2026-08-27_exp9_P2_duo_flux_RESULT_*` |
 | prior-following, steps C and D — **0.7177** and **0.8145** against a null of **0.4274** | `2026-08-11_diagnose_step{C,D}.txt` |
 | **Exp. 13** — MFCC-13 within **0.0533** / floor **0.0256**, 32/36, verdict GO | `2026-08-12_exp13_stem_separability.txt` |
@@ -43,6 +50,7 @@ stronger form of provenance — each pin is verified against its run's own
 | **Exp. 11, detection floor** — band-power change of each injected amplitude (×1.395, ×1.189, ×1.092, ×1.036; no label read) | `2026-09-25_floor_power_ratio.txt` (`scripts/replicate/floor_power_ratio.py`) |
 | **Exp. 12** — register, mono **22/42**, pooled **46/89**, stereo-from-raw 24/47 | `2026-08-17_exp12_*_RESULT_*` |
 | paired alpha — **23/44** stereo, **24/42** mono control, injection **44/44** | `2026-08-17_alpha_*_RESULT_*` |
+| paired alpha, the injection at other amplitudes — **43/44** at half amplitude, **44/44** at 1.0 and at double | `2026-08-10_alpha_ctrl2_a{0.5,1.0,2.0}_inject_RESULT_*` |
 | arm D leakage audit — pseudo-labels **0.6209** window-CV vs **0.4847** trial-CV | `2026-08-17_armD_leakage_audit_RESULT_*` |
 | arm A protocol parity — F1 **0.5267** / **0.4800** / **0.5400**; same-melody 46/89 vs diff 33/61 | `2026-08-17_armA_paper_*_RESULT_*`, `2026-08-11_armA_same_diff_melody.txt` — the split has had code again since 2026-09-01: `scripts/replicate/armA_same_diff_melody.sh` reproduces both bands exactly |
 | step C **58/154 = 0.3766** | pinned in `results_manifest.tsv` as `madeeg_clap_kfold` |

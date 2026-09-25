@@ -1,0 +1,5 @@
+control 1 PASS: Bonferroni thresholds reproduce the contract table
+control 2 PASS: REF n0/n1/n2 = 36/96/56, exact paired p = 0.0235 (expected: 0.0235)
+/Users/andrea/Library/Mobile Documents/com~apple~CloudDocs/Tesi/akami/runs/results/repl_ovo_cca_ica/madeeg_ownvsother.csv: acc 209/376 = 0.5559  n_pairs=188  n0/n1/n2 = 40/87/61  exact paired p = 0.0230
+/Users/andrea/Library/Mobile Documents/com~apple~CloudDocs/Tesi/akami/runs/results/repl_ovo_ridge/madeeg_ownvsother.csv: acc 202/376 = 0.5372  n_pairs=188  n0/n1/n2 = 38/98/52  exact paired p = 0.0851
+/Users/andrea/Library/Mobile Documents/com~apple~CloudDocs/Tesi/akami/runs/results/repl_ovo_cca/madeeg_ownvsother.csv: acc 207/376 = 0.5505  n_pairs=188  n0/n1/n2 = 34/101/53  exact paired p = 0.0265

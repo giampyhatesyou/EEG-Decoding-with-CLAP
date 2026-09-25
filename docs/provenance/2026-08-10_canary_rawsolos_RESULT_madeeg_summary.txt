@@ -1,0 +1,10 @@
+== MAD-EEG stimulus-reconstruction AAD ==
+train_on=raw_solos ensemble=duo target=mel n_bands=8 target_fs=64.0 lags=16 band=(1.0, 8.0) folds=5 estimator=ridge filters=pooled eeg_clean=none test_eeg=raw spatial=stereo
+PROVENANCE: the 1.0-8.0 Hz analysis band is OUR choice, not the paper's -- Cantisani et al. (WASPAA 2019) do not band-pass the EEG anywhere. lags 0-250 ms and shrinkage lambda are the paper's; n_mels and target_fs are ours unless set to the published 24 / 256.
+n_trials=154  chance=0.500
+OVERALL AAD accuracy: 0.4805
+per-subject: 0001=0.65 0002=0.35 0003=0.35 0004=0.45 0005=0.60 0007=0.29 0008=0.65 0009=0.45
+F1 over the attended-instrument label: micro=0.4805 (= accuracy) macro=0.4849 weighted=0.4771
+  ^ the paper (WASPAA 2019 Table 1) reports F1 without naming the averaging; its duets column is AE 58 / MAG 74 / MEL 79
+mean r(attended)=0.0162  mean r(best unattended)=0.0221
+mean inner_val_r (in-distribution reconstruction)=0.0582

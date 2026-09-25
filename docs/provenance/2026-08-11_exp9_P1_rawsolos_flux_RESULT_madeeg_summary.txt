@@ -1,0 +1,15 @@
+!! EXP. 9 (pre-registered 2026-08-11 evening, BEFORE any flux attention run) -- EXPLORATORY BY CONSTRUCTION: all 309 duos are spent (vault: ledger of looks). K=2 primaries (P1 raw_solos stereo, P2 duos_kfold stereo), one-sided McNemar flux vs the mel anchor on the SAME 154 trials, alpha = 0.05/2 = 0.025; absolute bar at alpha=0.025 is 90/154 = 0.5844. Gate: the mel anchors re-ran DECISION-IDENTICAL to canary_rawsolos (74/154) and canary_duo (86/154), zero discordants. n = 154 rechecked. Positive control for the flux path: self-test 1.0000 (Exp. 8, 11/8).
+!! OUTCOME OF THE WHOLE EXPERIMENT: RED, on the pre-declared branch. Tracking does NOT transfer to attention: P1 flux 76/154 = 0.4935 (mel 74/154; McNemar 33/64, p=0.4503), P2 flux 77/154 = 0.5000 (mel 86/154; 26/61, p=0.9000). Neither passes anything; neither reaches the absolute bar.
+!! MECHANISM (audio-only measurement, no EEG read, zero looks): within a duo the two stems' FLUX representations are far more mutually correlated (mean 0.287) than their MEL ones (mean 0.177), flux more similar on 30/36 duos -- ensemble playing synchronizes the very events flux tracks, so the decision margin shrinks exactly where the attention decision needs it. In own-vs-other the 'other' is a different piece (uncorrelated events), which is why flux wins there and not here.
+!! S1/S2 (mono replication) NOT EXECUTED: as pre-registered (duos_kfold + mono) they are structurally impossible -- the code asserts that mono duos have no preprocessed EEG. A mis-specification of the pre-registration, declared, not silently substituted; moot anyway with both primaries red.
+THIS RUN: PRIMARY candidate run of Exp. 9.
+== MAD-EEG stimulus-reconstruction AAD ==
+train_on=raw_solos ensemble=duo target=flux n_bands=1 target_fs=64.0 lags=16 band=(1.0, 8.0) folds=5 estimator=ridge filters=pooled eeg_clean=none test_eeg=raw spatial=stereo
+PROVENANCE: the 1.0-8.0 Hz analysis band is OUR choice, not the paper's -- Cantisani et al. (WASPAA 2019) do not band-pass the EEG anywhere. lags 0-250 ms and shrinkage lambda are the paper's; n_mels and target_fs are ours unless set to the published 24 / 256.
+n_trials=154  chance=0.500
+OVERALL AAD accuracy: 0.4935
+per-subject: 0001=0.35 0002=0.60 0003=0.50 0004=0.50 0005=0.45 0007=0.64 0008=0.45 0009=0.50
+F1 over the attended-instrument label: micro=0.4935 (= accuracy) macro=0.4925 weighted=0.4889
+  ^ the paper (WASPAA 2019 Table 1) reports F1 without naming the averaging; its duets column is AE 58 / MAG 74 / MEL 79
+mean r(attended)=0.0498  mean r(best unattended)=0.0532
+mean inner_val_r (in-distribution reconstruction)=0.0778
