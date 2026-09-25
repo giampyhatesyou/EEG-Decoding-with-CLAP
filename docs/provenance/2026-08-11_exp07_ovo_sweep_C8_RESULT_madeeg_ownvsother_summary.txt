@@ -1,0 +1,15 @@
+!! EXPLORATORY: one of a PRE-REGISTERED SWEEP OF 8 CONFIGURATIONS (Exp. 7, contract of 2026-08-11) against the reference ovo_sweep_REF (= ovo_ridge_ica, 208/376 = 0.5532). The maximum of a sweep is biased UPWARD by construction: no single accuracy below is a result on its own.
+!! Paired test = one-sided McNemar vs the reference on the SAME 376 comparisons (188 mutual pairs x 2 directions), alpha = 0.05/8 = 0.00625 (Bonferroni, K=8 fixed in the contract). Threshold = smallest integer with one-sided exact binomial < alpha at the OBSERVED discordant count. Null = 0.500, exact by symmetry. n = 376, rechecked: no configuration dropped segments.
+!! The absolute-accuracy p to cite is the EXACT PAIRED one (T = n1 + 2*Binom(n0+n2, 1/2)), not the binomial printed further down: the 376 comparisons are 188 pairs, not independent trials.
+THIS CANDIDATE C8: changes --band_high 40 --estimator shrinkage --shrinkage_lambda 0.1 (wide band + shrinkage together); every other flag as the reference.
+accuracy 203/376 = 0.5399 (exact paired p = 0.0774 vs null 0.500) -- discordants vs reference = 71, candidate right where reference wrong on 33/71, one-sided McNemar p = 0.7617, Bonferroni threshold 47/71 at alpha = 0.00625 -> does NOT beat the reference.
+== MAD-EEG own-vs-other on held-out SOLO segments ==
+WHAT THIS IS: for a held-out solo segment, does the estimator score that segment's EEG higher against its OWN audio than against another solo's? It is discrimination -- the same operation the real decision performs -- but on TRAINING material: no duo is loaded and no attention decision is taken. The ledger of looks declares it free.
+🔴 THE SIMILARITY IS THIS ESTIMATOR'S OWN and is NOT comparable across estimators (here: band_pearson). Only the ACCURACY below is comparable, because it is dimensionless. Never put a rho next to a band_pearson.
+estimator=shrinkage eeg_clean=notch_ica filters=pooled target=mel n_bands=8 target_fs=64.0 band=(1.0, 40.0) lags=16 folds=5 seed=42
+comparisons=376  (mutual pairs x 2 directions)
+🔴 NULL = 0.5, and it is EXACT BY SYMMETRY, not estimated: every pair is scored in both directions, so an estimator with nothing but a fixed instrument preference gets exactly one of the two right.
+own-vs-other accuracy: 203/376 = 0.5399   null 0.500   one-sided binomial p=0.0673
+per-subject: 0001=0.520 0002=0.580 0003=0.660 0004=0.615 0005=0.500 0007=0.458 0008=0.562 0009=0.380
+mean band_pearson(own)=0.0338  mean band_pearson(other)=0.0087
+NEXT: the paired comparison between two estimators is McNemar on the SAME comparisons -- python src/madeeg_diagnose.py --mcnemar <ridge.csv> <cca.csv>
