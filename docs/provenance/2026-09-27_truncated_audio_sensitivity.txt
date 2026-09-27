@@ -1,0 +1,59 @@
+!! ANALYSIS OF 2026-09-27, requested by the supervisor, on data already analysed.
+!! A recount of saved decisions without the 8 truncated stereo trials; no EEG opened,
+!! nothing retrained, no new look. Every p is exact one-sided binomial against the
+!! null 0.500 (every duo mixture is presented with both instruments as the target).
+
+  control 2026-07-29_ax_ica_hparams                78/154 = 0.5065  summary 0.5065  [OK]
+  control 2026-07-29_ax_ica_perinstr               86/150 = 0.5733  summary 0.5733  quoted 86/150  [OK]
+  control 2026-07-29_ax_ica_shrink                 80/154 = 0.5195  summary 0.5195  [OK]
+  control 2026-07-29_ax_mag_fs256                  76/154 = 0.4935  summary 0.4935  [OK]
+  control 2026-07-29_ax_mag_fs64                   82/154 = 0.5325  summary 0.5325  [OK]
+  control 2026-07-29_ax_mel24_fs64                 72/154 = 0.4675  summary 0.4675  [OK]
+  control 2026-07-29_ax_mel8_fs256                 76/154 = 0.4935  summary 0.4935  [OK]
+  control 2026-07-29_ax_notch                      74/154 = 0.4805  summary 0.4805  [OK]
+  control 2026-07-29_ax_notch_ica                  70/154 = 0.4545  summary 0.4545  [OK]
+  control 2026-07-29_ax_per_instrument             77/150 = 0.5133  summary 0.5133  [OK]
+  control 2026-07-29_ax_shrinkage                  81/154 = 0.5260  summary 0.5260  [OK]
+  control 2026-08-10_canary_rawsolos               74/154 = 0.4805  summary 0.4805  quoted 74/154  [OK]
+  control 2026-08-11_exp9_P1_rawsolos_flux         76/154 = 0.4935  summary 0.4935  quoted 76/154  [OK]
+  control 2026-08-17_armA_paper_band02_40          81/150 = 0.5400  summary 0.5400  [OK]
+  control 2026-08-17_armA_paper_band40             72/150 = 0.4800  summary 0.4800  [OK]
+  control 2026-08-17_armA_paper_package            79/150 = 0.5267  summary 0.5267  [OK]
+  -> every recounted file reproduces its run's own total.
+
+=== RECOUNT without the stereo trials of pop_mixtape_duo_BsDr_theme2 (fold == -1 in every row) ===
+  run                                                with       p |        without       p | removed
+  2026-07-29_ax_ica_hparams                 78/154 0.5065  0.4679 |  73/146 0.5000  0.5330 | 5/8 correct
+  2026-07-29_ax_ica_perinstr                86/150 0.5733  0.0430 |  83/142 0.5845  0.0266 | 3/8 correct
+  2026-07-29_ax_ica_shrink                  80/154 0.5195  0.3436 |  75/146 0.5137  0.4020 | 5/8 correct
+  2026-07-29_ax_mag_fs256                   76/154 0.4935  0.5955 |  72/146 0.4932  0.5980 | 4/8 correct
+  2026-07-29_ax_mag_fs64                    82/154 0.5325  0.2342 |  78/146 0.5342  0.2282 | 4/8 correct
+  2026-07-29_ax_mel24_fs64                  72/154 0.4675  0.8123 |  68/146 0.4658  0.8187 | 4/8 correct
+  2026-07-29_ax_mel8_fs256                  76/154 0.4935  0.5955 |  72/146 0.4932  0.5980 | 4/8 correct
+  2026-07-29_ax_notch                       74/154 0.4805  0.7136 |  70/146 0.4795  0.7187 | 4/8 correct
+  2026-07-29_ax_notch_ica                   70/154 0.4545  0.8867 |  66/146 0.4521  0.8928 | 4/8 correct
+  2026-07-29_ax_per_instrument              77/150 0.5133  0.4033 |  74/142 0.5211  0.3375 | 3/8 correct
+  2026-07-29_ax_shrinkage                   81/154 0.5260  0.2864 |  77/146 0.5274  0.2813 | 4/8 correct
+  2026-08-10_canary_rawsolos                74/154 0.4805  0.7136 |  70/146 0.4795  0.7187 | 4/8 correct
+  2026-08-11_exp9_P1_rawsolos_flux          76/154 0.4935  0.5955 |  71/146 0.4863  0.6604 | 5/8 correct
+  2026-08-17_armA_paper_band02_40           81/150 0.5400  0.1846 |  78/142 0.5493  0.1376 | 3/8 correct
+  2026-08-17_armA_paper_band40              72/150 0.4800  0.7161 |  71/142 0.5000  0.5334 | 1/8 correct
+  2026-08-17_armA_paper_package             79/150 0.5267  0.2839 |  77/142 0.5423  0.1780 | 2/8 correct
+
+=== LISTED, NOT RECOUNTED ===
+  2026-07-29_madeeg_gate_solos_RESULT_madeeg_records.csv: no fold column: training on solos cannot be verified
+  2026-07-30_exp04_mono_confirm_RESULT_madeeg_records.csv: its 9 rows of the mixture are mono: not affected
+  2026-08-10_alpha_ctrl2_a0.5_inject_RESULT_madeeg_alpha_li.csv: no fold column: training on solos cannot be verified
+  2026-08-10_alpha_ctrl2_a0.5_inject_RESULT_madeeg_alpha_pairs.csv: no fold column: training on solos cannot be verified
+  2026-08-10_alpha_ctrl2_a1.0_inject_RESULT_madeeg_alpha_li.csv: no fold column: training on solos cannot be verified
+  2026-08-10_alpha_ctrl2_a1.0_inject_RESULT_madeeg_alpha_pairs.csv: no fold column: training on solos cannot be verified
+  2026-08-10_alpha_ctrl2_a2.0_inject_RESULT_madeeg_alpha_li.csv: no fold column: training on solos cannot be verified
+  2026-08-10_alpha_ctrl2_a2.0_inject_RESULT_madeeg_alpha_pairs.csv: no fold column: training on solos cannot be verified
+  2026-08-17_alpha_ctrl_ica_inject_RESULT_madeeg_alpha_li.csv: no fold column: training on solos cannot be verified
+  2026-08-17_alpha_ctrl_ica_inject_RESULT_madeeg_alpha_pairs.csv: no fold column: training on solos cannot be verified
+  2026-08-17_alpha_real_mono_RESULT_madeeg_alpha_li.csv: no fold column: training on solos cannot be verified
+  2026-08-17_alpha_real_mono_RESULT_madeeg_alpha_pairs.csv: no fold column: training on solos cannot be verified
+  2026-08-17_alpha_real_stereo_RESULT_madeeg_alpha_li.csv: no fold column: training on solos cannot be verified
+  2026-08-17_alpha_real_stereo_RESULT_madeeg_alpha_pairs.csv: no fold column: training on solos cannot be verified
+  2026-08-27_canary_duo_RESULT_madeeg_records.csv: folds [0, 1, 2, 3, 4]: the truncated trials may also enter training
+  2026-08-27_exp9_P2_duo_flux_RESULT_madeeg_records.csv: folds [0, 1, 2, 3, 4]: the truncated trials may also enter training

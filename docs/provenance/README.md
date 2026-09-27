@@ -58,6 +58,22 @@ stronger form of provenance — each pin is verified against its run's own
 | synthetic positive controls, steps C and D — **148/154** and **142/154** | `2026-08-27_madeeg_clap_selftest{,_within}_RESULT_*` |
 | **Exp. 10** — retired before running: the toy that shows the rule is algebraically inert | `2026-08-11_exp10_retired_toy_sweep.py` |
 
+## Analyses of 2026-09-27, requested by the supervisor, on data already analysed
+
+Each file is written by the script named next to it, which first reproduces the published
+number (and exits without output if it does not) and prints the null next to every statistic.
+
+| number | file |
+|---|---|
+| **Exp. 9/13 on 18 mixtures** — the 36 stim ids are 18 mixtures x 2 targets with bit-identical correlations; flux more similar on **15/18** (sign test p 0.0038 one-sided), Wilcoxon exact p 0.0016 two-sided, mean difference **+0.1103**, bootstrap 95% [+0.0496, +0.1698]; gate counts over 18 (MFCC-13 16/18, noise 18/18, contrast 14/18), 13/18 has P = 0.0481 against 0.05/6, the smallest count under 0.05/6 is 15/18 | `2026-09-27_separability_18_mixtures.txt` (`scripts/replicate/separability_18_mixtures.py`) |
+| **per participant** — accuracy and exact interval per participant for twelve tests, hierarchical bootstrap (participants, then mixtures or mutual pairs; 10 000, seed 42); own-vs-other flux 243/376 [0.557, 0.733], flux − mel +0.0931 [+0.0160, +0.1686], step C prior-following minus its null +0.2903 [+0.0690, +0.5136]; r(attended) − r(unattended) per participant, mel and flux | `2026-09-27_per_subject_bootstrap.txt` (`scripts/replicate/per_subject_bootstrap.py`) |
+| **truncated trials** — the raw-path duo counts with and without the 8 stereo trials of `pop_mixtape_BsDr_theme2`: 74/154 → **70/146**, 76/154 → 71/146, axis maximum 86/150 → 83/142; files with folds other than −1 or no fold column are listed, not recounted | `2026-09-27_truncated_audio_sensitivity.txt` (`scripts/replicate/truncated_audio_sensitivity.py`) |
+| **leave-song-out per fold** — the 20 folds of the four Tab. 7.1 models, with song and code revision (report.py's MACRO re-derived first: 0.181, 0.247, 0.268 / 0.258, 0.142) | `2026-09-27_song_out_per_fold.txt` (`scripts/replicate/song_out_per_fold.py`) |
+| **Exp. 12 per pair** — the 2026-09-27 CPU re-run that saves `pairs.csv` (22/42, 24/47, 46/89, identical to 2026-08-17) | `2026-09-27_exp12_primary_RESULT_{pairs.csv,summary.txt}` |
+| **Exp. 11 vs Exp. 12 stereo, pair by pair** — agreement **21/47** (null from the accuracies 0.500), McNemar 13 vs 13, p 1.00 | `2026-09-27_register_exp11_vs_exp12_pairs.txt` (`scripts/replicate/register_exp11_vs_exp12_pairs.py`) |
+| **small numbers** — Fisher 24/42 vs 23/44 p **0.6711**; Tab. 9.1 p and intervals; intervals of the null results; benchmark within split 62 test trials, 0 / 59 / 3; every count reported as not significant with its interval (G3) | `2026-09-27_relatore_numeri.txt` (`scripts/replicate/relatore_numeri_2026-09.py`) |
+| **baseline retrained from scratch**, same parameters, seed 42, one run: global **0.8137** (re-tested on 2026-06-08 with the same result) | `2026-06-02_raw_within_scratch_RESULT_{test_breakdown_summary.txt,hparams.yaml}` (copied from the run archive) |
+
 ## Two traps in these files, both left in place on purpose
 
 **1. `2026-08-27_madeeg_clap_selftest_RESULT_summary.txt` reads `ABOVE CHANCE`

@@ -1,0 +1,70 @@
+!! ANALYSIS OF 2026-09-27, requested by the supervisor, on data already analysed
+!! (Exp. 9 audio diagnostic, Exp. 13, Exp. 16A). AUDIO ONLY: no EEG was read.
+!! It recounts published numbers on the 18 distinct mixtures; it spends no look.
+
+units: 36 stim ids · 18 distinct mixtures · 24 distinct stems
+
+=== POSITIVE CONTROL (published numbers over 36, crossed first) ===
+  mel-8 mean                   0.1772  published   0.1772  [OK]
+  flux mean                    0.2874  published   0.2874  [OK]
+  flux > mel-8                     30  published       30  [OK]
+  mean diff                    0.1103  published   0.1103  [OK]
+  mel-8 below mel-8                 0  published        0  [OK]
+  flux below mel-8                  8  published        8  [OK]
+  C1 mel-24 below mel-8            18  published       18  [OK]
+  C2 mel-64 below mel-8            18  published       18  [OK]
+  C3 MFCC-13 below mel-8           32  published       32  [OK]
+  C4 flux-8band below mel-8        16  published       16  [OK]
+  C5 flux-24band below mel-8       16  published       16  [OK]
+  C6 contrast-6 below mel-8        28  published       28  [OK]
+  N1 noise-512 below mel-8         36  published       36  [OK]
+  every count over 36 is even, and the two stim ids of each of the 18 mixtures give
+  bit-identical correlations under all 9 representations -> [OK]
+
+=== FLUX vs MEL-8, one row per mixture (signed r, mean over bands) ===
+  mixture                                       mel-8     flux  flux-mel
+  classique_morceau1_duo_CoFl_theme1_stereo    0.1303   0.1164   -0.0139
+  classique_morceau1_duo_CoFl_theme2_stereo    0.0030   0.1681   +0.1651
+  classique_morceau1_duo_CoOb_theme1_stereo    0.3726   0.1796   -0.1931
+  classique_morceau1_duo_CoOb_theme2_stereo    0.1348   0.1219   -0.0129
+  classique_morceau1_duo_FlOb_theme1_stereo    0.2314   0.3984   +0.1670
+  classique_morceau1_duo_FlOb_theme2_stereo    0.0658   0.3957   +0.3299
+  classique_morceau2_duo_BoFh_theme1_stereo    0.2601   0.3446   +0.0845
+  classique_morceau2_duo_BoFh_theme2_stereo    0.2130   0.2565   +0.0435
+  classique_morceau2_duo_BoFl_theme1_stereo    0.1674   0.2269   +0.0595
+  classique_morceau2_duo_BoFl_theme2_stereo    0.1201   0.1478   +0.0277
+  classique_morceau2_duo_FhFl_theme1_stereo    0.1467   0.3715   +0.2248
+  classique_morceau2_duo_FhFl_theme2_stereo   -0.2176   0.1323   +0.3499
+  pop_falldead_duo_BsDr_theme1_stereo          0.1244   0.3872   +0.2628
+  pop_falldead_duo_GtVx_theme1_stereo          0.2843   0.2984   +0.0142
+  pop_mixtape_duo_BsDr_theme1_stereo           0.4446   0.6272   +0.1826
+  pop_mixtape_duo_BsDr_theme2_stereo           0.5528   0.7001   +0.1472
+  pop_mixtape_duo_GtVx_theme1_stereo           0.1417   0.2001   +0.0584
+  pop_mixtape_duo_GtVx_theme2_stereo           0.0134   0.1010   +0.0876
+  mean mel-8 0.1772 · mean flux 0.2874 · mean diff +0.1103 · median diff +0.0861
+
+=== TESTS on the 18 differences (unit = mixture) ===
+  sign test: flux more similar in 15/18   null 9/18 = 0.500   one-sided p = 0.0038   two-sided p = 0.0075
+  Wilcoxon signed-rank (exact): W = 17   null: median difference 0   two-sided p = 0.001579   one-sided p = 0.000790
+  bootstrap of the mean difference over mixtures (10000 replicates, seed 42): +0.1103, 95% percentile interval [+0.0496, +0.1698]   null 0
+  LIMIT: the 18 mixtures are not fully independent either: they reuse 24 distinct stems over 36 stem slots.
+
+=== GATE COUNTS over 18 (|corr| strictly below mel-8; the Exp. 13/16A criterion 1) ===
+  representation       k/36  P(X>=k|36)   k/18  P(X>=k|18)
+  flux                 8/36    0.999844   4/18    0.996231
+  C1 mel-24           18/36    0.566030   9/18    0.592735
+  C2 mel-64           18/36    0.566030   9/18    0.592735
+  C3 MFCC-13          32/36    0.000001  16/18    0.000656
+  C4 flux-8band       16/36    0.797484   8/18    0.759659
+  C5 flux-24band      16/36    0.797484   8/18    0.759659
+  C6 contrast-6       28/36    0.000597  14/18    0.015442
+  N1 noise-512        36/36    0.000000  18/18    0.000004
+  C7 CLAP-512 (Exp. 17 file, 32/36) is not recomputed: its series exist only on the GPU
+  node. Over 18 it would be 16/18, P = 0.000656, IF its two halves are identical
+  like every row above (the noise and every fixed representation are functions of the
+  stems alone, so they are; that CLAP's are is inferred, not measured).
+
+  threshold of the gate: 26/36, P(X>=26|36) = 0.005665, Bonferroni 0.05/6 = 0.008333
+  the same proportion over 18 is 13/18: P(X>=13|18) = 0.048126
+  the smallest count over 18 with P <= 0.05/6 is 15/18 (P = 0.003769)
+  (printed as information for the text; no verdict is re-taken here)

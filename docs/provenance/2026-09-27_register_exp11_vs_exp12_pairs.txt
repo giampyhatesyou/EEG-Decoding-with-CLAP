@@ -1,0 +1,18 @@
+!! ANALYSIS OF 2026-09-27, requested by the supervisor, on data already analysed:
+!! the 47 stereo register pairs under the authors' cleaning (Exp. 11) and under the
+!! raw-release cleaning (Exp. 12), compared decision by decision. Exploratory: the
+!! duos are spent material.
+inputs: 2026-08-17_exp11_primary_RESULT_pairs.csv · 2026-09-27_exp12_primary_RESULT_pairs.csv
+
+=== POSITIVE CONTROL ===
+  Exp. 12 stereo  24/47  published 24/47  [OK]
+  Exp. 12 mono    22/42  published 22/42  [OK]
+  Exp. 12 pooled  46/89  published 46/89  [OK]
+  Exp. 11 stereo  24/47  published 24/47  [OK]
+  stereo pairs matched one to one on (subject, centroid distance): 47/47  [OK]
+
+=== PAIR BY PAIR (47 stereo pairs, 8 participants) ===
+  both correct 11 · both wrong 10 · only Exp. 11 correct 13 · only Exp. 12 correct 13
+  agreement 21/47 = 0.4468   null (independent decisions with these accuracies) 0.5002   exact binomial p (one-sided, agreement above null) = 0.8100
+  McNemar exact: discordant 26, split 13 vs 13   null 50/50   two-sided p = 1.0000
+  per subject (agreement / pairs):  0001 1/5 · 0002 2/6 · 0003 2/6 · 0004 4/5 · 0005 5/8 · 0007 2/5 · 0008 3/6 · 0009 2/6

@@ -1,0 +1,42 @@
+!! ANALYSIS OF 2026-09-27, requested by the supervisor, on data already analysed:
+!! the pinned leave-song-out folds of Tab. 7.1, read back from the run archive.
+!! Null 0.25 per fold (4 fixed slots). A fold has ONE target slot (one held-out song),
+!! so its accuracy is the rate at which the model picks that slot.
+
+=== POSITIVE CONTROL: report.py's loader and MACRO against Tab. 7.1 ===
+  audio_only_raw                   20 folds  MACRO 0.1808  published 0.181  [OK]
+  eeg_only                         20 folds  MACRO 0.2466  published 0.247  [OK]
+  contrastive_clap                 20 folds  MACRO 0.2678  published 0.268  [OK]
+  contrastive_raw                  20 folds  MACRO 0.1423  published 0.142  [OK]
+  contrastive_clap, 2026-07 only   14 folds  MACRO 0.2580  published 0.258  [OK]
+  every fold has a single target slot: yes  [OK]
+  (tags with more than one version, newest taken as report.py does: ct_raw_lso_song5->version_3, ct_raw_lso_song59->version_3, ct_raw_lso_song55->version_3, ct_raw_lso_song43->version_3, ct_clap_lso_song50->version_3, ct_clap_lso_song55->version_3)
+
+=== ACCURACY OF EVERY FOLD (null 0.25) ===
+   song         audio_only_raw               eeg_only       contrastive_clap        contrastive_raw
+      2 0.462 (n=104, 2026-07  ) 1.000 (n=104, 2026-07  ) 0.606 (n=104, 2026-07  ) 0.971 (n=104, 2026-07  )
+      3 1.000 (n=104, 2026-07  ) 0.952 (n=104, 2026-07  ) 0.904 (n=104, 2026-05  ) 0.971 (n=104, 2026-07  )
+      5 0.000 (n=104, 2026-07  ) 0.971 (n=104, 2026-07  ) 0.462 (n=104, 2026-05  ) 0.173 (n=104, 2026-07  )
+      7 0.000 (n=104, 2026-07  ) 0.000 (n=104, 2026-07  ) 0.058 (n=104, 2026-07  ) 0.000 (n=104, 2026-07  )
+      8 0.000 (n=104, 2026-07  ) 0.000 (n=104, 2026-07  ) 0.000 (n=104, 2026-07  ) 0.000 (n=104, 2026-07  )
+     16 0.000 (n=104, 2026-07  ) 0.000 (n=104, 2026-07  ) 0.000 (n=104, 2026-05  ) 0.000 (n=104, converged)
+     18 0.000 (n=104, 2026-07  ) 0.000 (n=104, 2026-07  ) 0.000 (n=104, 2026-07  ) 0.000 (n=104, 2026-07  )
+     33 0.923 (n=104, 2026-07  ) 1.000 (n=104, 2026-07  ) 0.577 (n=104, 2026-07  ) 0.721 (n=104, 2026-07  )
+     43 0.000 (n=104, 2026-07  ) 0.000 (n=104, 2026-07  ) 0.019 (n=104, 2026-07  ) 0.000 (n=104, 2026-07  )
+     44 0.077 (n=104, 2026-07  ) 0.000 (n=104, 2026-07  ) 0.087 (n=104, 2026-05  ) 0.000 (n=104, 2026-07  )
+     45 0.000 (n=104, 2026-07  ) 0.990 (n=104, 2026-07  ) 0.298 (n=104, 2026-07  ) 0.000 (n=104, 2026-07  )
+     50 0.769 (n=104, 2026-07  ) 0.000 (n=104, 2026-07  ) 0.875 (n=104, 2026-07  ) 0.010 (n=104, 2026-07  )
+     55 0.000 (n=104, 2026-07  ) 0.000 (n=104, 2026-07  ) 0.000 (n=104, 2026-07  ) 0.000 (n=104, 2026-07  )
+     59 0.000 (n=104, 2026-07  ) 0.000 (n=104, 2026-07  ) 0.288 (n=104, 2026-05  ) 0.000 (n=104, 2026-07  )
+     62 0.000 (n=104, 2026-07  ) 0.019 (n=104, 2026-07  ) 0.375 (n=104, 2026-07  ) 0.000 (n=104, 2026-07  )
+     68 0.000 (n=104, 2026-07  ) 0.000 (n=104, 2026-07  ) 0.740 (n=104, 2026-07  ) 0.000 (n=104, 2026-07  )
+    112 0.000 (n=104, 2026-07  ) 0.000 (n=104, 2026-07  ) 0.000 (n=104, 2026-07  ) 0.000 (n=104, 2026-07  )
+    120 0.385 (n=104, 2026-07  ) 0.000 (n=104, 2026-07  ) 0.010 (n=104, 2026-07  ) 0.000 (n=104, 2026-07  )
+    140 0.000 (n=104, 2026-07  ) 0.000 (n=104, 2026-07  ) 0.058 (n=104, 2026-07  ) 0.000 (n=104, 2026-07  )
+    145 0.000 (n=104, 2026-07  ) 0.000 (n=104, 2026-07  ) 0.000 (n=104, 2026-05  ) 0.000 (n=104, 2026-07  )
+
+  per model, over folds (each fold weighted once; MACRO above weights trials):
+  audio_only_raw     folds 20  median 0.000  min 0.000  max 1.000  folds above 0.25: 5/20  at 0: 14/20
+  eeg_only           folds 20  median 0.000  min 0.000  max 1.000  folds above 0.25: 5/20  at 0: 14/20
+  contrastive_clap   folds 20  median 0.072  min 0.000  max 0.904  folds above 0.25: 9/20  at 0: 6/20
+  contrastive_raw    folds 20  median 0.000  min 0.000  max 0.971  folds above 0.25: 3/20  at 0: 15/20

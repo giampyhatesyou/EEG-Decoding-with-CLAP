@@ -435,6 +435,15 @@ def run_exp12(args, out, md):
     ]
     write(out, "exp12_primary", lines)
 
+    # 2026-09-27: the per-pair record Exp. 11 already writes, so the 47 stereo-from-raw pairs
+    # can be compared decision by decision with Exp. 11's. Written after every number above,
+    # from the arrays already computed: no calculation changes.
+    import pandas as pd
+    pd.DataFrame([dict(subj=p["subj"], spatial=p["spatial"], stim_hi=trials[p["i_hi"]]["stim"],
+                       stim_lo=trials[p["i_lo"]]["stim"], dcent=p["dcent"], hit=bool(h))
+                  for p, h in zip(pairs, hits)]).to_csv(
+        os.path.join(out, "exp12_primary", "pairs.csv"), index=False)
+
 
 def main():
     ap = argparse.ArgumentParser()

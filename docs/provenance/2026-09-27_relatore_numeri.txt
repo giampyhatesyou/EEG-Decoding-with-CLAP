@@ -1,0 +1,112 @@
+!! ANALYSIS OF 2026-09-27, requested by the supervisor, on data already analysed:
+!! arithmetic on published counts and one count over the released benchmark split.
+!! Intervals: exact (Clopper-Pearson) 95%. p: exact binomial, one-sided above the null
+!! printed next to it, unless stated.
+
+=== POSITIVE CONTROL (values computed on 2026-09-25/26, crossed first) ===
+  Fisher exact, alpha mono 24/42 vs stereo 23/44: two-sided p = 0.6711  expected 0.67  [OK]
+  Tab. 9.1 ridge k-fold, log-mel (A1)       86/154 = 0.5584  p 0.0853  95% [0.476, 0.638]  expected 0.0853 [0.476, 0.638]  [OK]
+  Tab. 9.1 ridge, Hilbert envelope (A2)     78/154 = 0.5065  p 0.4679  95% [0.425, 0.588]  expected 0.4679 [0.425, 0.588]  [OK]
+  Tab. 9.1 ridge, published protocol (A3)   74/154 = 0.4805  p 0.7136  95% [0.399, 0.562]  expected 0.7136 [0.399, 0.562]  [OK]
+  null result register, pooled 89 pairs      46/89 = 0.517  95% [0.408, 0.624]  expected [0.408, 0.624]  [OK]
+  null result register, stereo               24/47 = 0.511  95% [0.361, 0.659]  expected [0.361, 0.659]  [OK]
+  null result register, mono                 22/42 = 0.524  95% [0.364, 0.680]  expected [0.364, 0.68]  [OK]
+  null result flux on duos, paper protocol   76/154 = 0.494  95% [0.412, 0.575]  expected [0.412, 0.575]  [OK]
+  null result flux on duos, k-fold           77/154 = 0.500  95% [0.418, 0.582]  expected [0.418, 0.582]  [OK]
+  null result mono replication (Exp. 4)      79/150 = 0.527  95% [0.444, 0.609]  expected [0.444, 0.609]  [OK]
+  benchmark within split, song of a test trial in training: (test, same participant, another, nobody) (62, 0, 59, 3)  expected (62, 0, 59, 3)  [OK]
+
+=== 1. Mono against stereo, paired alpha ===
+  24/42 = 0.5714 vs 23/44 = 0.5227   null: equal accuracies   Fisher exact two-sided p = 0.6711
+  (the two sets share their 8 participants, so the test treats dependent sets as independent)
+
+=== 2. Tab. 9.1 (n = 154, null 0.500, prospectively specified threshold 88/154) ===
+  ridge k-fold, log-mel (A1)       86/154 = 0.5584   one-sided p = 0.0853   95% [0.476, 0.638]
+  ridge, Hilbert envelope (A2)     78/154 = 0.5065   one-sided p = 0.4679   95% [0.425, 0.588]
+  ridge, published protocol (A3)   74/154 = 0.4805   one-sided p = 0.7136   95% [0.399, 0.562]
+
+=== 3. Null results of the answer to the supervisor (null 0.500) ===
+  register, pooled 89 pairs      46/89 = 0.517   one-sided p = 0.4161   95% [0.408, 0.624]
+  register, stereo               24/47 = 0.511   one-sided p = 0.5000   95% [0.361, 0.659]
+  register, mono                 22/42 = 0.524   one-sided p = 0.4388   95% [0.364, 0.680]
+  flux on duos, paper protocol   76/154 = 0.494   one-sided p = 0.5955   95% [0.412, 0.575]
+  flux on duos, k-fold           77/154 = 0.500   one-sided p = 0.5321   95% [0.418, 0.582]
+  mono replication (Exp. 4)      79/150 = 0.527   one-sided p = 0.2839   95% [0.444, 0.609]
+
+=== 4. Benchmark within split (dataset.zip, eeg_within_sub/<participant>/<split>/<song>/...) ===
+  training = train      : of 62 test trials, song in training of the same participant 0, of another participant 59, of nobody 3
+  training = train+valid: of 62 test trials, song in training of the same participant 0, of another participant 62, of nobody 0
+  (8 participants, 480 trials; 'training' in the thesis is the train split)
+
+=== 5. G3: every count reported as not significant, with its exact 95% interval ===
+  66 occurrences of 34 counts in 8 files
+  p is the exact binomial on the count; for own-vs-other the thesis prints the exact PAIRED
+  p (e.g. 202/376: 0.0851 paired, 0.0819 binomial), which respects the 188 mutual pairs.
+  file:line                               k/n    acc          95% CI       p  what
+  00b_abstract.tex:38                 76/154   0.494 [0.412, 0.575]  0.5955  Exp. 9 flux, paper protocol (P1) (null 0.5)
+  00b_abstract.tex:38                 77/154   0.500 [0.418, 0.582]  0.5321  Exp. 9 flux, k-fold (P2) (null 0.5)
+  01_summary.tex:79                   76/154   0.494 [0.412, 0.575]  0.5955  Exp. 9 flux, paper protocol (P1) (null 0.5)
+  01_summary.tex:79                   77/154   0.500 [0.418, 0.582]  0.5321  Exp. 9 flux, k-fold (P2) (null 0.5)
+  02_introduction.tex:94              76/154   0.494 [0.412, 0.575]  0.5955  Exp. 9 flux, paper protocol (P1) (null 0.5)
+  02_introduction.tex:94              77/154   0.500 [0.418, 0.582]  0.5321  Exp. 9 flux, k-fold (P2) (null 0.5)
+  09_results.tex:23                   86/154   0.558 [0.476, 0.638]  0.0853  anchor A1, ridge k-fold, log-mel (null 0.5)
+  09_results.tex:24                   78/154   0.506 [0.425, 0.588]  0.4679  anchor A2, ridge on the Hilbert envelope (null 0.5)
+  09_results.tex:25                   74/154   0.481 [0.399, 0.562]  0.7136  anchor A3, ridge, published protocol (null 0.5)
+  09_results.tex:43                   66/131   0.504 [0.415, 0.592]  0.5000  Exp. 6 McNemar, CCA vs ridge with ICA (discordant split) (null 0.5)
+  09_results.tex:45                  202/376   0.537 [0.485, 0.588]  0.0819  Exp. 6 own-vs-other, ridge without cleaning (null 0.5)
+  09_results.tex:45                   72/139   0.518 [0.432, 0.603]  0.3673  Exp. 6 McNemar, CCA vs ridge without ICA (discordant split) (null 0.5)
+  09_results.tex:69                   33/61    0.541 [0.408, 0.669]  0.3045  Exp. 7 McNemar, best configuration C3 (discordant split) (null 0.5)
+  09_results.tex:91                   86/150   0.573 [0.490, 0.654]  0.0430  axis study maximum (nominal p 0.043, 16 configurations) (null 0.5)
+  09_results.tex:93                   86/150   0.573 [0.490, 0.654]  0.0430  axis study maximum (nominal p 0.043, 16 configurations) (null 0.5)
+  09_results.tex:98                   79/150   0.527 [0.444, 0.609]  0.2839  Exp. 4 mono replication (null 0.5)
+  09_results.tex:100                  79/150   0.527 [0.444, 0.609]  0.2839  Exp. 4 mono replication (null 0.5)
+  09_results.tex:100                  86/150   0.573 [0.490, 0.654]  0.0430  axis study maximum (nominal p 0.043, 16 configurations) (null 0.5)
+  09_results.tex:105                  86/150   0.573 [0.490, 0.654]  0.0430  axis study maximum (nominal p 0.043, 16 configurations) (null 0.5)
+  09_results.tex:153                  58/154   0.377 [0.300, 0.458]  0.9992  step C, contrastive CLAP (null 0.5)
+  09_results.tex:194                  70/154   0.455 [0.374, 0.537]  0.8867  step D, contrastive CLAP within-mixture (null 0.5)
+  09_results.tex:198                  70/154   0.455 [0.374, 0.537]  0.8867  step D, contrastive CLAP within-mixture (null 0.5)
+  09_results.tex:291                  74/154   0.481 [0.399, 0.562]  0.7136  anchor A3, ridge, published protocol (null 0.5)
+  09_results.tex:291                  86/154   0.558 [0.476, 0.638]  0.0853  anchor A1, ridge k-fold, log-mel (null 0.5)
+  09_results.tex:305                  76/154   0.494 [0.412, 0.575]  0.5955  Exp. 9 flux, paper protocol (P1) (null 0.5)
+  09_results.tex:305                  74/154   0.481 [0.399, 0.562]  0.7136  anchor A3, ridge, published protocol (null 0.5)
+  09_results.tex:305                  33/64    0.516 [0.387, 0.642]  0.4503  Exp. 9 McNemar P1, flux vs mel (discordant split) (null 0.5)
+  09_results.tex:306                  77/154   0.500 [0.418, 0.582]  0.5321  Exp. 9 flux, k-fold (P2) (null 0.5)
+  09_results.tex:306                  86/154   0.558 [0.476, 0.638]  0.0853  anchor A1, ridge k-fold, log-mel (null 0.5)
+  09_results.tex:306                  26/61    0.426 [0.300, 0.559]  0.9000  Exp. 9 McNemar P2, flux vs mel (discordant split) (null 0.5)
+  09_results.tex:400                  24/47    0.511 [0.361, 0.659]  0.5000  Exp. 11 register, stereo (also Exp. 12 stereo from raw) (null 0.5)
+  09_results.tex:401                  22/42    0.524 [0.364, 0.680]  0.4388  Exp. 12 register, mono (null 0.5)
+  09_results.tex:402                  46/89    0.517 [0.408, 0.624]  0.4161  Exp. 12 register, pooled (null 0.5)
+  09_results.tex:403                  24/47    0.511 [0.361, 0.659]  0.5000  Exp. 11 register, stereo (also Exp. 12 stereo from raw) (null 0.5)
+  09_results.tex:408                  11/22    0.500 [0.282, 0.718]  0.5841  Exp. 11 dose-response, far pairs (null 0.5)
+  09_results.tex:408                  13/25    0.520 [0.313, 0.722]  0.5000  Exp. 11 dose-response, near pairs (null 0.5)
+  09_results.tex:455                  24/47    0.511 [0.361, 0.659]  0.5000  Exp. 11 register, stereo (also Exp. 12 stereo from raw) (null 0.5)
+  09_results.tex:474                  23/44    0.523 [0.367, 0.675]  0.4402  paired alpha, stereo (null 0.5)
+  09_results.tex:476                  24/42    0.571 [0.410, 0.723]  0.2204  paired alpha, mono (null 0.5)
+  09_results.tex:490                  76/154   0.494 [0.412, 0.575]  0.5955  Exp. 9 flux, paper protocol (P1) (null 0.5)
+  09_results.tex:490                  77/154   0.500 [0.418, 0.582]  0.5321  Exp. 9 flux, k-fold (P2) (null 0.5)
+  09_results.tex:491                  46/89    0.517 [0.408, 0.624]  0.4161  Exp. 12 register, pooled (null 0.5)
+  09_results.tex:491                  23/44    0.523 [0.367, 0.675]  0.4402  paired alpha, stereo (null 0.5)
+  10_audits.tex:20                    86/154   0.558 [0.476, 0.638]  0.0853  anchor A1, ridge k-fold, log-mel (null 0.5)
+  10_audits.tex:47                    86/154   0.558 [0.476, 0.638]  0.0853  anchor A1, ridge k-fold, log-mel (null 0.5)
+  11_groundwork.tex:140               80/154   0.519 [0.438, 0.601]  0.3436  Exp. 14, one of the four directions (null 0.5)
+  11_groundwork.tex:140               74/154   0.481 [0.399, 0.562]  0.7136  Exp. 14, one of the four directions (null 0.5)
+  11_groundwork.tex:140               28/52    0.538 [0.395, 0.678]  0.3389  Exp. 14, one of the four directions (null 0.5)
+  11_groundwork.tex:141               24/52    0.462 [0.322, 0.605]  0.7558  Exp. 14, one of the four directions (null 0.5)
+  11_groundwork.tex:157               74/154   0.481 [0.399, 0.562]  0.7136  anchor A3, ridge, published protocol (null 0.5)
+  11_groundwork.tex:157               86/154   0.558 [0.476, 0.638]  0.0853  anchor A1, ridge k-fold, log-mel (null 0.5)
+  11_groundwork.tex:162               65/154   0.422 [0.343, 0.504]  0.9782  Exp. 15 MFCC, k-fold (null 0.5)
+  11_groundwork.tex:163               75/154   0.487 [0.406, 0.569]  0.6564  Exp. 15 MFCC, paper protocol (null 0.5)
+  11_groundwork.tex:163               74/154   0.481 [0.399, 0.562]  0.7136  anchor A3, ridge, published protocol (null 0.5)
+  11_groundwork.tex:181               65/154   0.422 [0.343, 0.504]  0.9782  Exp. 15 MFCC, k-fold (null 0.5)
+  11_groundwork.tex:313              202/376   0.537 [0.485, 0.588]  0.0819  Exp. 16B, CCA with band power (null 0.5)
+  11_groundwork.tex:315               66/138   0.478 [0.393, 0.565]  0.7243  Exp. 16B, one of the four directions (null 0.5)
+  11_groundwork.tex:315               72/138   0.522 [0.435, 0.607]  0.3353  Exp. 16B, one of the four directions (null 0.5)
+  11_groundwork.tex:315               43/93    0.462 [0.358, 0.569]  0.7965  Exp. 16B, one of the four directions (null 0.5)
+  11_groundwork.tex:316               50/93    0.538 [0.431, 0.642]  0.2670  Exp. 16B, one of the four directions (null 0.5)
+  11_groundwork.tex:373              278/536   0.519 [0.475, 0.562]  0.2059  Exp. 18 match-mismatch S1 (null 0.5000 measured) (null 0.5)
+  11_groundwork.tex:474              244/536   0.455 [0.412, 0.498]  0.9829  Exp. 19 match-mismatch S1 (null 0.5)
+  11_groundwork.tex:643               46/89    0.517 [0.408, 0.624]  0.4161  Exp. 12 register, pooled (null 0.5)
+  11_groundwork.tex:647               23/44    0.523 [0.367, 0.675]  0.4402  paired alpha, stereo (null 0.5)
+  12_discussion.tex:81                23/44    0.523 [0.367, 0.675]  0.4402  paired alpha, stereo (null 0.5)
+  12_discussion.tex:239               10/16    0.625 [0.354, 0.848]  0.2272  Exp. 12, both trials at concentration 5 (descriptive) (null 0.5)
+  table also written to IC_nulli.tsv (vault, for the revision)

@@ -1,0 +1,217 @@
+!! ANALYSIS OF 2026-09-27, requested by the supervisor, on data already analysed.
+!! Decision records only; the cuts are by participant and by mixture, nothing else.
+!! Every duo, register and alpha decision has the null 0.500 (both instruments of a
+!! mixture are targets); own-vs-other 0.500 exact by symmetry; step C's prior-following
+!! has the null 0.4274 = P(prior == target), computed from the data.
+!! With 8 participants the smallest p attainable at participant level is 1/2^8 = 1/256
+!! = 0.0039 (all 8 on the same side): the participant-level view estimates uncertainty,
+!! it cannot add power.
+
+=== POSITIVE CONTROL (published totals, crossed before anything else) ===
+  anchor, ridge k-fold, log-mel (A1)         86/154  published 86/154  [OK]
+  anchor, ridge, published protocol (A3)     74/154  published 74/154  [OK]
+  Exp. 9 flux, published protocol (P1)       76/154  published 76/154  [OK]
+  Exp. 9 flux, k-fold (P2)                   77/154  published 77/154  [OK]
+  Exp. 4 mono replication                    79/150  published 79/150  [OK]
+  own-vs-other, mel reference                208/376  published 208/376  [OK]
+  own-vs-other, flux (Exp. 8 F1)             243/376  published 243/376  [OK]
+  register stereo (Exp. 11)                  24/47  published 24/47  [OK]
+  register mono (Exp. 12)                    22/42  published 22/42  [OK]
+  register pooled (Exp. 12)                  46/89  published 46/89  [OK]
+  paired alpha stereo                        23/44  published 23/44  [OK]
+  paired alpha mono                          24/42  published 24/42  [OK]
+  Exp. 8 agreement table both/mel only/flux only/neither (159, 49, 84, 84)  published (159, 49, 84, 84)  [OK]
+  mean r(attended) / r(best unattended), mel anchor (A1)   (0.0202, 0.0118)  published (0.0202, 0.0118)  [OK]
+  mean r(attended) / r(best unattended), flux k-fold (P2)  (0.056, 0.0513)  published (0.056, 0.0513)  [OK]
+  step C prior-following 89/124, null 0.4274  published 89/124, 0.4274  [OK]
+
+=== PER PARTICIPANT AND POOLED (exact 95% intervals; hierarchical bootstrap percentile) ===
+
+  anchor, ridge k-fold, log-mel (A1): 86/154 = 0.5584, null 0.500, from 8 participants and 107 participant-clusters
+    0001   11/20  = 0.550   [0.315, 0.769]
+    0002   13/20  = 0.650   [0.408, 0.846]
+    0003   10/20  = 0.500   [0.272, 0.728]
+    0004   11/20  = 0.550   [0.315, 0.769]
+    0005    8/20  = 0.400   [0.191, 0.639]
+    0007   11/14  = 0.786   [0.492, 0.953]
+    0008   12/20  = 0.600   [0.361, 0.809]
+    0009   10/20  = 0.500   [0.272, 0.728]
+    participants above the null 5, below 1, at it 2   sign test over participants (null 50/50) one-sided p = 0.1094
+    pooled 0.5584   exact binomial 95% [0.476, 0.638] (trials as independent)   hierarchical bootstrap 95% [0.463, 0.656]   null 0.500 INSIDE the hierarchical interval
+
+  anchor, ridge, published protocol (A3): 74/154 = 0.4805, null 0.500, from 8 participants and 107 participant-clusters
+    0001   13/20  = 0.650   [0.408, 0.846]
+    0002    7/20  = 0.350   [0.154, 0.592]
+    0003    7/20  = 0.350   [0.154, 0.592]
+    0004    9/20  = 0.450   [0.231, 0.685]
+    0005   12/20  = 0.600   [0.361, 0.809]
+    0007    4/14  = 0.286   [0.084, 0.581]
+    0008   13/20  = 0.650   [0.408, 0.846]
+    0009    9/20  = 0.450   [0.231, 0.685]
+    participants above the null 3, below 5, at it 0   sign test over participants (null 50/50) one-sided p = 0.8555
+    pooled 0.4805   exact binomial 95% [0.399, 0.562] (trials as independent)   hierarchical bootstrap 95% [0.362, 0.597]   null 0.500 INSIDE the hierarchical interval
+
+  Exp. 9 flux, published protocol (P1): 76/154 = 0.4935, null 0.500, from 8 participants and 107 participant-clusters
+    0001    7/20  = 0.350   [0.154, 0.592]
+    0002   12/20  = 0.600   [0.361, 0.809]
+    0003   10/20  = 0.500   [0.272, 0.728]
+    0004   10/20  = 0.500   [0.272, 0.728]
+    0005    9/20  = 0.450   [0.231, 0.685]
+    0007    9/14  = 0.643   [0.351, 0.872]
+    0008    9/20  = 0.450   [0.231, 0.685]
+    0009   10/20  = 0.500   [0.272, 0.728]
+    participants above the null 2, below 3, at it 3   sign test over participants (null 50/50) one-sided p = 0.8125
+    pooled 0.4935   exact binomial 95% [0.412, 0.575] (trials as independent)   hierarchical bootstrap 95% [0.405, 0.581]   null 0.500 INSIDE the hierarchical interval
+
+  Exp. 9 flux, k-fold (P2): 77/154 = 0.5000, null 0.500, from 8 participants and 107 participant-clusters
+    0001   10/20  = 0.500   [0.272, 0.728]
+    0002   10/20  = 0.500   [0.272, 0.728]
+    0003   13/20  = 0.650   [0.408, 0.846]
+    0004    9/20  = 0.450   [0.231, 0.685]
+    0005    7/20  = 0.350   [0.154, 0.592]
+    0007    6/14  = 0.429   [0.177, 0.711]
+    0008   11/20  = 0.550   [0.315, 0.769]
+    0009   11/20  = 0.550   [0.315, 0.769]
+    participants above the null 3, below 3, at it 2   sign test over participants (null 50/50) one-sided p = 0.6562
+    pooled 0.5000   exact binomial 95% [0.418, 0.582] (trials as independent)   hierarchical bootstrap 95% [0.408, 0.592]   null 0.500 INSIDE the hierarchical interval
+
+  Exp. 4 mono replication: 79/150 = 0.5267, null 0.500, from 8 participants and 109 participant-clusters
+    0001   12/20  = 0.600   [0.361, 0.809]
+    0002   14/20  = 0.700   [0.457, 0.881]
+    0003   12/20  = 0.600   [0.361, 0.809]
+    0004   11/20  = 0.550   [0.315, 0.769]
+    0005   14/20  = 0.700   [0.457, 0.881]
+    0007    3/10  = 0.300   [0.067, 0.652]
+    0008    9/20  = 0.450   [0.231, 0.685]
+    0009    4/20  = 0.200   [0.057, 0.437]
+    participants above the null 5, below 3, at it 0   sign test over participants (null 50/50) one-sided p = 0.3633
+    pooled 0.5267   exact binomial 95% [0.444, 0.609] (trials as independent)   hierarchical bootstrap 95% [0.379, 0.654]   null 0.500 INSIDE the hierarchical interval
+
+  own-vs-other, mel reference: 208/376 = 0.5532, null 0.500, from 8 participants and 188 participant-clusters
+    0001   24/50  = 0.480   [0.337, 0.626]
+    0002   31/50  = 0.620   [0.472, 0.753]
+    0003   34/50  = 0.680   [0.533, 0.805]
+    0004   34/52  = 0.654   [0.509, 0.780]
+    0005   27/52  = 0.519   [0.376, 0.660]
+    0007    9/24  = 0.375   [0.188, 0.594]
+    0008   24/48  = 0.500   [0.352, 0.648]
+    0009   25/50  = 0.500   [0.355, 0.645]
+    participants above the null 4, below 2, at it 2   sign test over participants (null 50/50) one-sided p = 0.3438
+    pooled 0.5532   exact binomial 95% [0.501, 0.604] (trials as independent)   hierarchical bootstrap 95% [0.473, 0.629]   null 0.500 INSIDE the hierarchical interval
+
+  own-vs-other, flux (Exp. 8 F1): 243/376 = 0.6463, null 0.500, from 8 participants and 188 participant-clusters
+    0001   30/50  = 0.600   [0.452, 0.736]
+    0002   38/50  = 0.760   [0.618, 0.869]
+    0003   41/50  = 0.820   [0.686, 0.914]
+    0004   34/52  = 0.654   [0.509, 0.780]
+    0005   27/52  = 0.519   [0.376, 0.660]
+    0007   11/24  = 0.458   [0.256, 0.672]
+    0008   34/48  = 0.708   [0.559, 0.830]
+    0009   28/50  = 0.560   [0.413, 0.700]
+    participants above the null 7, below 1, at it 0   sign test over participants (null 50/50) one-sided p = 0.0352
+    pooled 0.6463   exact binomial 95% [0.596, 0.695] (trials as independent)   hierarchical bootstrap 95% [0.557, 0.733]   null 0.500 outside the hierarchical interval
+
+  register stereo (Exp. 11): 24/47 = 0.5106, null 0.500, from 8 participants and 47 participant-clusters
+    0001    3/5   = 0.600   [0.147, 0.947]
+    0002    3/6   = 0.500   [0.118, 0.882]
+    0003    4/6   = 0.667   [0.223, 0.957]
+    0004    2/5   = 0.400   [0.053, 0.853]
+    0005    5/8   = 0.625   [0.245, 0.915]
+    0007    3/5   = 0.600   [0.147, 0.947]
+    0008    1/6   = 0.167   [0.004, 0.641]
+    0009    3/6   = 0.500   [0.118, 0.882]
+    participants above the null 4, below 2, at it 2   sign test over participants (null 50/50) one-sided p = 0.3438
+    pooled 0.5106   exact binomial 95% [0.361, 0.659] (trials as independent)   hierarchical bootstrap 95% [0.333, 0.681]   null 0.500 INSIDE the hierarchical interval
+
+  register mono (Exp. 12): 22/42 = 0.5238, null 0.500, from 8 participants and 42 participant-clusters
+    0001    2/5   = 0.400   [0.053, 0.853]
+    0002    5/6   = 0.833   [0.359, 0.996]
+    0003    4/6   = 0.667   [0.223, 0.957]
+    0004    2/5   = 0.400   [0.053, 0.853]
+    0005    3/4   = 0.750   [0.194, 0.994]
+    0007    1/4   = 0.250   [0.006, 0.806]
+    0008    1/5   = 0.200   [0.005, 0.716]
+    0009    4/7   = 0.571   [0.184, 0.901]
+    participants above the null 4, below 4, at it 0   sign test over participants (null 50/50) one-sided p = 0.6367
+    pooled 0.5238   exact binomial 95% [0.364, 0.680] (trials as independent)   hierarchical bootstrap 95% [0.324, 0.721]   null 0.500 INSIDE the hierarchical interval
+
+  register pooled (Exp. 12): 46/89 = 0.5169, null 0.500, from 8 participants and 67 participant-clusters
+    0001    5/10  = 0.500   [0.187, 0.813]
+    0002    8/12  = 0.667   [0.349, 0.901]
+    0003    6/12  = 0.500   [0.211, 0.789]
+    0004    3/10  = 0.300   [0.067, 0.652]
+    0005    9/12  = 0.750   [0.428, 0.945]
+    0007    3/9   = 0.333   [0.075, 0.701]
+    0008    5/11  = 0.455   [0.167, 0.766]
+    0009    7/13  = 0.538   [0.251, 0.808]
+    participants above the null 3, below 3, at it 2   sign test over participants (null 50/50) one-sided p = 0.6562
+    pooled 0.5169   exact binomial 95% [0.408, 0.624] (trials as independent)   hierarchical bootstrap 95% [0.375, 0.656]   null 0.500 INSIDE the hierarchical interval
+
+  paired alpha stereo: 23/44 = 0.5227, null 0.500, from 8 participants and 44 participant-clusters
+    0001    2/4   = 0.500   [0.068, 0.932]
+    0002    6/6   = 1.000   [0.541, 1.000]
+    0003    3/6   = 0.500   [0.118, 0.882]
+    0004    1/4   = 0.250   [0.006, 0.806]
+    0005    4/8   = 0.500   [0.157, 0.843]
+    0007    1/5   = 0.200   [0.005, 0.716]
+    0008    3/5   = 0.600   [0.147, 0.947]
+    0009    3/6   = 0.500   [0.118, 0.882]
+    participants above the null 2, below 2, at it 4   sign test over participants (null 50/50) one-sided p = 0.6875
+    pooled 0.5227   exact binomial 95% [0.367, 0.675] (trials as independent)   hierarchical bootstrap 95% [0.324, 0.727]   null 0.500 INSIDE the hierarchical interval
+
+  paired alpha mono: 24/42 = 0.5714, null 0.500, from 8 participants and 42 participant-clusters
+    0001    3/5   = 0.600   [0.147, 0.947]
+    0002    3/6   = 0.500   [0.118, 0.882]
+    0003    1/6   = 0.167   [0.004, 0.641]
+    0004    4/5   = 0.800   [0.284, 0.995]
+    0005    3/4   = 0.750   [0.194, 0.994]
+    0007    3/4   = 0.750   [0.194, 0.994]
+    0008    4/5   = 0.800   [0.284, 0.995]
+    0009    3/7   = 0.429   [0.099, 0.816]
+    participants above the null 5, below 2, at it 1   sign test over participants (null 50/50) one-sided p = 0.2266
+    pooled 0.5714   exact binomial 95% [0.410, 0.723] (trials as independent)   hierarchical bootstrap 95% [0.370, 0.778]   null 0.500 INSIDE the hierarchical interval
+
+=== G1: the two paired contrasts and the prior ===
+  own-vs-other, flux minus mel (Exp. 8 F1 - reference, 376 paired decisions, 188 mutual pairs, 8 participants):
+    0001  mel 24/50  flux 30/50  difference +0.120  (flux-only 11, mel-only 5)
+    0002  mel 31/50  flux 38/50  difference +0.140  (flux-only 13, mel-only 6)
+    0003  mel 34/50  flux 41/50  difference +0.140  (flux-only 13, mel-only 6)
+    0004  mel 34/52  flux 34/52  difference +0.000  (flux-only 8, mel-only 8)
+    0005  mel 27/52  flux 27/52  difference +0.000  (flux-only 9, mel-only 9)
+    0007  mel  9/24  flux 11/24  difference +0.083  (flux-only 5, mel-only 3)
+    0008  mel 24/48  flux 34/48  difference +0.208  (flux-only 16, mel-only 6)
+    0009  mel 25/50  flux 28/50  difference +0.060  (flux-only 9, mel-only 6)
+    pooled difference +0.0931 (243 - 208 = 35/376)   null 0   hierarchical bootstrap 95% [+0.0160, +0.1686]   null outside
+    participants with flux above mel 6, below 0   sign test (null 50/50) one-sided p = 0.0156
+
+  r(attended) - r(best unattended), mean per participant (null 0):
+            mel anchor (A1)  flux k-fold (P2)
+    0001           +0.0103           +0.0150
+    0002           +0.0275           +0.0006
+    0003           +0.0050           +0.0153
+    0004           -0.0004           +0.0000
+    0005           -0.0232           -0.0095
+    0007           +0.0204           -0.0018
+    0008           +0.0210           +0.0164
+    0009           +0.0098           -0.0006
+    mel anchor (A1): pooled +0.0084   hierarchical bootstrap 95% [-0.0063, +0.0229]   null 0 INSIDE
+    flux k-fold (P2): pooled +0.0047   hierarchical bootstrap 95% [-0.0085, +0.0177]   null 0 INSIDE
+
+  step C, the model chose its training-fold prior (89/124 decidable trials):
+    0001  follows 11/15 = 0.733   null for this participant 0.667
+    0002  follows 12/15 = 0.800   null for this participant 0.333
+    0003  follows 10/18 = 0.556   null for this participant 0.556
+    0004  follows 16/17 = 0.941   null for this participant 0.588
+    0005  follows 11/17 = 0.647   null for this participant 0.176
+    0007  follows  6/11 = 0.545   null for this participant 0.364
+    0008  follows  9/15 = 0.600   null for this participant 0.667
+    0009  follows 14/16 = 0.875   null for this participant 0.062
+    pooled 0.7177   hierarchical bootstrap 95% [0.591, 0.840]   null 0.4274 outside
+    following minus its null, resampled together: +0.2903   95% [+0.0690, +0.5136]   0 outside
+
+=== G2 CHECK: results reported as positive, is the null inside the hierarchical interval? ===
+  own-vs-other flux - mel (McNemar 84/133)         +0.0931  [+0.0160, +0.1686]  null 0.000 outside
+  own-vs-other, flux (Exp. 8 F1)                   +0.6463  [+0.5573, +0.7325]  null 0.500 outside
+  step C prior-following 89/124 (minus its null)   +0.2903  [+0.0690, +0.5136]  null 0.000 outside
+  (15/18 of the stem similarity has no participant level: its interval over mixtures is in
+   2026-09-27_separability_18_mixtures.txt)

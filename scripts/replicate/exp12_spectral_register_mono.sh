@@ -31,7 +31,7 @@
 #              DRIVER, which exits with an error if it does not pass.
 # PRE-REGISTRATION: "Chapter 2 - Exp. 12: the spectral register on the MONO duos
 #              (fresh material), pre-registered criterion (2026-08-11)"
-# PROVENANCE : runs/results/exp12_{primary,control_a10}/ and
+# PROVENANCE : runs/results/exp12_{primary,control_a10}/ (primary/pairs.csv since 2026-09-27) and
 #              docs/provenance/2026-08-17_exp12_*_RESULT_*
 # =============================================================================
 set -euo pipefail
