@@ -20,6 +20,9 @@
   register pooled (Exp. 12)                  46/89  published 46/89  [OK]
   paired alpha stereo                        23/44  published 23/44  [OK]
   paired alpha mono                          24/42  published 24/42  [OK]
+  Exp. 6 CCA, no cleaning                    207/376  published 207/376  [OK]
+  Exp. 6 CCA with ICA                        209/376  published 209/376  [OK]
+  Exp. 8 F2 flux_mel                         238/376  published 238/376  [OK]
   Exp. 8 agreement table both/mel only/flux only/neither (159, 49, 84, 84)  published (159, 49, 84, 84)  [OK]
   mean r(attended) / r(best unattended), mel anchor (A1)   (0.0202, 0.0118)  published (0.0202, 0.0118)  [OK]
   mean r(attended) / r(best unattended), flux k-fold (P2)  (0.056, 0.0513)  published (0.056, 0.0513)  [OK]
@@ -211,7 +214,12 @@
 
 === G2 CHECK: results reported as positive, is the null inside the hierarchical interval? ===
   own-vs-other flux - mel (McNemar 84/133)         +0.0931  [+0.0160, +0.1686]  null 0.000 outside
+  own-vs-other, mel reference                      +0.5532  [+0.4731, +0.6294]  null 0.500 INSIDE -> G2
   own-vs-other, flux (Exp. 8 F1)                   +0.6463  [+0.5573, +0.7325]  null 0.500 outside
+  own-vs-other, Exp. 6 CCA, no cleaning            +0.5505  [+0.4634, +0.6376]  null 0.500 INSIDE -> G2
+  own-vs-other, Exp. 6 CCA with ICA                +0.5559  [+0.4581, +0.6468]  null 0.500 INSIDE -> G2
+  own-vs-other, Exp. 8 F2 flux_mel                 +0.6330  [+0.5457, +0.7200]  null 0.500 outside
   step C prior-following 89/124 (minus its null)   +0.2903  [+0.0690, +0.5136]  null 0.000 outside
+  (MFCC-13 214/376 and mel-64 212/376 of Exp. 14 have no committed records: not recomputable.)
   (15/18 of the stem similarity has no participant level: its interval over mixtures is in
    2026-09-27_separability_18_mixtures.txt)

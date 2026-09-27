@@ -43,6 +43,10 @@ OVO_REF = "2026-08-11_exp07_ovo_sweep_REF_RESULT_madeeg_ownvsother.csv"   # md5 
 OVO_FLUX = "2026-08-11_exp08_ovo_flux_F1_RESULT_madeeg_ownvsother.csv"
 REG11 = "2026-08-17_exp11_primary_RESULT_pairs.csv"
 REG12 = "2026-09-27_exp12_primary_RESULT_pairs.csv"
+# G2 only: other own-vs-other counts the thesis reports above the null at trial level
+G2_EXTRA = [("Exp. 6 CCA, no cleaning", "2026-08-10_exp06_ovo_cca_RESULT_madeeg_ownvsother.csv", 207),
+            ("Exp. 6 CCA with ICA", "2026-08-10_exp06_ovo_cca_ica_RESULT_madeeg_ownvsother.csv", 209),
+            ("Exp. 8 F2 flux_mel", "2026-08-11_exp08_ovo_flux_F2_RESULT_madeeg_ownvsother.csv", 238)]
 ALPHA = {"stereo": ("2026-08-17_alpha_real_stereo_RESULT_madeeg_alpha_pairs.csv", 23, 44),
          "mono": ("2026-08-17_alpha_real_mono_RESULT_madeeg_alpha_pairs.csv", 24, 42)}
 
@@ -121,6 +125,12 @@ def main():
         d = rd(f)
         tests.append((f"paired alpha {render}", pd.DataFrame(dict(subject=d.subject, cluster=d.mixture, y=d.correct)), k, n, 0.5))
 
+    extra = []
+    for label, f, k in G2_EXTRA:
+        d = rd(f)
+        pair = [f"{fo}:{min(a, b)}-{max(a, b)}" for fo, a, b in zip(d.fold, d.seg, d.other)]
+        extra.append((label, pd.DataFrame(dict(subject=d.subject, cluster=pair, y=d.correct)), k, 376, 0.5))
+
     # step C: did the model choose its training-fold prior? (madeeg_diagnose's own functions)
     from madeeg_diagnose import load, majority
     rows = load(os.path.join(args.archive, "madeeg_clap_kfold", "madeeg_contrastive_records.csv"),
@@ -130,7 +140,7 @@ def main():
     sc = pd.DataFrame(dec, columns=["subject", "cluster", "y", "prior_right"])
 
     say("=== POSITIVE CONTROL (published totals, crossed before anything else) ===")
-    for label, d, k, n, _ in tests:
+    for label, d, k, n, _ in tests + extra:
         got = (int(d.y.sum()), len(d))
         say(f"  {label:42s} {got[0]}/{got[1]}  published {k}/{n}  [{'OK' if got == (k, n) else 'FAIL'}]")
         if got != (k, n):
@@ -196,7 +206,8 @@ def main():
     say(f"    participants with flux above mel {pos}, below {neg}   sign test (null 50/50) one-sided p = "
         f"{binomtest(pos, pos + neg, 0.5, alternative='greater').pvalue:.4f}")
     g2.append(("own-vs-other flux - mel (McNemar 84/133)", d.y.mean(), hb, 0.0))
-    g2 += [(lab, acc, hb_, nl) for lab, _, acc, hb_, nl in summary if lab.startswith("own-vs-other, flux")]
+    g2 += [(lab, acc, hb_, nl) for lab, _, acc, hb_, nl in summary if lab.startswith("own-vs-other")]
+    g2 += [(f"own-vs-other, {lab}", k / n, hier_boot(d, "y"), null) for lab, d, k, n, null in extra]
 
     say("\n  r(attended) - r(best unattended), mean per participant (null 0):")
     say(f"    {'':6s} {'mel anchor (A1)':>16s} {'flux k-fold (P2)':>17s}")
@@ -226,6 +237,7 @@ def main():
     for lab, est, hb, nl in g2:
         say(f"  {lab:48s} {est:+.4f}  [{hb[0]:+.4f}, {hb[1]:+.4f}]  null {nl:.3f} "
             f"{'INSIDE -> G2' if hb[0] <= nl <= hb[1] else 'outside'}")
+    say("  (MFCC-13 214/376 and mel-64 212/376 of Exp. 14 have no committed records: not recomputable.)")
     say("  (15/18 of the stem similarity has no participant level: its interval over mixtures is in")
     say("   2026-09-27_separability_18_mixtures.txt)")
     open(os.path.join(PROV, OUT), "w").write("\n".join(L) + "\n")
