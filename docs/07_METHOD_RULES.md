@@ -152,7 +152,7 @@ requires an explicit `--train-s1` / `--train-s2` flag to do so locally.
 A retracted claim stays on record, struck through, with the reason. It is not
 deleted and history is not rewritten: it prevents the same error twice, and it
 tells the reader how much to trust the other claims in the same document. The
-project accumulated 28 such retractions; they are material for the methods
+project accumulated 34 such retractions (28 by 15 August 2026, six more on 16-17 August); they are material for the methods
 chapter, not embarrassment to be hidden.
 
 ---
