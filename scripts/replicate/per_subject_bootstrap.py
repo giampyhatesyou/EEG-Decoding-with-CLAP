@@ -47,6 +47,22 @@ REG12 = "2026-09-27_exp12_primary_RESULT_pairs.csv"
 G2_EXTRA = [("Exp. 6 CCA, no cleaning", "2026-08-10_exp06_ovo_cca_RESULT_madeeg_ownvsother.csv", 207),
             ("Exp. 6 CCA with ICA", "2026-08-10_exp06_ovo_cca_ica_RESULT_madeeg_ownvsother.csv", 209),
             ("Exp. 8 F2 flux_mel", "2026-08-11_exp08_ovo_flux_F2_RESULT_madeeg_ownvsother.csv", 238)]
+# Figure titles only, in the names the thesis uses (Tab. 9.1, sec. 9.1.3, 9.4.2, 9.4.5); the
+# labels above stay as they are, because they are what the provenance file prints.
+FIG_TITLE = {
+    "anchor, ridge k-fold, log-mel (A1)": "duo: ridge k-fold, log-mel",
+    "anchor, ridge, published protocol (A3)": "duo: ridge, published protocol",
+    "Exp. 9 flux, published protocol (P1)": "duo: flux, published protocol",
+    "Exp. 9 flux, k-fold (P2)": "duo: flux, k-fold",
+    "Exp. 4 mono replication": "duo: mono replication",
+    "own-vs-other, mel reference": "own-vs-other: mel",
+    "own-vs-other, flux (Exp. 8 F1)": "own-vs-other: flux",
+    "register stereo (Exp. 11)": "attended register: stereo",
+    "register mono (Exp. 12)": "attended register: mono",
+    "register pooled (Exp. 12)": "attended register: pooled",
+    "paired alpha stereo": "alpha lateralisation: stereo",
+    "paired alpha mono": "alpha lateralisation: mono",
+}
 ALPHA = {"stereo": ("2026-08-17_alpha_real_stereo_RESULT_madeeg_alpha_pairs.csv", 23, 44),
          "mono": ("2026-08-17_alpha_real_mono_RESULT_madeeg_alpha_pairs.csv", 24, 42)}
 
@@ -247,19 +263,24 @@ def main():
         import matplotlib
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
-        fig, axes = plt.subplots(3, 4, figsize=(9.5, 7.2), sharey=True)
+        # Drawn at print size (\textwidth = 483.7 pt = 6.69 in, included at width=\textwidth),
+        # so the font sizes below are the sizes on the page.
+        fig, axes = plt.subplots(4, 3, figsize=(6.69, 8.0), sharey=True)
         for ax, (label, per, acc, hb, null) in zip(axes.flat, summary):
             for i, (s, kk, nn, lo, hi) in enumerate(per):
-                ax.errorbar(i, kk / nn, yerr=[[kk / nn - lo], [hi - kk / nn]], fmt="o", ms=3, color="0.3", lw=0.8)
-            ax.errorbar(len(per) + 0.8, acc, yerr=[[acc - hb[0]], [hb[1] - acc]], fmt="D", ms=4, color="k", lw=1.4)
-            ax.axhline(null, color="tab:red", ls="--", lw=0.8)
-            ax.set_xticks(list(range(len(per))) + [len(per) + 0.8], [s[-1] for s, *_ in per] + ["all"], fontsize=6)
-            ax.set_title(label, fontsize=7)
+                ax.errorbar(i, kk / nn, yerr=[[kk / nn - lo], [hi - kk / nn]], fmt="o", ms=3.5, color="0.3", lw=1.0)
+            ax.errorbar(len(per) + 0.8, acc, yerr=[[acc - hb[0]], [hb[1] - acc]], fmt="D", ms=5, color="k", lw=1.6)
+            ax.axhline(null, color="tab:red", ls="--", lw=1.2)
+            ax.set_xticks(list(range(len(per))) + [len(per) + 0.8], [s[-1] for s, *_ in per] + ["all"], fontsize=8)
+            ax.tick_params(axis="y", labelsize=8)
+            ax.set_title(FIG_TITLE[label], fontsize=9)
             ax.set_ylim(0, 1)
         for ax in axes.flat[len(summary):]:
             ax.axis("off")
         for ax in axes[:, 0]:
-            ax.set_ylabel("accuracy", fontsize=8)
+            ax.set_ylabel("accuracy", fontsize=9)
+        for ax in axes[-1, :]:
+            ax.set_xlabel("participant", fontsize=9)
         fig.tight_layout()
         fig.savefig(os.path.join(args.fig_dir, "per_subject_accuracy.pdf"))
         fig, ax = plt.subplots(figsize=(4.2, 2.8))
