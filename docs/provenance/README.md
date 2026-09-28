@@ -74,6 +74,12 @@ number (and exits without output if it does not) and prints the null next to eve
 | **small numbers** — Fisher 24/42 vs 23/44 p **0.6711**; Tab. 9.1 p and intervals; intervals of the null results; benchmark within split 62 test trials, 0 / 59 / 3; every count reported as not significant with its interval (G3) | `2026-09-27_relatore_numeri.txt` (`scripts/replicate/relatore_numeri_2026-09.py`) |
 | **baseline retrained from scratch**, same parameters, seed 42, one run: global **0.8137** (re-tested on 2026-06-08 with the same result) | `2026-06-02_raw_within_scratch_RESULT_{test_breakdown_summary.txt,hparams.yaml}` (copied from the run archive) |
 
+## Analysis of 2026-09-28, on metadata only
+
+| number | file |
+|---|---|
+| **Exp. 11 confounds** — presentation order: higher-register trial first in **26/47** stereo pairs (timestamps and sample indices agree 47/47), exact binomial p **0.2800** one-sided, 0.5601 two-sided (the 11 August figure 0.39 was P(X >= 25), one short of the count); loudness **27/13/7**, 27/40 p 0.0192 one-sided | `2026-09-28_register_confounds.txt` (`scripts/replicate/register_confounds.py`) |
+
 ## Two traps in these files, both left in place on purpose
 
 **1. `2026-08-27_madeeg_clap_selftest_RESULT_summary.txt` reads `ABOVE CHANCE`

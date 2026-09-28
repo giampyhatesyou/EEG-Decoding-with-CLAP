@@ -1,0 +1,14 @@
+!! ANALYSIS OF 2026-09-28 on metadata only (no EEG): the two confounds of the stereo
+!! register test (Exp. 11), first counted by hand on 11 August 2026 and never saved.
+
+=== POSITIVE CONTROL (analysis plan of 11 August, crossed first) ===
+  stereo twin pairs             47   plan 47
+  higher register louder/softer/equal  27/13/7   plan 27/13/7   [OK]
+
+=== PRESENTATION ORDER (the higher-register trial of each pair presented first) ===
+  by first timestamp 26/47 · by first sample index 26/47 · agree 47/47
+  null 23.5/47 = 0.500   exact binomial p one-sided 0.2800 · two-sided 0.5601
+  (the 11 August figure 0.39 is P(X >= 25 | 47) = 0.3854: one short of the count)
+
+=== LOUDNESS (the higher-register instrument louder, among unequal pairs) ===
+  27/40   null 0.500   exact binomial p one-sided 0.0192 · two-sided 0.0385
