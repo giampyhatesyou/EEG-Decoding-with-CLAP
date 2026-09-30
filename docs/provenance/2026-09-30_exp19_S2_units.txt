@@ -1,0 +1,35 @@
+!! ANALYSIS OF 2026-09-30 on the stored records of Exp. 19 (no EEG, no training, no new
+!! split): the independent units behind the stage-2 figure 113/188.
+
+=== POSITIVE CONTROL (published figures, crossed first) ===
+  S1: 244/536  per-recording mean 0.4215 over 21 recordings  published 244/536, 0.4215, 21  [OK]
+  S2: 113/188  per-recording mean 0.5999 over 13 recordings  published 113/188, 0.5999, 13  [OK]
+
+=== STAGE 2, THE PAIRS (null 0.5000, measured after balancing) ===
+  113/188 = 0.6011   exact two-sided 95% CI [0.527, 0.672]   one-sided binomial p = 0.003404  (descriptive: pairs share EEG windows)
+
+=== THE PARTICIPANTS BEHIND THE 188 PAIRS ===
+  0001: 7/24 = 0.2917
+  0003: 66/110 = 0.6000
+  0008: 28/30 = 0.9333
+  0009: 12/24 = 0.5000
+  -> 4 of 8 participants contribute held-out pairs
+
+=== THE RECORDINGS (subject x solo key) ===
+  0001 pop_falldead_solo_Bs_theme1_mono: 2/12
+  0001 pop_falldead_solo_Dr_theme1_mono: 5/12
+  0003 classique_morceau2_solo_Bo_theme2_mono: 16/19
+  0003 classique_morceau2_solo_Fl_theme1_mono: 19/19
+  0003 pop_falldead_solo_Dr_theme1_mono: 14/24
+  0003 pop_falldead_solo_Gt_theme1_mono: 11/12
+  0003 pop_falldead_solo_Vx_theme1_mono: 2/24
+  0003 pop_mixtape_solo_Gt_theme1_mono: 4/12
+  0008 pop_mixtape_solo_Bs_theme2_mono: 14/15
+  0008 pop_mixtape_solo_Dr_theme1_mono: 14/15
+  0009 pop_falldead_solo_Dr_theme1_mono: 4/12
+  0009 pop_falldead_solo_Vx_theme1_mono: 2/5
+  0009 pop_mixtape_solo_Vx_theme2_mono: 6/7
+  -> 7 of 13 recordings above 0.5, 0 exactly at 0.5
+  sign test over recordings, one-sided, null 0.5: P(X >= 7 | 13) = 0.5000
+  (recordings of the same participant are not independent either, so this is still
+   generous: the participant is the unit a new-trial claim would generalise over)
