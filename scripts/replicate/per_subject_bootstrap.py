@@ -287,7 +287,8 @@ def main():
         for j, (lab, dd) in enumerate(diffs.items()):
             v = [dd[dd.subject == s].y.mean() for s in subs]
             ax.plot(np.arange(len(subs)) + (j - 0.5) * 0.25, v, "o" if j else "s", ms=4,
-                    mfc="none" if j else "0.3", mec="0.3", ls="none", label=lab)
+                    mfc="none" if j else "0.3", mec="0.3", ls="none",
+                    label={"mel anchor (A1)": "mel anchor", "flux k-fold (P2)": "flux, k-fold"}.get(lab, lab))
         ax.axhline(0, color="tab:red", ls="--", lw=0.8)
         ax.set_xticks(range(len(subs)), [s[-1] for s in subs], fontsize=7)
         ax.set_xlabel("participant", fontsize=8)

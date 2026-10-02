@@ -118,7 +118,8 @@ def main():
                 ax.plot(i + rng.uniform(-0.18, 0.18), a, "o", ms=3.5,
                         mfc="none" if v != "2026-07" else "0.25", mec="0.25")
         ax.axhline(0.25, color="tab:red", lw=1, ls="--", label="null 0.25")
-        ax.set_xticks(range(len(MODELS)), ["audio only", "EEG only", "CLAP contrastive", "raw contrastive"])
+        ax.set_xticks(range(len(MODELS)), ["audio only", "EEG only", "contrastive,\npre-trained audio",
+                                           "contrastive,\nlearned audio"])  # the names of Table 7.1
         ax.set_ylabel("fold accuracy (one held-out song)")
         ax.set_ylim(-0.03, 1.03)
         ax.plot([], [], "o", mfc="0.25", mec="0.25", ms=3.5, label="current code (2026-07)")
