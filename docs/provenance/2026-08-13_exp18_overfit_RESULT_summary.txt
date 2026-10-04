@@ -1,0 +1,82 @@
+!! --overfit 20 -- trained and scored on the SAME 20
+!! items. This is the optimisation-sanity check (Exp. 18 §4.3). ~1.0 means
+!! the wiring can learn. It is NOT held-out accuracy and NOT a result.
+
+== MAD-EEG solo match-mismatch, negatives=temporal_offset ==
+epoch_cap=60 lr=0.003 batch=4 seed=42 temperature=0.5 valid_frac=0.2
+early_stop: patience=0 min_delta=0.002 on the TRAIN loss -> did not fire
+balance_pairs=False (Exp. 19 §2.1 null repair; a no-op on temporal_offset)
+window=2.0s stride=1.0s min_offset=2.0s band=(1.0, 45.0) Hz
+recordings=105 repetitions=420 pairs=3346 held_out_recordings=21
+
+STOPPING EPOCH 59 of 60 run, cap 60
+accuracy AT THE STOPPING EPOCH: 20/20 = 1.0000
+null (best EEG-free rule, measured on the held-out pairs): 0.7500 by candidate identity, 0.9500 conditioning on the subject too
+one-sided binomial vs the measured null 0.7500: p=0.003171 (descriptive: pairs share EEG windows)
+per-recording mean over 20 held-out recordings: 1.0000
+train loss 0.7150 -> 0.0350
+pre-registered gate: null 0.7500 is ABOVE the 0.52 ceiling, so the gate is 'beat it, exact one-sided binomial p <= 0.05' (p = 0.003171); the absolute 0.70 bar is reported alongside, not instead
+  -> not applicable -- this run has no held-out set
+
+full curve (diagnostic only -- the result is the LAST row):
+ epoch  train_loss  held_out_acc
+     0      0.7150        0.6000
+     1      0.6013        0.7500
+     2      0.4516        0.6500
+     3      0.3272        0.9000
+     4      0.3749        0.9500
+     5      0.2996        0.9500
+     6      0.2695        1.0000
+     7      0.1991        1.0000
+     8      0.2178        1.0000
+     9      0.1395        1.0000
+    10      0.1234        0.9500
+    11      0.2078        1.0000
+    12      0.1992        1.0000
+    13      0.1918        0.9500
+    14      0.1703        1.0000
+    15      0.1430        1.0000
+    16      0.1195        1.0000
+    17      0.1337        1.0000
+    18      0.0708        1.0000
+    19      0.1117        1.0000
+    20      0.1529        1.0000
+    21      0.0964        0.9500
+    22      0.1728        0.8500
+    23      0.1100        0.7500
+    24      0.1528        0.9000
+    25      0.1055        1.0000
+    26      0.0905        1.0000
+    27      0.0768        1.0000
+    28      0.0715        1.0000
+    29      0.0695        1.0000
+    30      0.0631        1.0000
+    31      0.0545        1.0000
+    32      0.1164        1.0000
+    33      0.0673        1.0000
+    34      0.0568        1.0000
+    35      0.0868        1.0000
+    36      0.0697        1.0000
+    37      0.0948        1.0000
+    38      0.0530        1.0000
+    39      0.0909        1.0000
+    40      0.0674        1.0000
+    41      0.0679        1.0000
+    42      0.0562        1.0000
+    43      0.0594        1.0000
+    44      0.0420        1.0000
+    45      0.0411        1.0000
+    46      0.0388        1.0000
+    47      0.0382        1.0000
+    48      0.0384        1.0000
+    49      0.0357        1.0000
+    50      0.0493        1.0000
+    51      0.0399        1.0000
+    52      0.0528        1.0000
+    53      0.0415        1.0000
+    54      0.0354        1.0000
+    55      0.0368        1.0000
+    56      0.0369        1.0000
+    57      0.0310        1.0000
+    58      0.0362        1.0000
+    59      0.0350        1.0000
