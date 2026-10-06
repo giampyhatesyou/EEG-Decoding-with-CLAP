@@ -46,7 +46,6 @@ reference, not part of the path.
 | `MADEEG.md` | Reference · the Chapter 2 dataset: schema, what is in which release, the loader, the traps. |
 | `CHANGES_FROM_BASELINE.md` | Reference · every difference from the upstream Akama repository, file by file, including what is byte-identical. |
 | `LEGACY.md` | Reference · the **upstream** README, kept verbatim. Its internal links point at the upstream layout. |
-| `paper.pdf` · `cantisani_waspaa2019.pdf` | The two papers the two arms build on. |
 | `model_architecture.png` | The upstream architecture figure. |
 | `provenance/` | **6** · the run outputs behind every Chapter 2 number, plus `README.md`, which maps each number to the file that produced it. |
 

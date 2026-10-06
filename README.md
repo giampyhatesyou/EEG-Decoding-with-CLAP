@@ -1,46 +1,62 @@
-# EEG-based Auditory Attention Decoding in Polyphonic Music
+# What are we really decoding in musical attention?
 
-Code and evidence for a master's thesis on decoding, from EEG, **which instrument a
-listener is attending to** in real polyphonic music.
+Code and evidence for the master's thesis *What are we really decoding in musical
+attention? A brief inquiry into what a CLAP model learns instead of attention*, by
+Andrea Giampietro (supervisor: Daniel Baldauf), Master's Degree in Artificial
+Intelligence Systems, Department of Information Engineering and Computer Science,
+University of Trento, academic year 2025/2026.
 
-Two arms, two datasets, two chapters. They answer different questions, so their
-numbers never share a table.
+The question is whether the EEG alone can tell **which instrument a listener is
+attending to** in real polyphonic music. The thesis examines it on two datasets that
+answer different questions, so their numbers never share a table. The repository
+calls them Chapter 1 and Chapter 2, names that predate the final structure of the
+thesis:
 
-- **Chapter 1 — the methodological arm** (Akama et al. 2025, consumer EEG).
-  Two moves, and the second is what started the investigation. First the published
-  contrastive EEG↔audio baseline is reproduced: **0.875 macro / 0.865 global**,
-  chance 0.25, matching the paper. Then its four learned audio encoders are replaced
-  by a frozen LAION-CLAP tower, and the within-split accuracy goes **well past 90 %**
-  — **0.946 macro / 0.935 global** over 8 seeds. *That* number is what had to be
-  explained, and the rest of the chapter explains it: **the same CLAP architecture
-  scores 0.943 leave-subject-out and 0.268 leave-song-out** (chance 0.25). It
-  generalises across *people* and collapses across *songs* — and the audio alone,
-  with no EEG at all, already identifies the target at **0.996**. In that dataset
-  song is aliased with target, so "which instrument is attended" cannot be separated
-  from "which song is playing". The learned-audio baseline behaves the same way, one
-  step lower (0.781 subject-out, 0.142 song-out): the confound is in the dataset, not
-  in the representation.
+| in this repository | in the thesis | dataset |
+|---|---|---|
+| Chapter 1 | chapters 5 to 7 | Akama et al. 2026, four-channel consumer EEG |
+| Chapter 2 | chapters 8 to 11 | MAD-EEG (Cantisani et al. 2019), 20-channel laboratory EEG |
 
-  *Two caveats travel with those four numbers, and neither is hidden in a script.*
-  **(a)** 0.943 and 0.268 are the same *architecture*, not the same pipeline: 5 of the
-  6 subject-out folds are the pre-refactor **2026-05** revision, which is why
-  `RESULTS.md` carries a `vintage` column — the contrast holds, it just has to be
-  quoted with the vintage ([`cap1_leave_subject_out.sh`](scripts/replicate/cap1_leave_subject_out.sh),
-  "TWO MANDATORY CAVEATS"). **(b)** A second reading of the baseline fold,
-  0.865/0.852, also circulates; it is the all-trials / high-attention pair, not another
-  run. **Closed on 27 August 2026**: the canonical pair is the one the manifest pins,
-  **0.875 macro / 0.865 global**, and the two readings are never mixed
-  ([`cap1_within_split.sh`](scripts/replicate/cap1_within_split.sh)).
-- **Chapter 2 — the identifiable arm** (MAD-EEG, 20-channel lab EEG).
-  The same mixture is attended with **different** targets across trials, so attention
-  is identifiable and stimulus identity cannot win. Everything here is a
-  pre-registered test with a written threshold, and most verdicts are honest
-  negatives: the linear family peaks at **0.5584** on the duo (threshold 0.5714), and
-  the contrastive arm lands **below** chance at **0.3766** for a diagnosed reason —
-  prior-following, not noise.
+The experiment numbers used throughout the code (Exp. N) are the ones of
+`scripts/replicate/README.md`, and the scripts added during the writing cite the
+thesis chapters and tables they reproduce.
 
-Every reported number has a null computed from the data, a positive control crossed
-before the number was looked at, and a threshold written before the run.
+**Chapter 1.** The published contrastive baseline is reproduced at **0.875 macro /
+0.865 global** (null 0.25). With its learned audio encoders replaced by a frozen
+LAION-CLAP tower, the model reaches **0.946 macro / 0.935 global** over eight seeds on
+held-out trials of songs that reach training through other listeners, and **0.943**
+when a whole listener is held out (five of its six folds come from an earlier code
+revision). When a song is held out instead, it falls to
+**0.258** (null 0.25, the fourteen folds of one code revision; the manifest pins the
+twenty-fold mean over two revisions, 0.268), and the learned-audio baseline falls to
+**0.142**. Under the protocol with which the baseline is reported, a classifier
+that sees no EEG recovers the label at **0.996** with the
+pre-trained audio representation and 0.967 with the learned one. In this benchmark
+the attended target is a function of the song, so these results are consistent with
+a model that learned the identity of the stimulus rather than attention.
+
+**Chapter 2.** On MAD-EEG the same mixture is attended with different targets across
+trials, so the identity of the mixture cannot supply the attended label. A
+contrastive model of the same kind gives **58/154 = 0.3766** on the duo decision
+(95% CI 0.300 to 0.458, null 0.500) and follows the stimulus prior of its training
+folds in **0.7177** of the trials, against a data-derived null of 0.4274. The linear
+anchors stay near the null on the same decision (at best **86/154 = 0.5584**, against
+a prospectively specified threshold of 88/154). Replacing the log-mel target with
+spectral flux gives **243/376 = 0.6463** on the own-vs-other task (McNemar exact
+p = 0.0015), the only positive result of a prospectively specified test, but the gain
+does not transfer to the attention decision (76/154 and 77/154, exploratory). The
+attended spectral register is not decoded from band power (**46/89**, 95% CI 0.408 to
+0.624), and a match-mismatch model with trial identity made uninformative fits its
+training pairs while its held-out accuracy moves by 0.001.
+
+The simplest account offered by the thesis is that ensemble music aligns its sources
+in metre and onsets, so a gain in tracking goes to what the instruments share and
+cancels when they are compared. It is an inference, since no manipulation of the
+stimuli was made.
+
+Each planned test was evaluated against a criterion specified before its result was
+computed (the exceptions are stated where they occur), against a null computed from
+the data, and after a positive control had passed.
 
 ## The documentation, in the order it is meant to be read
 
@@ -71,15 +87,17 @@ Chapter 2 dataset), [`docs/CHANGES_FROM_BASELINE.md`](docs/CHANGES_FROM_BASELINE
 ## Reference papers
 
 > Akama T. et al. *Decoding Selective Auditory Attention to Musical Elements in
-> Ecologically Valid Music Listening*. Sony CSL, 2025. — `docs/paper.pdf`.
+> Ecologically Valid Music Listening*. Scientific Reports 16, 24486 (2026).
+> <https://doi.org/10.1038/s41598-026-55371-6>
 > Upstream code: <https://github.com/JURIUENO11/Music_attention> (its README is kept
 > as `docs/LEGACY.md`).
 
 > Cantisani G. et al. *EEG-based decoding of auditory attention to a target
-> instrument in polyphonic music*. WASPAA 2019. — `docs/cantisani_waspaa2019.pdf`.
-> The MAD-EEG arm reproduces this protocol; its 79 F1 on duets does **not** reproduce
-> from any package faithful to the declared methods (see
-> `scripts/replicate/armA_paper_protocol.sh`).
+> instrument in polyphonic music*. IEEE WASPAA 2019, pp. 80-84.
+> <https://doi.org/10.1109/WASPAA.2019.8937219> (open version: HAL hal-02291896).
+> The MAD-EEG arm implements this protocol without the independent component analysis
+> the paper declares, and gives F1 0.5267 / 0.4800 / 0.5400 rather than the reported
+> 0.79 (see `scripts/replicate/armA_paper_protocol.sh`).
 
 ## Quick start
 
@@ -136,7 +154,7 @@ training run implicitly.
 ```
 .
 ├── README.md · RESULTS.md · results_manifest.tsv   what was found, and the pins behind it
-├── docs/        the seven documents above, the two papers, and provenance/ (the evidence)
+├── docs/        the seven documents above and provenance/ (the evidence)
 ├── src/         everything that computes: run.py is the entry point, the rest are drivers
 ├── scripts/     everything you invoke, incl. replicate/ — one script per experiment
 ├── sweeps/      the resumable cross-validation sweeps and the reporting script
@@ -246,4 +264,6 @@ Three interpreters, and they are not interchangeable — the env with `torch` ha
 
 ## License
 
-CC-BY-SA 4.0 (inherited from the upstream repo). See `LICENSE`.
+CC BY-NC-SA 4.0, inherited from the upstream repository (`LICENSE`, copied unchanged).
+The upstream README names CC-BY-SA 4.0, but the license file it ships is the
+NonCommercial one, and the file is what applies.
